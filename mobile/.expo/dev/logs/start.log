@@ -407,3 +407,33 @@
 {"_e":"metro:server_log","_t":1789675054631,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
 {"_e":"metro:server_log","_t":1789675204672,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
 {"_e":"metro:server_log","_t":1789675384962,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1789675922242,"id":"8n","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789675922242,"id":"8n","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789675922243,"id":"8n","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789675922330,"id":"8n","total":1,"ms":87.9286}
+{"_e":"metro:bundling:started","_t":1789677526917,"id":"9e","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789677526917,"id":"9e","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789677526919,"id":"9e","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789677526971,"id":"9e","total":1,"ms":53.3897}
+{"_e":"metro:bundling:started","_t":1789678591797,"id":"a5","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789678591797,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678591799,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678591904,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678591930,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678592030,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678592130,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678592230,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678592330,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678592437,"id":"a5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789678592593,"id":"a5","total":1,"ms":796.2925}
+{"_e":"metro:bundling:started","_t":1789678793880,"id":"ay","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789678793880,"id":"ay","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789678793881,"id":"ay","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789678793950,"id":"ay","total":1,"ms":70.0973}
+{"_e":"metro:server_log","_t":1789678937693,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1789679212898,"id":"bz","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789679212898,"id":"bz","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789679212899,"id":"bz","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789679213001,"id":"bz","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789679213053,"id":"bz","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789679213107,"id":"bz","total":1,"ms":209.1204}

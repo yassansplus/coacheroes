@@ -9,14 +9,16 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
+import { preloadAppImages } from '@/config/preloadAssets';
 import { AppProviders } from '@/providers/AppProviders';
 import { colors } from '@/theme/colors';
 
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [imagesLoaded, setImagesLoaded] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Montserrat_400Regular,
     Montserrat_500Medium,
@@ -26,12 +28,26 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    let mounted = true;
+
+    void preloadAppImages().finally(() => {
+      if (mounted) {
+        setImagesLoaded(true);
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && imagesLoaded) {
       void SplashScreen.hideAsync();
     }
-  }, [fontError, fontsLoaded]);
+  }, [fontError, fontsLoaded, imagesLoaded]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !imagesLoaded) {
     return null;
   }
 

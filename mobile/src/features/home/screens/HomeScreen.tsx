@@ -16,6 +16,11 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppModal } from '@/components/AppModal';
 import { Badge } from '@/components/Badge';
 import { Banner } from '@/components/Banner';
+import {
+  BodyPainSelector,
+  type BodyPainSelection,
+  type BodyPainSide,
+} from '@/components/BodyPainSelector';
 import { BottomSheet } from '@/components/BottomSheet';
 import { BottomTabBar } from '@/components/BottomTabBar';
 import { Button } from '@/components/Button';
@@ -306,6 +311,51 @@ function NavigationPreview() {
         onChange={setSelectedTab}
         value={selectedTab}
       />
+    </View>
+  );
+}
+
+function BodyPainSelectorPreview() {
+  const [painAreas, setPainAreas] = useState<BodyPainSelection[]>(['left_elbow', 'right_knee']);
+  const [painSide, setPainSide] = useState<BodyPainSide>('left');
+  const [painNote, setPainNote] = useState('');
+  const [noCurrentPain, setNoCurrentPain] = useState(false);
+
+  const handleNoCurrentPain = (enabled: boolean) => {
+    setNoCurrentPain(enabled);
+    if (enabled) {
+      setPainAreas([]);
+      setPainNote('');
+    }
+  };
+
+  return (
+    <View style={styles.painPreview}>
+      <BodyPainSelector
+        disabled={noCurrentPain}
+        onChange={setPainAreas}
+        onSideChange={setPainSide}
+        side={painSide}
+        value={painAreas}
+      />
+      <TextField
+        editable={!noCurrentPain}
+        label="Préciser si nécessaire"
+        maxLength={200}
+        multiline
+        onChangeText={setPainNote}
+        placeholder="Ex. : douleur au genou droit lors de la course…"
+        value={painNote}
+      />
+      <Card style={styles.painToggleCard}>
+        <Toggle
+          label="Aucune douleur actuellement"
+          onValueChange={handleNoCurrentPain}
+          value={noCurrentPain}
+        />
+      </Card>
+      <Banner message="L’app ne remplace pas un avis médical." variant="info" />
+      <Button onPress={() => Alert.alert('Douleurs enregistrées')} text="Continuer" />
     </View>
   );
 }
@@ -620,6 +670,17 @@ export function HomeScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Douleurs</Text>
+              <Text style={styles.sectionLegend}>corps interactif</Text>
+            </View>
+
+            <View style={styles.bodyPainExample}>
+              <BodyPainSelectorPreview />
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Feedback</Text>
               <Text style={styles.sectionLegend}>bannière · toast · overlays</Text>
             </View>
@@ -905,5 +966,14 @@ const styles = StyleSheet.create({
   tabIcon: {
     height: 20,
     width: 20,
+  },
+  bodyPainExample: {
+    marginTop: 16,
+  },
+  painPreview: {
+    gap: 14,
+  },
+  painToggleCard: {
+    padding: 14,
   },
 });

@@ -35,7 +35,10 @@ métier. Le layout Expo Router est toujours nommé `_layout.tsx`.
 
 - Le point d'entrée est `expo-router/entry`; ne pas recréer `App.tsx`.
 - `app/_layout.tsx` charge Montserrat, garde le splash screen visible jusqu'au
-  chargement des polices et applique `colors.background` à toutes les routes.
+  chargement des polices et des assets image, puis applique `colors.background`
+  à toutes les routes. La liste centralisée dans `src/config/preloadAssets.ts`
+  précharge les PNG 3D avec `Image.prefetch` afin d'éviter leur apparition
+  progressive au premier affichage.
 - `AppProviders` accueille les providers applicatifs partagés; il contient
   actuellement `SafeAreaProvider`.
 - Les groupes `(auth)` et `(app)` sont réservés aux routes publiques et
@@ -161,6 +164,21 @@ dans un même groupe d'options. `Checkbox` est un choix indépendant contrôlé 
 utiliser `checked` et `onChange`. Les deux acceptent un `label`, `disabled`, une
 couleur active personnalisable et exposent les rôles d'accessibilité natifs.
 
+`BodyPainSelector` est le sélecteur de localisation de douleur. Il affiche les
+silhouettes neutres face et dos, avec des zones tactiles et des choix multiples
+pour `shoulder`, `elbow`, `wrist`, `back`, `hip`, `knee`, `ankle`, `heel` et
+`other`. Chaque ajout est obligatoirement latéralisé : le parent contrôle le
+côté courant avec `side` (`left` ou `right`) et `onSideChange`. Il est contrôlé
+par `value` (tableau de `BodyPainSelection`) et `onChange`; chaque valeur est
+prête à persister, par exemple `left_wrist` ou `right_heel`. Le composant ne
+persiste jamais lui-même les données. Les zones sélectionnées reçoivent un
+marqueur bleu et les chips correspondantes passent au dégradé primaire; les
+autres zones tactiles du côté actif restent visibles en gris pour indiquer où
+appuyer. Le parent peut le désactiver avec `disabled`, par exemple quand
+l'utilisateur indique ne ressentir aucune douleur. Les notes, le consentement
+médical, les actions de navigation et l'enregistrement appartiennent à l'écran
+ou à la feature qui le compose.
+
 `TextField` est le champ de formulaire standard. Il est contrôlé via `value` et
 `onChangeText`, et peut afficher `label`, `helperText`, `error`, accessoires
 gauche/droite et `required`. Il transmet les props utiles de `TextInput`, dont
@@ -267,7 +285,7 @@ adaptée.
 `src/features/home/screens/HomeScreen.tsx` est actuellement le catalogue visuel
 des composants, pas un écran métier définitif. Il présente les boutons, cartes,
 contrôles de sélection, formulaires, feedback, états d'écran, calendrier et
-primitives de navigation.
+primitives de navigation, ainsi qu'un exemple complet de saisie de douleurs.
 
 - La maquette utilise `SafeAreaView` et `ScrollView`.
 - Le contenu a une largeur fluide avec `maxWidth: 680`; aucune hauteur ou
@@ -287,6 +305,11 @@ peuvent être utilisées dans un composant avec `Image` et `require`. Exemple
 actuel : `21_Flamme.png` dans le premier `CardHighlight`. Les autres exemples
 utilisent calendrier, trophée et haltères. Ne pas remplacer ces assets par des
 emojis quand l'asset correspondant existe.
+
+Les silhouettes neutres du sélecteur de douleur sont `22_Corps_face.png` et
+`23_Corps_dos.png`. Elles sont deux PNG RGBA générés pour le projet et doivent
+rester assorties, intégralement visibles et sans marqueur coloré intégré : les
+marqueurs interactifs sont toujours rendus par `BodyPainSelector`.
 
 ## Dépendances UI actuelles
 
