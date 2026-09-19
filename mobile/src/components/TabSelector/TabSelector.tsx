@@ -82,6 +82,7 @@ export function TabSelector({ items, onChange, style, value }: TabSelectorProps)
             key={item.value}
             accessibilityRole="tab"
             accessibilityState={{ selected: isSelected }}
+            aria-selected={isSelected}
             onPress={() => onChange(item.value)}
             style={styles.tab}
           >

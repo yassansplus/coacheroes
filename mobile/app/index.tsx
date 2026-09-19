@@ -1,3 +1,8 @@
-import { HomeScreen } from '@/features/home/screens/HomeScreen';
+import { useRouter } from 'expo-router';
 
-export default HomeScreen;
+import { OnboardingScreen } from '@/features/onboarding/screens/OnboardingScreen';
+
+export default function IndexRoute() {
+  const router = useRouter();
+  return <OnboardingScreen onOpenLibrary={() => router.push('/components')} />;
+}

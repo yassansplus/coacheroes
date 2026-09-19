@@ -1,12 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, type ReactNode } from 'react';
 import {
   Animated,
   Easing,
   Pressable,
   StyleSheet,
   Text,
+  View,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -30,6 +31,9 @@ type ButtonProps = {
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  leading?: ReactNode;
+  trailing?: ReactNode;
+  accessibilityLabel?: string;
 };
 
 const BUTTON_RADII: Record<ButtonRadius, number> = {
@@ -58,6 +62,9 @@ export function Button({
   disabled = false,
   style,
   textStyle,
+  leading,
+  trailing,
+  accessibilityLabel,
 }: ButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const gradientInversion = useRef(new Animated.Value(0)).current;
@@ -115,6 +122,8 @@ export function Button({
     <Animated.View style={{ transform: [{ scale }] }}>
       <Pressable
         accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? text}
+        accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={handlePress}
         onPressIn={() => {
@@ -159,6 +168,7 @@ export function Button({
             </Animated.View>
           </>
         ) : null}
+        {leading ? <View style={styles.accessory}>{leading}</View> : null}
         <Text
           style={[
             styles.label,
@@ -169,6 +179,7 @@ export function Button({
         >
           {text}
         </Text>
+        {trailing ? <View style={styles.accessory}>{trailing}</View> : null}
       </Pressable>
     </Animated.View>
   );
@@ -182,6 +193,8 @@ const styles = StyleSheet.create({
     minHeight: 48,
     overflow: 'hidden',
     paddingHorizontal: 20,
+    flexDirection: 'row',
+    gap: 12,
   },
   primary: {
     backgroundColor: 'transparent',
@@ -201,7 +214,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
     fontSize: 14,
     zIndex: 1,
+    flexShrink: 1,
+    textAlign: 'center',
   },
+  accessory: { zIndex: 1 },
   primaryLabel: {
     color: '#ffffff',
   },

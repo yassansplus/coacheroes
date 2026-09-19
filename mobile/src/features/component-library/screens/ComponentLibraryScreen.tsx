@@ -48,6 +48,8 @@ import { WeightSelectorV2 } from '@/components/WeightSelectorV2';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
+import { OnboardingComponentsPreview } from '../components/OnboardingComponentsPreview';
+
 type ProgressCardPreviewProps = Omit<ComponentProps<typeof ProgressCard>, 'icon'> & {
   imageSource: ImageSourcePropType;
 };
@@ -360,7 +362,7 @@ function BodyPainSelectorPreview() {
   );
 }
 
-export function HomeScreen() {
+export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding: () => void }) {
   const [selectedPeriod, setSelectedPeriod] = useState('semaine');
   const [selectedObjective, setSelectedObjective] = useState('maintien');
   const [weight, setWeight] = useState(72.5);
@@ -380,7 +382,10 @@ export function HomeScreen() {
             <Text style={styles.description}>
               Des éléments simples, cohérents et réutilisables pour construire chaque écran.
             </Text>
+            <Button text="Découvrir l’onboarding" onPress={onOpenOnboarding} style={{ marginTop: 18 }} />
           </Card>
+
+          <OnboardingComponentsPreview />
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>

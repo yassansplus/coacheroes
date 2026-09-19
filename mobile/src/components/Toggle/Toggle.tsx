@@ -14,6 +14,7 @@ type ToggleProps = {
 export function Toggle({ disabled = false, label, onValueChange, style, value }: ToggleProps) {
   const nativeToggle = (
     <Switch
+      accessibilityLabel={label}
       disabled={disabled}
       ios_backgroundColor="#dfe6f4"
       onValueChange={onValueChange}
@@ -45,6 +46,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   label: {
+    flex: 1,
+    marginRight: 12,
     color: '#141b41',
     fontFamily: fontFamily.semiBold,
     fontSize: 14,

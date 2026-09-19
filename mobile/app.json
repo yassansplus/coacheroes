@@ -15,7 +15,15 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autorise Coac Heroes à accéder aux photos que tu choisis pour suivre ton évolution.",
+          "cameraPermission": "Autorise Coac Heroes à prendre une photo pour suivre ton évolution.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }

@@ -437,3 +437,187 @@
 {"_e":"metro:bundling:progress","_t":1789679213001,"id":"bz","progress":0,"total":1,"current":0}
 {"_e":"metro:bundling:progress","_t":1789679213053,"id":"bz","progress":0,"total":1,"current":0}
 {"_e":"metro:bundling:done","_t":1789679213107,"id":"bz","total":1,"ms":209.1204}
+{"_e":"root:init","_t":1789769501009,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789769501011,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789769501014,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789769501935,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789769502744,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789769503166,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789769510789,"atlas":false,"workers":8,"host":"::","port":8081}
+{"_e":"metro:bundling:started","_t":1789769758692,"id":"1","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789769758692,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789769758697,"id":"1","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789769758797,"id":"1","progress":0.09307670209709855,"total":59,"current":18}
+{"_e":"metro:bundling:progress","_t":1789769758897,"id":"1","progress":0.09307670209709855,"total":161,"current":22}
+{"_e":"metro:bundling:progress","_t":1789769759021,"id":"1","progress":0.09307670209709855,"total":161,"current":23}
+{"_e":"metro:bundling:progress","_t":1789769759121,"id":"1","progress":0.0999251669884794,"total":329,"current":104}
+{"_e":"metro:bundling:progress","_t":1789769759222,"id":"1","progress":0.1762203666104264,"total":374,"current":157}
+{"_e":"metro:bundling:progress","_t":1789769759356,"id":"1","progress":0.17847236123423607,"total":374,"current":158}
+{"_e":"metro:bundling:progress","_t":1789769759456,"id":"1","progress":0.3099160378361144,"total":582,"current":324}
+{"_e":"metro:bundling:progress","_t":1789769759559,"id":"1","progress":0.32880563963029946,"total":647,"current":371}
+{"_e":"metro:bundling:progress","_t":1789769759787,"id":"1","progress":0.3305805656352348,"total":647,"current":372}
+{"_e":"metro:bundling:progress","_t":1789769759886,"id":"1","progress":0.3305805656352348,"total":838,"current":471}
+{"_e":"metro:bundling:progress","_t":1789769759986,"id":"1","progress":0.4582914698514737,"total":938,"current":635}
+{"_e":"metro:bundling:progress","_t":1789769760087,"id":"1","progress":0.4640834056946459,"total":938,"current":639}
+{"_e":"metro:bundling:progress","_t":1789769760302,"id":"1","progress":0.4655370724810307,"total":938,"current":640}
+{"_e":"metro:bundling:progress","_t":1789769760402,"id":"1","progress":0.6669444444444445,"total":1020,"current":833}
+{"_e":"metro:bundling:progress","_t":1789769760504,"id":"1","progress":0.7689180069534738,"total":1064,"current":933}
+{"_e":"metro:bundling:progress","_t":1789769760616,"id":"1","progress":0.8194663197832712,"total":1087,"current":984}
+{"_e":"metro:bundling:progress","_t":1789769760716,"id":"1","progress":0.8873706221564672,"total":1138,"current":1072}
+{"_e":"metro:bundling:progress","_t":1789769760816,"id":"1","progress":0.9397289832733682,"total":1209,"current":1172}
+{"_e":"metro:bundling:progress","_t":1789769760917,"id":"1","progress":0.9397289832733682,"total":1339,"current":1205}
+{"_e":"metro:bundling:progress","_t":1789769761037,"id":"1","progress":0.9397289832733682,"total":1339,"current":1206}
+{"_e":"metro:bundling:progress","_t":1789769761139,"id":"1","progress":0.9397289832733682,"total":1380,"current":1337}
+{"_e":"metro:bundling:progress","_t":1789769761240,"id":"1","progress":0.9557455132280306,"total":1430,"current":1398}
+{"_e":"metro:bundling:progress","_t":1789769761340,"id":"1","progress":0.9878256122864154,"total":1474,"current":1465}
+{"_e":"metro:bundling:progress","_t":1789769761445,"id":"1","progress":0.9907069870018225,"total":1503,"current":1496}
+{"_e":"metro:bundling:progress","_t":1789769761949,"id":"1","progress":0.9920319042553616,"total":1503,"current":1497}
+{"_e":"metro:bundling:done","_t":1789769762074,"id":"1","total":1503,"ms":3382.2915}
+{"_e":"metro:server_log","_t":1789769972912,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
+{"_e":"root:init","_t":1789771590171,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789771590208,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789771590278,"mode":"development","files":[],"env":{}}
+{"_e":"root:init","_t":1789771630974,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789771631012,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789771631085,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789771653339,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789771667159,"serverRoot":"../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:server_log","_t":1789771670913,"level":"error","data":["An unknown error occurred while installing React Native DevTools. Details:\n\n/mnt/e/coacHeroes/mobile/node_modules/@react-native/debugger-shell/bin/react-native-devtools: error while loading shared libraries: libgtk-3.so.0: cannot open shared object file: No such file or directory\n"]}
+{"_e":"expo:dev-tools-plugin:load","_t":1789771671430,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789771696981,"atlas":false,"workers":3,"host":"::","port":8082}
+{"_e":"metro:bundling:started","_t":1789771732839,"id":"1","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1789771774943,"id":"1","total":1095,"ms":42103.536707}
+{"_e":"metro:client_log","_t":1789771775339,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1789771775354,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1789771775357,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1789771775766,"level":"error","data":["[TypeError: Image.default.resolveAssetSource is not a function]","\n\nCode: preloadAssets.ts\n\u001b[0m\u001b[0m\nCall Stack\n  imageAssets.map$argument_0 (src/config/preloadAssets.ts:39:28)\n  preloadAppImages (src/config/preloadAssets.ts:38:17)\n  useEffect$argument_0 (app/_layout.tsx:33:26)"]}
+{"_e":"metro:client_log","_t":1789771775829,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:bundling:started","_t":1789771796633,"id":"e","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1789771796690,"id":"e","total":1,"ms":56.829154}
+{"_e":"metro:client_log","_t":1789771796849,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1789771796850,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1789771796857,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1789771796975,"level":"error","data":["[TypeError: Image.default.resolveAssetSource is not a function]","\n\nCode: preloadAssets.ts\n\u001b[0m\u001b[0m\nCall Stack\n  imageAssets.map$argument_0 (src/config/preloadAssets.ts:39:28)\n  preloadAppImages (src/config/preloadAssets.ts:38:17)\n  useEffect$argument_0 (app/_layout.tsx:33:26)"]}
+{"_e":"metro:client_log","_t":1789771796998,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:bundling:started","_t":1789771801846,"id":"r","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1789771801902,"id":"r","total":1,"ms":55.228703}
+{"_e":"metro:client_log","_t":1789771802088,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1789771802089,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1789771802091,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1789771802191,"level":"error","data":["[TypeError: Image.default.resolveAssetSource is not a function]","\n\nCode: preloadAssets.ts\n\u001b[0m\u001b[0m\nCall Stack\n  imageAssets.map$argument_0 (src/config/preloadAssets.ts:39:28)\n  preloadAppImages (src/config/preloadAssets.ts:38:17)\n  useEffect$argument_0 (app/_layout.tsx:33:26)"]}
+{"_e":"metro:client_log","_t":1789771802235,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1789771803606,"level":"warn","data":["Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md"]}
+{"_e":"root:init","_t":1789771832613,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789771832651,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789771832729,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789771855508,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789771869009,"serverRoot":"../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:server_log","_t":1789771872579,"level":"error","data":["An unknown error occurred while installing React Native DevTools. Details:\n\n/mnt/e/coacHeroes/mobile/node_modules/@react-native/debugger-shell/bin/react-native-devtools: error while loading shared libraries: libgtk-3.so.0: cannot open shared object file: No such file or directory\n"]}
+{"_e":"expo:dev-tools-plugin:load","_t":1789771873150,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789771900360,"atlas":false,"workers":3,"host":"::","port":8082}
+{"_e":"metro:bundling:started","_t":1789771929167,"id":"1","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1789771966788,"id":"1","total":1095,"ms":37621.556686}
+{"_e":"metro:client_log","_t":1789771967158,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1789771967179,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1789771967179,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1789771967842,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1789771969172,"level":"warn","data":["Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md"]}
+{"_e":"root:init","_t":1789772133847,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789772133890,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789772133965,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789772156130,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789772169211,"serverRoot":"../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:server_log","_t":1789772172650,"level":"error","data":["An unknown error occurred while installing React Native DevTools. Details:\n\n/mnt/e/coacHeroes/mobile/node_modules/@react-native/debugger-shell/bin/react-native-devtools: error while loading shared libraries: libgtk-3.so.0: cannot open shared object file: No such file or directory\n"]}
+{"_e":"expo:dev-tools-plugin:load","_t":1789772173179,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789772178195,"atlas":false,"workers":3,"host":"::","port":8082}
+{"_e":"metro:bundling:started","_t":1789772185308,"id":"1","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1789772203011,"id":"1","total":1095,"ms":17703.28765}
+{"_e":"metro:client_log","_t":1789772203313,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1789772203326,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1789772203332,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1789772203850,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1789772205292,"level":"warn","data":["Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md"]}
+{"_e":"metro:client_log","_t":1789772216439,"level":"error","data":["\n\nCode: ProgressRing.tsx\n\u001b[0m \u001b[90m 14 |\u001b[39m     \u001b[36mreturn\u001b[39m \u001b[33m<\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 15 |\u001b[39m       \u001b[33m<\u001b[39m\u001b[33mCircle\u001b[39m cx\u001b[33m=\u001b[39m{size \u001b[33m/\u001b[39m \u001b[35m2\u001b[39m} cy\u001b[33m=\u001b[39m{size \u001b[35m/ 2} r={radius} stroke={colors.primaryTint} strokeWidth={strokeWidth} fill=\"none\" /\u001b[39m\u001b[33m>\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 16 |\u001b[39m       \u001b[33m<\u001b[39m\u001b[33mCircle\u001b[39m cx\u001b[33m=\u001b[39m{size \u001b[33m/\u001b[39m \u001b[35m2\u001b[39m} cy\u001b[33m=\u001b[39m{size \u001b[33m/\u001b[39m \u001b[35m2\u001b[39m} r\u001b[33m=\u001b[39m{radius} stroke\u001b[33m=\u001b[39m{\u001b[32m`url(#${id})`\u001b[39m} opacity\u001b[33m=\u001b[39m{opacity} strokeWidth\u001b[33m=\u001b[39m{strokeWidth}\n \u001b[90m    |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 17 |\u001b[39m         strokeDasharray\u001b[33m=\u001b[39m{\u001b[32m`${length} ${length}`\u001b[39m} strokeDashoffset\u001b[33m=\u001b[39m{length \u001b[33m*\u001b[39m (\u001b[35m1\u001b[39m \u001b[33m-\u001b[39m value \u001b[33m/\u001b[39m \u001b[35m100\u001b[39m)} strokeLinecap\u001b[33m=\u001b[39m\u001b[32m\"round\"\u001b[39m fill\u001b[33m=\u001b[39m\u001b[32m\"none\"\u001b[39m\n \u001b[90m 18 |\u001b[39m         rotation\u001b[33m=\u001b[39m{\u001b[33m-\u001b[39m\u001b[35m90\u001b[39m} origin\u001b[33m=\u001b[39m{\u001b[32m`${size / 2}, ${size / 2}`\u001b[39m} \u001b[33m/\u001b[39m\u001b[33m>\u001b[39m\n \u001b[90m 19 |\u001b[39m     \u001b[33m<\u001b[39m\u001b[33m/\u001b[39m\u001b[33m>\u001b[39m\u001b[33m;\u001b[39m\u001b[0m\nCall Stack\n  ring (src/components/ProgressRing/ProgressRing.tsx:16:7)\n  ProgressRing (src/components/ProgressRing/ProgressRing.tsx:26:8)\n  GenerationStep (src/features/onboarding/components/GenerationStep.tsx:27:5)\n  renderStep (src/features/onboarding/screens/OnboardingScreen.tsx:54:23)\n  OnboardingScreen (src/features/onboarding/screens/OnboardingScreen.tsx:67:8)\n  IndexRoute (app/index.tsx:7:10)\n  RootLayout (app/_layout.tsx:57:7)"]}
+{"_e":"root:init","_t":1789772298344,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789772298383,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789772298454,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789772320185,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789772333828,"serverRoot":"../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789772337892,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789772342892,"atlas":false,"workers":3,"host":"::","port":8082}
+{"_e":"metro:bundling:started","_t":1789772350051,"id":"1","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1789772364402,"id":"1","total":1095,"ms":14350.209181}
+{"_e":"metro:client_log","_t":1789772364684,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1789772364703,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1789772364703,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1789772365238,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1789772366656,"level":"warn","data":["Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md"]}
+{"_e":"metro:bundling:started","_t":1789772415851,"id":"1h","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789772415851,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772415855,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772415970,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772417431,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772417532,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772417632,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772417732,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772417834,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772417947,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418191,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418294,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418396,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418496,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418596,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418700,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418807,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789772418913,"id":"1h","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789772418990,"id":"1h","total":1,"ms":3139.372}
+{"_e":"metro:server_log","_t":1789772688693,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1789773358447,"id":"56","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789773358448,"id":"56","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789773358449,"id":"56","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789773358561,"id":"56","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789773358575,"id":"56","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789773358676,"id":"56","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789773358775,"id":"56","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789773358875,"id":"56","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789773359024,"id":"56","total":1,"ms":575.9236}
+{"_e":"metro:bundling:started","_t":1789773455685,"id":"6z","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789773455685,"id":"6z","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789773455725,"id":"6z","total":1,"ms":40.3298}
+{"_e":"metro:server_log","_t":1789773544254,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
+{"_e":"metro:client_log","_t":1789773565271,"level":"error","data":["[TypeError: undefined is not a function]","\n\n\u001b[1mCode: utils.ts\u001b[22m\n\u001b[0m \u001b[90m 2 |\u001b[39m\n \u001b[90m 3 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mfunction\u001b[39m toggleItem\u001b[33m<\u001b[39m\u001b[33mT\u001b[39m\u001b[33m>\u001b[39m(items\u001b[33m:\u001b[39m \u001b[33mT\u001b[39m[]\u001b[33m,\u001b[39m item\u001b[33m:\u001b[39m \u001b[33mT\u001b[39m)\u001b[33m:\u001b[39m \u001b[33mT\u001b[39m[] {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 4 |\u001b[39m   \u001b[36mreturn\u001b[39m items\u001b[33m.\u001b[39mincludes(item) \u001b[33m?\u001b[39m items\u001b[33m.\u001b[39mfilter(value \u001b[33m=>\u001b[39m value \u001b[33m!==\u001b[39m item) \u001b[33m:\u001b[39m [\u001b[33m...\u001b[39mitems\u001b[33m,\u001b[39m item]\u001b[33m;\u001b[39m\n \u001b[90m   |\u001b[39m                                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 5 |\u001b[39m }\n \u001b[90m 6 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36mfunction\u001b[39m formatMinutes(minutes\u001b[33m:\u001b[39m number)\u001b[33m:\u001b[39m string {\n \u001b[90m 7 |\u001b[39m   \u001b[36mconst\u001b[39m hours \u001b[33m=\u001b[39m \u001b[33mMath\u001b[39m\u001b[33m.\u001b[39mfloor(minutes \u001b[33m/\u001b[39m \u001b[35m60\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[1mCall Stack\u001b[22m\n\u001b[90m  toggleItem (src\\features\\onboarding\\utils.ts:4:45)\u001b[39m\n\u001b[90m  ChoiceCard.props.onPress (src\\features\\onboarding\\components\\ProfileSteps.tsx:21:123)\u001b[39m\n\u001b[90m  Pressable.props.onPress (src\\components\\ChoiceCard\\ChoiceCard.tsx:40:103)\u001b[39m"]}
+{"_e":"metro:bundling:started","_t":1789773569860,"id":"8v","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789773569860,"id":"8v","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789773569898,"id":"8v","total":1,"ms":37.662}
+{"_e":"metro:server_log","_t":1789773660061,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
+{"_e":"metro:server_log","_t":1789773944980,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}
+{"_e":"metro:bundling:started","_t":1789773950141,"id":"d0","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789773950141,"id":"d0","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789773950184,"id":"d0","total":1,"ms":42.6841}
+{"_e":"metro:bundling:started","_t":1789773958876,"id":"e2","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789773958877,"id":"e2","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789773958913,"id":"e2","total":1,"ms":35.9966}
+{"_e":"metro:bundling:started","_t":1789774294471,"id":"g5","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789774294471,"id":"g5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789774294472,"id":"g5","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789774294612,"id":"g5","total":1,"ms":141.0323}
+{"_e":"root:init","_t":1789774762398,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789774762438,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789774762518,"mode":"development","files":[],"env":{}}
+{"_e":"devserver:start","_t":1789774784661,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789774800123,"serverRoot":"../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789774805035,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789774810833,"atlas":false,"workers":3,"host":"::","port":8082}
+{"_e":"metro:bundling:started","_t":1789774818505,"id":"1","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1789774854771,"id":"1","total":1098,"ms":36265.167885}
+{"_e":"metro:client_log","_t":1789774855075,"level":"info","data":["%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools","font-weight:bold"]}
+{"_e":"metro:client_log","_t":1789774855094,"level":"log","data":["Running application \"main\" with appParams:\n","{\"hydrate\": undefined, \"rootTag\": \"#root\"}","\nDevelopment-level warnings: ON.\nPerformance optimizations: OFF."]}
+{"_e":"metro:client_log","_t":1789774855096,"level":"warn","data":["\"shadow*\" style props are deprecated. Use \"boxShadow\"."]}
+{"_e":"metro:client_log","_t":1789774855801,"level":"warn","data":["props.pointerEvents is deprecated. Use style.pointerEvents"]}
+{"_e":"metro:client_log","_t":1789774857193,"level":"warn","data":["Animated: `useNativeDriver` is not supported because the native animated module is missing. Falling back to JS-based animation. To resolve this, add `RCTAnimation` module to this app, or remove `useNativeDriver`. Make sure to run `bundle exec pod install` first. Read more about autolinking: https://github.com/react-native-community/cli/blob/master/docs/autolinking.md"]}
+{"_e":"metro:bundling:started","_t":1789775184693,"id":"lq","platform":"ios","environment":null,"entry":"node_modules\\expo-router\\entry.js"}
+{"_e":"metro:bundling:progress","_t":1789775184693,"id":"lq","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789775184695,"id":"lq","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:progress","_t":1789775184800,"id":"lq","progress":0,"total":1,"current":0}
+{"_e":"metro:bundling:done","_t":1789775184852,"id":"lq","total":1,"ms":159.0464}
+{"_e":"metro:server_log","_t":1789775546064,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","com.yassansplus.expogo","iPhone","60"]}

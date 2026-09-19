@@ -15,6 +15,8 @@ import { fontFamily } from '@/theme/typography';
 
 type TextFieldProps = Omit<TextInputProps, 'onChangeText' | 'style' | 'value'> & {
   containerStyle?: StyleProp<ViewStyle>;
+  fieldStyle?: StyleProp<ViewStyle>;
+  labelStyle?: StyleProp<TextStyle>;
   error?: string;
   formatValue?: (value: string) => string;
   helperText?: string;
@@ -29,6 +31,8 @@ type TextFieldProps = Omit<TextInputProps, 'onChangeText' | 'style' | 'value'> &
 
 export function TextField({
   containerStyle,
+  fieldStyle,
+  labelStyle,
   error,
   formatValue,
   helperText,
@@ -49,13 +53,13 @@ export function TextField({
   return (
     <View style={containerStyle}>
       {label ? (
-        <Text style={styles.label}>
+        <Text style={[styles.label, labelStyle]}>
           {label}
           {required ? <Text style={styles.required}> *</Text> : null}
         </Text>
       ) : null}
 
-      <View style={[styles.field, focused && !hasError && styles.focused, hasError && styles.errorField]}>
+      <View style={[styles.field, fieldStyle, focused && !hasError && styles.focused, hasError && styles.errorField]}>
         {leftAccessory ? <View style={styles.accessory}>{leftAccessory}</View> : null}
         <TextInput
           {...inputProps}
@@ -111,6 +115,7 @@ const styles = StyleSheet.create({
   input: {
     color: '#141b41',
     flex: 1,
+    minWidth: 0,
     fontFamily: fontFamily.medium,
     fontSize: 14,
     paddingVertical: 12,

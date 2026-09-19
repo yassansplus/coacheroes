@@ -10,7 +10,8 @@ par type de fichier à l'échelle de toute l'application.
 mobile/
 ├── app/                         # Routes et layouts Expo Router uniquement
 │   ├── _layout.tsx               # Layout racine
-│   ├── index.tsx                 # Route qui délègue à la feature Home
+│   ├── index.tsx                 # Route qui délègue à la feature Onboarding
+│   ├── components.tsx            # Bibliothèque de composants
 │   ├── (auth)/                   # Routes d'authentification à venir
 │   └── (app)/                    # Routes connectées à venir
 └── src/
@@ -61,7 +62,8 @@ src/features/<feature>/
 ```
 
 Ne pas créer tous ces dossiers par défaut : une feature simple peut ne contenir
-qu'un écran. `home` est l'exemple de référence minimal.
+qu'un écran. `component-library` conserve le catalogue visuel; `onboarding`
+porte les 16 étapes du parcours public, son état local et ses validations.
 
 ## Règles de dépendance
 
@@ -282,10 +284,39 @@ adaptée.
 
 ## Maquette et responsive
 
-`src/features/home/screens/HomeScreen.tsx` est actuellement le catalogue visuel
-des composants, pas un écran métier définitif. Il présente les boutons, cartes,
+`src/features/component-library/screens/ComponentLibraryScreen.tsx` est le catalogue
+visuel des composants, accessible sur `/components`. Il présente les boutons, cartes,
 contrôles de sélection, formulaires, feedback, états d'écran, calendrier et
 primitives de navigation, ainsi qu'un exemple complet de saisie de douleurs.
+
+L'accueil `/` présente désormais l'onboarding. Les 16 maquettes de
+`FitBuddy_Onboarding_01-16` servent de référence. Les réponses et les URI des
+photos restent en mémoire pendant la session : aucune authentification, aucun
+upload, aucune génération IA ni persistance n'est effectuée. Le récapitulatif
+permet de modifier une étape puis d'y revenir. Le programme final est un aperçu,
+avec une semaine dérivée des disponibilités et des sports sélectionnés.
+
+`ChoiceCard` est la carte de choix avec indicateur visible (rôle `radio` ou
+`checkbox`), déclinée en tuile, ligne ou chip. Elle complète `SelectableCard`
+sans modifier son usage pour les récompenses. `NumberStepper` est un compteur
+contrôlé avec bornes, pas, formatage et tailles compact / large.
+`TagInput` compose `TextField` et des tags supprimables. Ses tags (`value`) et
+son brouillon (`inputValue`) sont contrôlés avec `onChange(value, inputValue)`;
+les virgules, Entrée, + et la perte de focus valident les saisies. Les libellés,
+couleurs et styles sont personnalisables. Le parent conserve le brouillon et
+doit le valider lors d'une navigation qui n'entraîne pas de perte de focus.
+`WeekdaySelector` sélectionne plusieurs jours (indices 0 = lundi à 6 = dimanche).
+`PhotoPicker` reçoit une URI et un `onChange`; il ouvre le sélecteur natif ou la
+caméra avec `expo-image-picker`, sans stocker ni téléverser de données.
+`ProgressRing` est une primitive de progression circulaire, avec anneau double
+optionnel. `Illustration` utilise le registre `src/config/illustrations.ts`,
+également consommé par le préchargement. `Symbol` fournit les petits glyphes
+d'interface en SVG; les illustrations métier continuent d'utiliser les PNG 3D.
+
+Les compléments d'illustration sont extraits des maquettes dans
+`assets/onboarding/`, avec le script reproductible
+`scripts/prepare-onboarding-assets.cjs`. Ils ne contiennent pas de contrôles ni
+de textes d'interface. Les nouveaux composants sont présentés dans le catalogue.
 
 - La maquette utilise `SafeAreaView` et `ScrollView`.
 - Le contenu a une largeur fluide avec `maxWidth: 680`; aucune hauteur ou
@@ -315,6 +346,7 @@ marqueurs interactifs sont toujours rendus par `BodyPainSelector`.
 
 - `expo-router` : navigation et routes.
 - `expo-haptics` : retour haptique optionnel des boutons.
+- `expo-image-picker` : choix local de photos et prise de vue facultative.
 - `expo-linear-gradient` : dégradé du bouton primaire.
 - `react-native-svg` : anneaux et indicateurs de progression personnalisables.
 - `@expo-google-fonts/montserrat`, `expo-font`, `expo-splash-screen` : police
