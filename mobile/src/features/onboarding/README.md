@@ -28,7 +28,7 @@ les aliments du catalogue conservent leur identifiant. Le brouillon est contrôl
 par la feature et validé aussi au passage à l’étape suivante ou précédente.
 Les aliments personnalisés restent visibles dans le détail du programme.
 
-Les boutons Apple / Google ouvrent la démonstration sans authentification.
+Le bouton Apple ouvre la démonstration sans authentification.
 La génération est une animation locale, annulée au démontage. Les jours, sports,
 durées et totaux hebdomadaires de l'aperçu dépendent des choix; ses objectifs
 nutritionnels sont les données illustratives de la maquette, pas un calcul

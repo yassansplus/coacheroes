@@ -20,9 +20,6 @@ export function WelcomeStep({ onStart, onLogin, onOpenLibrary }: {
     <View style={styles.actions}>
       <Button text="Continuer avec Apple" leading={<Symbol name="apple" size={26} color="white" />}
         onPress={onStart} style={styles.button} textStyle={styles.buttonText} />
-      <Button text="Continuer avec Google" variant="outline" textColor={colors.text}
-        leading={<Symbol name="google" size={24} />} onPress={onStart}
-        style={[styles.button, styles.google]} textStyle={styles.buttonText} />
       <View style={styles.loginRow}><View style={styles.line} />
         <Button text="J’ai déjà un compte" variant="secondary" backgroundColor="transparent" textColor={colors.primary}
           onPress={onLogin} textStyle={styles.loginText} style={styles.login} />
@@ -42,7 +39,6 @@ const styles = StyleSheet.create({
   tagline: { color: colors.textSecondary, fontFamily: fontFamily.medium, fontSize: 14, textAlign: 'center', lineHeight: 21 },
   hero: { width: '112%', marginLeft: '-6%', alignSelf: 'center' },
   actions: { gap: 10, paddingHorizontal: 6 }, button: { minHeight: 56, borderRadius: 23 }, buttonText: { fontSize: 15 },
-  google: { borderColor: colors.border, backgroundColor: colors.surface },
   loginRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, gap: 8 },
   line: { height: 1, backgroundColor: colors.border, flex: 1 }, login: { paddingHorizontal: 8 }, loginText: { fontSize: 12 },
   privacy: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
