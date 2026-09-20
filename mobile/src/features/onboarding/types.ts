@@ -35,7 +35,7 @@ export type OnboardingProfile = {
   meals: string;
   cooking: string;
   restaurants: string;
-  tracking: string;
+  tracking: ('none' | 'calories' | 'macros')[];
   likedFoods: string[];
   avoidedFoods: string[];
   allergies: string;

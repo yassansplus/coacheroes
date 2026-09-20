@@ -6,13 +6,13 @@ import {
   StyleSheet,
   Text,
   View,
-  type ImageSourcePropType,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/AppHeader';
+import { AppNavbar, type AppNavTab } from '@/components/AppNavbar';
 import { AppModal } from '@/components/AppModal';
 import { Badge } from '@/components/Badge';
 import { Banner } from '@/components/Banner';
@@ -26,15 +26,23 @@ import { BottomTabBar } from '@/components/BottomTabBar';
 import { Button } from '@/components/Button';
 import { Calendar } from '@/components/Calendar';
 import { Card } from '@/components/Card';
+import { CameraCapture } from '@/components/CameraCapture';
+import { MessageComposer } from '@/components/MessageComposer';
+import { DropdownMenu } from '@/components/DropdownMenu';
+import { LineChart } from '@/components/charts/LineChart';
 import { CardHighlight } from '@/components/CardHighlight';
 import { Checkbox } from '@/components/Checkbox';
 import { DailyQuests, type DailyQuest } from '@/components/DailyQuests';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { IconButton } from '@/components/IconButton';
+import { Illustration } from '@/components/Illustration';
 import { LevelProgressCard } from '@/components/LevelProgressCard';
+import { XPRewardCard } from '@/components/XPRewardCard';
 import { LoadingState } from '@/components/LoadingState';
 import { PillSelector } from '@/components/PillSelector';
+import { NumberStepper } from '@/components/NumberStepper';
+import { ScreenBackdrop } from '@/components/ScreenBackdrop';
 import { ProgressCard, ProgressCardRow } from '@/components/ProgressCard';
 import { RadioButton } from '@/components/RadioButton';
 import { SelectableCard } from '@/components/SelectableCard';
@@ -45,13 +53,14 @@ import { Toggle } from '@/components/Toggle';
 import { Toast } from '@/components/Toast';
 import { WeightSelectorV1 } from '@/components/WeightSelectorV1';
 import { WeightSelectorV2 } from '@/components/WeightSelectorV2';
+import { type IllustrationName } from '@/config/illustrations';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
 import { OnboardingComponentsPreview } from '../components/OnboardingComponentsPreview';
 
 type ProgressCardPreviewProps = Omit<ComponentProps<typeof ProgressCard>, 'icon'> & {
-  imageSource: ImageSourcePropType;
+  iconName: IllustrationName;
 };
 
 type ProgressCardExample = Omit<ProgressCardPreviewProps, 'style'> & {
@@ -78,7 +87,7 @@ const pillSelectorItems = [
 const progressCardExamples: ProgressCardExample[] = [
   {
     id: 'calories',
-    imageSource: require('../../../../10_Assets_3D/21_Flamme.png'),
+    iconName: 'flame',
     label: 'Calories',
     progress: 65,
     target: '/ 2 200 kcal',
@@ -86,7 +95,7 @@ const progressCardExamples: ProgressCardExample[] = [
   },
   {
     id: 'proteines',
-    imageSource: require('../../../../10_Assets_3D/10_Couverts.png'),
+    iconName: 'cutlery',
     iconBackgroundColor: '#e6fbf2',
     label: 'Protéines',
     labelColor: '#139d78',
@@ -98,7 +107,7 @@ const progressCardExamples: ProgressCardExample[] = [
   },
   {
     id: 'sommeil',
-    imageSource: require('../../../../10_Assets_3D/17_Lune.png'),
+    iconName: 'moon',
     iconBackgroundColor: 'lilac',
     label: 'Sommeil',
     labelColor: 'accent',
@@ -118,7 +127,7 @@ const progressCardExamples: ProgressCardExample[] = [
   },
   {
     id: 'pas',
-    imageSource: require('../../../../10_Assets_3D/07_Chaussure.png'),
+    iconName: 'shoe',
     iconBackgroundColor: 'lavender',
     label: 'Pas',
     labelColor: 'accent',
@@ -134,11 +143,7 @@ const dailyQuestExamples: DailyQuest[] = [
   {
     currentValue: 3,
     icon: (
-      <Image
-        resizeMode="contain"
-        source={require('../../../../10_Assets_3D/14_Halteres.png')}
-        style={dailyQuestIconStyle}
-      />
+      <Illustration name="dumbbell" size={42} style={dailyQuestIconStyle} />
     ),
     iconBackgroundColor: '#edf5ff',
     id: 'seances',
@@ -150,11 +155,7 @@ const dailyQuestExamples: DailyQuest[] = [
   {
     currentValue: 4,
     icon: (
-      <Image
-        resizeMode="contain"
-        source={require('../../../../10_Assets_3D/11_Pomme.png')}
-        style={dailyQuestIconStyle}
-      />
+      <Illustration name="apple" size={42} style={dailyQuestIconStyle} />
     ),
     iconBackgroundColor: '#e8fbf1',
     id: 'proteines',
@@ -166,11 +167,7 @@ const dailyQuestExamples: DailyQuest[] = [
   {
     currentValue: 2,
     icon: (
-      <Image
-        resizeMode="contain"
-        source={require('../../../../10_Assets_3D/17_Lune.png')}
-        style={dailyQuestIconStyle}
-      />
+      <Illustration name="moon" size={42} style={dailyQuestIconStyle} />
     ),
     iconBackgroundColor: 'lilac',
     id: 'sommeil',
@@ -181,11 +178,11 @@ const dailyQuestExamples: DailyQuest[] = [
   },
 ];
 
-function ProgressCardPreview({ imageSource, ...progressCardProps }: ProgressCardPreviewProps) {
+function ProgressCardPreview({ iconName, ...progressCardProps }: ProgressCardPreviewProps) {
   return (
     <ProgressCard
       {...progressCardProps}
-      icon={<Image resizeMode="contain" source={imageSource} style={styles.progressIcon} />}
+      icon={<Illustration name={iconName} style={styles.progressIcon} />}
     />
   );
 }
@@ -267,6 +264,7 @@ function CalendarPreview() {
 
 function NavigationPreview() {
   const [selectedTab, setSelectedTab] = useState('home');
+  const [appTab, setAppTab] = useState<AppNavTab>('program');
 
   return (
     <View style={styles.navigationPreview}>
@@ -295,12 +293,12 @@ function NavigationPreview() {
       <BottomTabBar
         items={[
           {
-            icon: <Image source={require('../../../../10_Assets_3D/02_Logo_eclair.png')} style={styles.tabIcon} />,
+            icon: <Illustration name="logo" size={32} style={styles.tabIcon} />,
             label: 'Accueil',
             value: 'home',
           },
           {
-            icon: <Image source={require('../../../../10_Assets_3D/03_Calendrier.png')} style={styles.tabIcon} />,
+            icon: <Illustration name="calendar" size={32} style={styles.tabIcon} />,
             label: 'Planning',
             value: 'calendar',
           },
@@ -313,6 +311,8 @@ function NavigationPreview() {
         onChange={setSelectedTab}
         value={selectedTab}
       />
+      <Text style={styles.componentLabel}>Navbar de l’application</Text>
+      <AppNavbar value={appTab} onChange={setAppTab} />
     </View>
   );
 }
@@ -362,7 +362,7 @@ function BodyPainSelectorPreview() {
   );
 }
 
-export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding: () => void }) {
+export function ComponentLibraryScreen({ onOpenOnboarding, onOpenDailyCheckIn, onOpenProgram, onOpenNutrition, onOpenCoach, onOpenProgression }: { onOpenOnboarding: () => void; onOpenDailyCheckIn: () => void; onOpenProgram: () => void; onOpenNutrition: () => void; onOpenCoach: () => void; onOpenProgression: () => void }) {
   const [selectedPeriod, setSelectedPeriod] = useState('semaine');
   const [selectedObjective, setSelectedObjective] = useState('maintien');
   const [weight, setWeight] = useState(72.5);
@@ -370,6 +370,10 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
   const [boxerRewardSelected, setBoxerRewardSelected] = useState(true);
   const [selectedFrequency, setSelectedFrequency] = useState('three');
   const [weeklySummaryEnabled, setWeeklySummaryEnabled] = useState(true);
+  const [nutritionMenuVisible, setNutritionMenuVisible] = useState(false);
+  const [cameraDemoVisible, setCameraDemoVisible] = useState(false);
+  const [cameraDemoPhoto, setCameraDemoPhoto] = useState<string>();
+  const [messagePreview, setMessagePreview] = useState('');
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -382,10 +386,32 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
             <Text style={styles.description}>
               Des éléments simples, cohérents et réutilisables pour construire chaque écran.
             </Text>
-            <Button text="Découvrir l’onboarding" onPress={onOpenOnboarding} style={{ marginTop: 18 }} />
+            <Button text="Jouer l’onboarding" onPress={onOpenOnboarding} style={{ marginTop: 18 }} />
+            <Button text="Jouer le bilan quotidien" variant="outline" onPress={onOpenDailyCheckIn} style={{ marginTop: 10 }} />
+            <Button text="Jouer le programme" variant="outline" onPress={onOpenProgram} style={{ marginTop: 10 }} />
+            <Button text="Jouer la nutrition" variant="outline" onPress={onOpenNutrition} style={{ marginTop: 10 }} />
+            <Button text="Jouer le coach" variant="outline" onPress={onOpenCoach} style={{ marginTop: 10 }} />
+            <Button text="Jouer la progression" variant="outline" onPress={onOpenProgression} style={{ marginTop: 10 }} />
           </Card>
 
           <OnboardingComponentsPreview />
+          <Card><Text style={styles.title}>Saisie de conversation</Text><MessageComposer value={messagePreview} onChange={setMessagePreview} onSend={() => { setMessagePreview(''); Alert.alert('Message envoyé'); }} /></Card>
+          <Card>
+            <Text style={styles.title}>Caméra intégrée</Text>
+            <Button text={cameraDemoVisible ? 'Fermer la caméra' : 'Tester la caméra'} variant="outline" onPress={() => setCameraDemoVisible(!cameraDemoVisible)} />
+            {cameraDemoVisible ? <CameraCapture value={cameraDemoPhoto} onChange={setCameraDemoPhoto} label="Place le sujet dans le cadre" /> : null}
+          </Card>
+          <Card style={{ minHeight: 220, zIndex: 2 }}>
+            <Text style={styles.title}>Menu contextuel</Text>
+            <Text style={styles.description}>Même menu réutilisé dans Programme et Nutrition.</Text>
+            <Button text="Ouvrir les options" variant="outline" onPress={() => setNutritionMenuVisible(true)} />
+            <DropdownMenu visible={nutritionMenuVisible} onClose={() => setNutritionMenuVisible(false)} items={[{ label: 'Ajouter un repas', onPress: onOpenNutrition }, { label: 'Voir l’historique', onPress: onOpenNutrition }]} />
+          </Card>
+          <Card>
+            <Text style={styles.sectionTitle}>Tendance sur 7 jours</Text>
+            <LineChart accessibilityLabel="Exemple de tendance du poids sur sept jours"
+              data={[78.5, 78.2, 77.9, 77.6, 77.4, 77.3, 77.5].map((value, day) => ({ day, value, label: ['L', 'M', 'M', 'J', 'V', 'S', 'D'][day] }))} />
+          </Card>
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -432,10 +458,7 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
                 <CardHighlight
                   color="#ff5a3d"
                   icon={
-                    <Image
-                      source={require('../../../../10_Assets_3D/21_Flamme.png')}
-                      style={styles.highlightIcon}
-                    />
+                    <Illustration name="flame" style={styles.highlightIcon} />
                   }
                   title="Série"
                   value="7 jours"
@@ -443,10 +466,7 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
                 <CardHighlight
                   backgroundColor="lavender"
                   icon={
-                    <Image
-                      source={require('../../../../10_Assets_3D/03_Calendrier.png')}
-                      style={styles.highlightIcon}
-                    />
+                    <Illustration name="calendar" style={styles.highlightIcon} />
                   }
                 />
                 <CardHighlight
@@ -461,10 +481,7 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
                 <CardHighlight
                   backgroundColor="lilac"
                   icon={
-                    <Image
-                      source={require('../../../../10_Assets_3D/14_Halteres.png')}
-                      style={styles.highlightIcon}
-                    />
+                    <Illustration name="dumbbell" style={styles.highlightIcon} />
                   }
                 />
               </View>
@@ -527,6 +544,7 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
               value="320 / 500 XP"
               style={styles.levelProgressCard}
             />
+            <XPRewardCard gainedXP={320} initialXP={120} haptics={false} />
           </View>
 
           <View style={styles.section}>
@@ -561,6 +579,19 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
                   onChange={setSelectedObjective}
                   value={selectedObjective}
                 />
+              </View>
+
+              <View style={styles.selectorExample}>
+                <Text style={styles.componentLabel}>Pills · sélection remplie</Text>
+                <PillSelector variant="filled" items={pillSelectorItems} onChange={setSelectedObjective} value={selectedObjective} />
+              </View>
+              <View style={styles.selectorExample}>
+                <Text style={styles.componentLabel}>Stepper vertical · charge</Text>
+                <Card style={{ maxWidth: 220 }}><NumberStepper layout="stacked" unit="kg" label="la charge" value={weight} onChange={setWeight} step={2.5} maximum={500} /></Card>
+              </View>
+              <View style={styles.selectorExample}>
+                <Text style={styles.componentLabel}>Fond de parcours</Text>
+                <View style={{ height: 130, overflow: 'hidden', borderRadius: 24 }}><ScreenBackdrop /></View>
               </View>
 
               <View style={styles.selectorExample}>
@@ -599,11 +630,7 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
                   <SelectableCard
                     description="Première série complétée"
                     icon={
-                      <Image
-                        resizeMode="contain"
-                        source={require('../../../../10_Assets_3D/04_Gants_de_boxe.png')}
-                        style={styles.rewardIcon}
-                      />
+                <Illustration name="boxing" style={styles.rewardIcon} />
                     }
                     onPress={() => setBoxerRewardSelected((selected) => !selected)}
                     selected={boxerRewardSelected}
@@ -721,11 +748,7 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
                 <EmptyState
                   description="Ajoute une séance pour commencer à suivre ta progression."
                   icon={
-                    <Image
-                      resizeMode="contain"
-                      source={require('../../../../10_Assets_3D/03_Calendrier.png')}
-                      style={styles.stateIcon}
-                    />
+                    <Illustration name="calendar" style={styles.stateIcon} />
                   }
                   onAction={() => Alert.alert('Nouvelle séance')}
                   title="Aucune séance"
@@ -735,11 +758,7 @@ export function ComponentLibraryScreen({ onOpenOnboarding }: { onOpenOnboarding:
               <Card>
                 <ErrorState
                   icon={
-                    <Image
-                      resizeMode="contain"
-                      source={require('../../../../10_Assets_3D/15_Trousse_de_secours.png')}
-                      style={styles.stateIcon}
-                    />
+                    <Illustration name="firstAid" style={styles.stateIcon} />
                   }
                   onRetry={() => Alert.alert('Nouvel essai')}
                 />
@@ -860,8 +879,8 @@ const styles = StyleSheet.create({
     width: 160,
   },
   progressIcon: {
-    height: '72%',
-    width: '72%',
+    height: '52%',
+    width: '52%',
   },
   levelProgressCard: {
     marginTop: 16,

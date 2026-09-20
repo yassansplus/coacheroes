@@ -1,12 +1,16 @@
 import { Image, type ImageSourcePropType } from 'react-native';
 
-import { illustrations } from './illustrations';
+import { illustrations, isSvgIllustration } from './illustrations';
 
 /**
  * Assets affichés par le design system. Ils sont préchargés au lancement pour
  * éviter un affichage progressif des illustrations sur le premier écran.
  */
-const imageAssets: readonly ImageSourcePropType[] = Object.values(illustrations);
+export const imageAssets: readonly ImageSourcePropType[] = [
+  ...Object.values(illustrations).filter((asset): asset is ImageSourcePropType => !isSvgIllustration(asset)),
+  require('../../assets/progression/example-before.jpg'),
+  require('../../assets/progression/example-current.jpg'),
+];
 
 export async function preloadAppImages() {
   await Promise.all(
@@ -22,7 +26,10 @@ export async function preloadAppImages() {
         return Promise.resolve();
       }
 
-      return Image.prefetch(source.uri).catch(() => undefined);
+      return Image.prefetch(source.uri).catch(() => {
+        // The native warm-up in the root layout still loads bundled/file assets.
+        if (__DEV__) console.warn('[images] Prefetch unavailable; using native image loading.');
+      });
     }),
   );
 }

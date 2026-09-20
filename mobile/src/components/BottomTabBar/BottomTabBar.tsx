@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { Motion } from '@/components/Motion';
+import { feedback } from '@/utils/feedback';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
@@ -11,6 +13,7 @@ export type BottomTabItem<T extends string> = {
 };
 
 type BottomTabBarProps<T extends string> = {
+  highlightActiveTab?: boolean;
   items: readonly BottomTabItem<T>[];
   onChange: (value: T) => void;
   style?: StyleProp<ViewStyle>;
@@ -22,9 +25,11 @@ export function BottomTabBar<T extends string>({
   onChange,
   style,
   value,
+  highlightActiveTab = false,
 }: BottomTabBarProps<T>) {
+  const [width, setWidth] = useState(0);
   return (
-    <View accessibilityRole="tablist" style={[styles.bar, style]}>
+    <View accessibilityRole="tablist" onLayout={event => setWidth(event.nativeEvent.layout.width)} style={[styles.bar, style]}>
       {items.map((item) => {
         const selected = item.value === value;
 
@@ -33,11 +38,11 @@ export function BottomTabBar<T extends string>({
             key={item.value}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            onPress={() => onChange(item.value)}
-            style={({ pressed }) => [styles.tab, pressed && styles.pressed]}
+            onPress={() => { if (!selected) { feedback(); onChange(item.value); } }}
+            style={({ pressed }) => [styles.tab, selected && highlightActiveTab && styles.activeTab, pressed && styles.pressed]}
           >
-            <View style={[styles.icon, selected && styles.activeIcon]}>{item.icon}</View>
-            <Text style={[styles.label, selected && styles.activeLabel]}>{item.label}</Text>
+            <Motion trigger={selected} pop style={[styles.icon, selected && styles.activeIcon]}>{item.icon}</Motion>
+            <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.label, width > 0 && width / items.length < 64 && { fontSize: 8 }, selected && styles.activeLabel]}>{item.label}</Text>
           </Pressable>
         );
       })}
@@ -64,10 +69,12 @@ const styles = StyleSheet.create({
     gap: 3,
     justifyContent: 'center',
     minHeight: 56,
+    minWidth: 0,
   },
   pressed: {
     opacity: 0.68,
   },
+  activeTab: { backgroundColor: colors.primarySurface, borderRadius: 22 },
   icon: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -77,6 +84,8 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -1 }],
   },
   label: {
+    maxWidth: '100%',
+    paddingHorizontal: 2,
     color: '#7d8cad',
     fontFamily: fontFamily.medium,
     fontSize: 9,

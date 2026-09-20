@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { feedback } from '@/utils/feedback';
+import { Motion } from '@/components/Motion';
 import { IconButton } from '@/components/IconButton';
 import { Symbol } from '@/components/Symbol';
 import { colors } from '@/theme/colors';
@@ -13,14 +15,21 @@ type NumberStepperProps = {
   maximum?: number;
   step?: number;
   size?: 'compact' | 'large';
+  layout?: 'inline' | 'stacked';
+  unit?: string;
   formatValue?: (value: number) => string;
   style?: StyleProp<ViewStyle>;
 };
 
 export function NumberStepper({ value, onChange, label, minimum = 0, maximum = 999, step = 1,
-  size = 'compact', formatValue = value => String(value), style }: NumberStepperProps) {
+  size = 'compact', layout = 'inline', unit, formatValue = value => String(value), style }: NumberStepperProps) {
   const large = size === 'large';
-  const update = (direction: number) => onChange(Math.min(maximum, Math.max(minimum, Number((value + direction * step).toFixed(2)))));
+  const update = (direction: number) => { const next = Math.min(maximum, Math.max(minimum, Number((value + direction * step).toFixed(2)))); if (next !== value) { feedback(); onChange(next); } };
+  if (layout === 'stacked') return <View style={[{ gap: 12, alignItems: 'stretch' }, style]}>
+    <Motion trigger={value} pop><Text accessibilityLabel={`${label} : ${formatValue(value)} ${unit ?? ''}`} accessibilityLiveRegion="polite" numberOfLines={1} adjustsFontSizeToFit style={[styles.largeValue, { fontSize: 46, textAlign: 'center', color: colors.text, fontFamily: fontFamily.bold }]}>{formatValue(value)}</Text></Motion>
+    <Text style={{ color: colors.textSecondary, fontFamily: fontFamily.medium, fontSize: 16, textAlign: 'center', minHeight: 20 }}>{unit ?? ''}</Text>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-around', gap: 6 }}><IconButton accessibilityLabel={`Diminuer ${label}`} disabled={value <= minimum} size={46} backgroundColor="accentSurface" icon={<Symbol name="minus" color="primary" />} onPress={() => update(-1)} /><IconButton accessibilityLabel={`Augmenter ${label}`} disabled={value >= maximum} size={46} backgroundColor="accentSurface" icon={<Symbol name="plus" color="primary" />} onPress={() => update(1)} /></View>
+  </View>;
   return <View style={[styles.container, large && styles.large, style]}>
     <IconButton accessibilityLabel={`Diminuer ${label}`} disabled={value <= minimum} size={large ? 42 : 32}
       backgroundColor="primaryTint" icon={<Symbol name="minus" size={large ? 22 : 17} color="primary" />} onPress={() => update(-1)} />

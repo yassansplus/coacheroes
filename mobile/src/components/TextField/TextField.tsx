@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,6 +16,8 @@ import { fontFamily } from '@/theme/typography';
 type TextFieldProps = Omit<TextInputProps, 'onChangeText' | 'style' | 'value'> & {
   containerStyle?: StyleProp<ViewStyle>;
   fieldStyle?: StyleProp<ViewStyle>;
+  /** Changes to this value request focus for the input. */
+  focusRequest?: number;
   labelStyle?: StyleProp<TextStyle>;
   error?: string;
   formatValue?: (value: string) => string;
@@ -32,6 +34,7 @@ type TextFieldProps = Omit<TextInputProps, 'onChangeText' | 'style' | 'value'> &
 export function TextField({
   containerStyle,
   fieldStyle,
+  focusRequest,
   labelStyle,
   error,
   formatValue,
@@ -48,7 +51,11 @@ export function TextField({
   ...inputProps
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
+  const input = useRef<TextInput>(null);
   const hasError = Boolean(error);
+  useEffect(() => {
+    if (focusRequest) input.current?.focus();
+  }, [focusRequest]);
 
   return (
     <View style={containerStyle}>
@@ -63,6 +70,7 @@ export function TextField({
         {leftAccessory ? <View style={styles.accessory}>{leftAccessory}</View> : null}
         <TextInput
           {...inputProps}
+          ref={input}
           accessibilityLabel={inputProps.accessibilityLabel ?? label}
           onBlur={(event) => {
             setFocused(false);

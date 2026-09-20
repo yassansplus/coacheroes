@@ -19,27 +19,39 @@ import { AvailabilityStep, EquipmentStep, PerformanceStep, SportsStep } from '..
 import { WelcomeStep } from '../components/WelcomeStep';
 import { useOnboarding } from '../hooks/useOnboarding';
 
-export function OnboardingScreen({ onOpenLibrary }: { onOpenLibrary: () => void }) {
-  const flow = useOnboarding();
+export function OnboardingScreen({ onOpenLibrary, editStep, onCloseEdit }: { onOpenLibrary: () => void; editStep?: number; onCloseEdit?: () => void }) {
+  const flow = useOnboarding(editStep, onCloseEdit);
+  const goBack = editStep && onCloseEdit ? onCloseEdit : flow.back;
   const [loginVisible, setLoginVisible] = useState(false);
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
   const [demoNotice, setDemoNotice] = useState(false);
+  const [profileFocus, setProfileFocus] = useState<{ field: 'age' | 'height' | 'weight'; request: number } | null>(null);
   const hideDemoNotice = useCallback(() => setDemoNotice(false), []);
   const props = { profile: flow.profile, update: flow.update };
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (flow.step === 1) return false;
-      flow.back(); return true;
+      goBack(); return true;
     });
     return () => subscription.remove();
-  }, [flow.back, flow.step]);
+  }, [goBack, flow.step]);
   function start() { setLoginVisible(false); flow.next(); setDemoNotice(true); }
+  const next = useCallback(() => {
+    if (flow.step === 3) {
+      const field = (['age', 'height', 'weight'] as const).find(key => !flow.profile[key].trim());
+      if (field) {
+        setProfileFocus(current => ({ field, request: (current?.request ?? 0) + 1 }));
+        return;
+      }
+    }
+    flow.next();
+  }, [flow.next, flow.profile, flow.step]);
   function renderStep() {
     switch (flow.step) {
       case 1: return <WelcomeStep onStart={start} onLogin={() => setLoginVisible(true)} onOpenLibrary={onOpenLibrary} />;
       case 2: return <GoalStep {...props} />;
-      case 3: return <ProfileStep {...props} />;
+      case 3: return <ProfileStep {...props} focusField={profileFocus?.field} focusRequest={profileFocus?.request} />;
       case 4: return <LevelStep {...props} />;
       case 5: return <PerformanceStep {...props} />;
       case 6: return <SportsStep {...props} />;
@@ -57,11 +69,11 @@ export function OnboardingScreen({ onOpenLibrary }: { onOpenLibrary: () => void 
     }
   }
   return <>
-    <OnboardingLayout step={flow.step} completed={flow.completed} onBack={flow.back} error={flow.error}
+    <OnboardingLayout step={flow.step} editing={Boolean(editStep)} completed={flow.completed} onBack={goBack} error={flow.error}
       contentStyle={[7, 10, 11].includes(flow.step) ? { gap: 12, paddingTop: 8 } : undefined}
-      onNext={flow.step === 1 || flow.step === 15 || flow.completed ? undefined : flow.step === 16 ? flow.finish : flow.next}
-      nextLabel={flow.editingStep ? 'Enregistrer les modifications' : flow.step === 14 ? 'Créer mon programme' : flow.step === 16 ? 'Commencer' : 'Continuer'}
-      onSkip={[5, 7, 8, 10].includes(flow.step) ? flow.skip : undefined}
+      onNext={flow.step === 1 || flow.step === 15 || flow.completed ? undefined : flow.step === 16 ? onOpenLibrary : next}
+      nextLabel={editStep || flow.editingStep ? 'Enregistrer les modifications' : flow.step === 14 ? 'Créer mon programme' : flow.step === 16 ? 'Terminer' : 'Continuer'}
+      onSkip={!editStep && [5, 7, 8, 10].includes(flow.step) ? flow.skip : undefined}
       onOptions={flow.step === 11 ? () => setOptionsVisible(true) : undefined}
       footer={flow.step === 16 && !flow.completed ? <Button text="Voir le détail" variant="outline" onPress={() => setDetailVisible(true)} style={{ minHeight: 49 }} /> : undefined}>
       {renderStep()}

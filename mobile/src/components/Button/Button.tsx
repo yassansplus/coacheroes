@@ -30,6 +30,7 @@ type ButtonProps = {
   hapticFeedback?: ButtonHapticFeedback;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  containerStyle?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   leading?: ReactNode;
   trailing?: ReactNode;
@@ -61,6 +62,7 @@ export function Button({
   hapticFeedback = false,
   disabled = false,
   style,
+  containerStyle,
   textStyle,
   leading,
   trailing,
@@ -119,7 +121,7 @@ export function Button({
   }, [onPress, triggerHapticFeedback]);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
+    <Animated.View style={[containerStyle, { transform: [{ scale }] }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? text}

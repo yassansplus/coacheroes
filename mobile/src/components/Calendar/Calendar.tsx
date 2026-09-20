@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { Motion } from '@/components/Motion';
+import { feedback } from '@/utils/feedback';
 import { IconButton } from '@/components/IconButton';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
 type CalendarProps = {
+  renderDay?: (date: Date, selected: boolean) => ReactNode;
   disabledDate?: (date: Date) => boolean;
   initialMonth?: Date;
   locale?: string;
@@ -50,6 +53,7 @@ function getMonthDays(month: Date) {
 }
 
 export function Calendar({
+  renderDay,
   disabledDate,
   initialMonth,
   locale = 'fr-FR',
@@ -71,6 +75,7 @@ export function Calendar({
 
   const changeMonth = (delta: number) => {
     const next = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + delta, 1);
+    feedback();
     setDisplayedMonth(next);
     onMonthChange?.(next);
   };
@@ -101,7 +106,7 @@ export function Calendar({
         ))}
       </View>
 
-      <View style={styles.days}>
+      <Motion trigger={displayedMonth.getTime()} style={styles.days}>
         {days.map((date, index) => {
           if (!date) {
             return <View key={`empty-${index}`} style={styles.dayCell} />;
@@ -126,21 +131,24 @@ export function Calendar({
               accessibilityRole="button"
               accessibilityState={{ disabled, selected }}
               disabled={disabled}
-              onPress={() => onSelectDate(date)}
+              onPress={() => { if (!selected) feedback(); onSelectDate(date); }}
               style={({ pressed }) => [
                 styles.dayCell,
-                selected && styles.selectedDay,
-                today && !selected && styles.today,
+                renderDay && { padding: 2, aspectRatio: 0.8 },
+                !renderDay && selected && styles.selectedDay,
+                !renderDay && today && !selected && styles.today,
                 pressed && !disabled && styles.pressedDay,
               ]}
             >
-              <Text style={[styles.dayText, selected && styles.selectedDayText, disabled && styles.disabledDayText]}>
+              <Motion trigger={selected} delay={selected ? 0 : Math.min(index, 30) * 8} pop style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              {renderDay ? renderDay(date, selected) : <Text style={[styles.dayText, selected && styles.selectedDayText, disabled && styles.disabledDayText]}>
                 {date.getDate()}
-              </Text>
+              </Text>}
+              </Motion>
             </Pressable>
           );
         })}
-      </View>
+      </Motion>
     </View>
   );
 }

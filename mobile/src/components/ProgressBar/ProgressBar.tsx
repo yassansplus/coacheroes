@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef } from 'react';
 import {
   Animated,
+  AccessibilityInfo,
   StyleSheet,
   View,
   type StyleProp,
@@ -45,9 +46,8 @@ export function ProgressBar({
 
   useEffect(() => {
     progressAnimation.stopAnimation();
-    progressAnimation.setValue(animated ? 0 : clampedProgress);
-
     if (!animated) {
+      progressAnimation.setValue(clampedProgress);
       return;
     }
 
@@ -60,9 +60,14 @@ export function ProgressBar({
       }),
     ]);
 
-    animation.start();
-
-    return animation.stop;
+    let alive = true, stopped = false;
+    const finish = () => { stopped = true; animation.stop(); progressAnimation.setValue(clampedProgress); };
+    const preference = AccessibilityInfo.addEventListener('reduceMotionChanged', reduced => { if (reduced) finish(); });
+    void AccessibilityInfo.isReduceMotionEnabled().then(reduced => {
+      if (!alive || stopped) return;
+      if (reduced) finish(); else animation.start();
+    }).catch(() => { if (alive) finish(); });
+    return () => { alive = false; animation.stop(); preference.remove(); };
   }, [animated, animationDelay, animationDuration, clampedProgress, progressAnimation]);
 
   return (

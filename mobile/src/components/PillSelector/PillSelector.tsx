@@ -11,13 +11,15 @@ export type PillSelectorItem = {
 };
 
 type PillSelectorProps = {
+  variant?: 'outline' | 'filled';
+  itemStyle?: StyleProp<ViewStyle>;
   items: PillSelectorItem[];
   onChange: (value: string) => void;
   style?: StyleProp<ViewStyle>;
   value: string;
 };
 
-export function PillSelector({ items, onChange, style, value }: PillSelectorProps) {
+export function PillSelector({ items, onChange, style, value, variant = 'outline', itemStyle }: PillSelectorProps) {
   const handleChange = (nextValue: string) => {
     if (nextValue !== value) {
       void Haptics.selectionAsync().catch(() => undefined);
@@ -30,7 +32,7 @@ export function PillSelector({ items, onChange, style, value }: PillSelectorProp
     <View style={[styles.list, style]}>
       {items.map((item) => {
         const isSelected = item.value === value;
-        const label = <Text style={[styles.label, isSelected && styles.activeLabel]}>{item.label}</Text>;
+        const label = <Text style={[styles.label, isSelected && styles.activeLabel, isSelected && variant === 'filled' && { color: colors.white }]}>{item.label}</Text>;
 
         return (
           <Pressable
@@ -38,6 +40,7 @@ export function PillSelector({ items, onChange, style, value }: PillSelectorProp
             accessibilityRole="radio"
             accessibilityState={{ checked: isSelected }}
             onPress={() => handleChange(item.value)}
+            style={itemStyle}
           >
             {isSelected ? (
               <LinearGradient
@@ -46,14 +49,14 @@ export function PillSelector({ items, onChange, style, value }: PillSelectorProp
                 start={{ x: 0, y: 0.5 }}
                 style={styles.activeBorder}
               >
-                <LinearGradient
+                {variant === 'filled' ? <View style={[styles.activeBackground, { backgroundColor: 'transparent' }]}>{label}</View> : <LinearGradient
                   colors={['#f4faff', '#fdfaff']}
                   end={{ x: 1, y: 0.5 }}
                   start={{ x: 0, y: 0.5 }}
                   style={styles.activeBackground}
                 >
                   {label}
-                </LinearGradient>
+                </LinearGradient>}
               </LinearGradient>
             ) : (
               <View style={styles.inactivePill}>{label}</View>

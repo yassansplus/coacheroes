@@ -16,25 +16,34 @@ import type { FoodInputs, FoodSection, StepProps } from '../types';
 import { foodLabel, toggleItem } from '../utils';
 import { SectionHeading, StepHeading, stepStyles as s } from './StepContent';
 
-const habits: { key: 'meals' | 'cooking' | 'restaurants' | 'tracking'; title: string; subtitle: string;
+const habits: { key: 'meals' | 'cooking' | 'restaurants'; title: string; subtitle: string;
   icon: IllustrationName; items: { value: string; label: string }[] }[] = [
   { key: 'meals', title: 'Nombre de repas', subtitle: 'Combien de repas manges-tu par jour ?', icon: 'cutlery',
     items: ['2', '3', '4', '5+'].map(value => ({ value, label: value })) },
   { key: 'cooking', title: 'Tu cuisines ?', subtitle: 'À quelle fréquence cuisines-tu tes repas ?', icon: 'salad',
-    items: [{ value: 'rarely', label: 'Rarement' }, { value: 'sometimes', label: 'Parfois' }, { value: 'often', label: 'Souvent' }] },
+    items: [{ value: 'never', label: 'Jamais' }, { value: 'sometimes', label: 'Parfois' }, { value: 'often', label: 'Souvent' }] },
   { key: 'restaurants', title: 'Repas au restaurant', subtitle: 'Combien de fois par semaine manges-tu au restaurant ?', icon: 'house',
     items: [{ value: '0-1', label: '0 – 1' }, { value: '2-3', label: '2 – 3' }, { value: '4+', label: '4+' }] },
-  { key: 'tracking', title: 'Suivi actuel', subtitle: 'Suis-tu déjà ton alimentation ?', icon: 'calendar',
-    items: [{ value: 'none', label: 'Aucun' }, { value: 'calories', label: 'Calories' }, { value: 'macros', label: 'Macros' }] },
 ];
+const trackingItems = [{ value: 'none', label: 'Aucun' }, { value: 'calories', label: 'Calories' }, { value: 'macros', label: 'Macros' }] as const;
 
 export function EatingHabitsStep({ profile, update }: StepProps) {
+  function toggleTracking(value: (typeof trackingItems)[number]['value']) {
+    if (value === 'none') { update({ tracking: ['none'] }); return; }
+    const next = toggleItem(profile.tracking.filter(item => item !== 'none'), value);
+    update({ tracking: next.length ? next : ['none'] });
+  }
   return <>
     <StepHeading title="Tes habitudes alimentaires" subtitle="Aide-nous à comprendre ton quotidien pour un accompagnement vraiment adapté." icon="salad" />
     {habits.map(habit => <Card key={habit.key} style={[s.section, styles.habit]}>
       <SectionHeading title={habit.title} subtitle={habit.subtitle} icon={habit.icon} />
       <TabSelector value={profile[habit.key]} onChange={value => update({ [habit.key]: value })} items={habit.items} style={styles.tabs} />
     </Card>)}
+    <Card style={[s.section, styles.habit]}>
+      <SectionHeading title="Suivi actuel" subtitle="Suis-tu déjà tes calories ou tes macros ?" icon="calendar" />
+      <View style={s.grid}>{trackingItems.map(item => <ChoiceCard key={item.value} title={item.label} layout="chip" indicatorPosition="trailing"
+        indicatorSize={18} selected={profile.tracking.includes(item.value)} onPress={() => toggleTracking(item.value)} style={s.third} />)}</View>
+    </Card>
   </>;
 }
 

@@ -70,7 +70,7 @@ export function createInitialProfile(): OnboardingProfile {
     sports: ['strength'], places: [], days: [0, 2, 4, 6], sessions: 4, timeOfDay: 'evening', duration: '60',
     gymType: null, equipment: [], painSide: 'right', pains: [], painNotes: '', noPain: false,
     sleep: 390, activity: 'moderate', steps: 7500, meals: '3', cooking: 'often', restaurants: '2-3',
-    tracking: 'none', likedFoods: [], avoidedFoods: [], allergies: '', photos: {},
+    tracking: ['none'], likedFoods: [], avoidedFoods: [], allergies: '', photos: {},
     measurements: { waist: '', chest: '', arms: '', thighs: '' }, skippedSteps: [],
   };
 }

@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 
 import { colors, resolveColor, type AppColor } from '@/theme/colors';
+import { feedback } from '@/utils/feedback';
 
 type IconButtonVariant = 'primary' | 'surface' | 'outline' | 'ghost';
 
@@ -39,7 +40,7 @@ export function IconButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => { feedback(); onPress(); }}
       style={({ pressed }) => [
         styles.button,
         styles[variant],

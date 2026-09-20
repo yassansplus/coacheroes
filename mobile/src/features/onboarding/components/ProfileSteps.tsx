@@ -23,7 +23,13 @@ export function GoalStep({ profile, update }: StepProps) {
   </>;
 }
 
-export function ProfileStep({ profile, update }: StepProps) {
+type ProfileField = 'age' | 'height' | 'weight';
+type ProfileStepProps = StepProps & {
+  focusField?: ProfileField | null;
+  focusRequest?: number;
+};
+
+export function ProfileStep({ profile, update, focusField, focusRequest }: ProfileStepProps) {
   return <>
     <StepHeading title="Tes informations" centered />
     <Illustration name="profile" style={[s.hero, styles.profileHero]} />
@@ -31,6 +37,7 @@ export function ProfileStep({ profile, update }: StepProps) {
       ['age', 'Âge', '28', 'ans'], ['height', 'Taille', '176', 'cm'], ['weight', 'Poids', '75,0', 'kg'],
     ] as const).map(([key, label, placeholder, unit]) => <Card key={key} style={styles.numberCard}>
       <TextField label={label} value={profile[key]} onChangeText={value => update({ [key]: value })}
+        focusRequest={focusField === key ? focusRequest : undefined}
         formatValue={normalizeNumber} placeholder={placeholder} keyboardType={key === 'weight' ? 'decimal-pad' : 'number-pad'}
         maxLength={key === 'weight' ? 5 : 3} fieldStyle={styles.numberField} inputStyle={styles.numberInput}
         labelStyle={styles.numberLabel} rightAccessory={<Text style={styles.unit}>{unit}</Text>} />

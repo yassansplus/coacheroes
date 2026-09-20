@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { feedback } from '@/utils/feedback';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
   StyleSheet,
@@ -81,6 +83,8 @@ export function ProgressCard({
   const [cardWidth, setCardWidth] = useState(0);
   const [displayedProgress, setDisplayedProgress] = useState(0);
   const [displayedValue, setDisplayedValue] = useState(0);
+  const focused = useRef(false);
+  useFocusEffect(useCallback(() => { focused.current = true; return () => { focused.current = false; }; }, []));
   const progressAnimation = useRef(new Animated.Value(0)).current;
   const valueAnimation = useRef(new Animated.Value(0)).current;
   const layoutWidth = cardWidth || DEFAULT_CARD_WIDTH;
@@ -150,7 +154,7 @@ export function ProgressCard({
     }
 
     const animation = Animated.parallel(animations);
-    animation.start();
+    animation.start(({ finished }) => { if (finished && focused.current) feedback('selection'); });
 
     return () => {
       animation.stop();

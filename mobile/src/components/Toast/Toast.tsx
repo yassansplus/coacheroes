@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { Motion } from '@/components/Motion';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
@@ -33,14 +34,17 @@ export function Toast({
   variant = 'info',
   visible,
 }: ToastProps) {
+  const hide = useRef(onHide);
+  hide.current = onHide;
+  const canHide = Boolean(onHide);
   useEffect(() => {
-    if (!visible || !onHide || duration <= 0) {
+    if (!visible || !canHide || duration <= 0) {
       return undefined;
     }
 
-    const timeout = setTimeout(onHide, duration);
+    const timeout = setTimeout(() => hide.current?.(), duration);
     return () => clearTimeout(timeout);
-  }, [duration, onHide, visible]);
+  }, [duration, canHide, visible, message]);
 
   if (!visible) {
     return null;
@@ -49,14 +53,14 @@ export function Toast({
   const palette = variants[variant];
 
   return (
-    <View accessibilityLiveRegion="polite" style={[styles.toast, { backgroundColor: palette.backgroundColor }, style]}>
-      <Text style={[styles.message, { color: palette.color }]}>{message}</Text>
+    <Motion trigger={message} style={[styles.toast, { backgroundColor: palette.backgroundColor }, style]}>
+      <Text accessibilityLiveRegion="polite" style={[styles.message, { color: palette.color }]}>{message}</Text>
       {actionLabel && onAction ? (
         <Pressable accessibilityRole="button" onPress={onAction} style={styles.action}>
           <Text style={[styles.actionText, { color: palette.color }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}
-    </View>
+    </Motion>
   );
 }
 

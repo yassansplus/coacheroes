@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
+import { AnimatedMetricText } from '@/components/Motion';
 import { ProgressBar, type ProgressBarProps } from '@/components/ProgressBar';
 import { fontFamily } from '@/theme/typography';
 
@@ -48,7 +49,7 @@ export function LevelProgressCard({
             {title || value ? (
               <View style={styles.header}>
                 {title ? <Text style={styles.title}>{title}</Text> : <View />}
-                {value ? <Text style={styles.value}>{value}</Text> : null}
+                {value ? animated === false ? <Text style={styles.value}>{value}</Text> : <AnimatedMetricText value={value} style={styles.value} /> : null}
               </View>
             ) : null}
 

@@ -8,10 +8,10 @@ import { Symbol } from '@/components/Symbol';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
-type PhotoPickerProps = { label: string; value?: string; onChange: (uri: string | undefined) => void; disabled?: boolean };
+type PhotoPickerProps = { label: string; value?: string; onChange: (uri: string | undefined) => void; disabled?: boolean; variant?: 'tile' | 'frame' };
 
 /** The parent owns the URI; this component never uploads or persists a photo. */
-export function PhotoPicker({ label, value, onChange, disabled = false }: PhotoPickerProps) {
+export function PhotoPicker({ label, value, onChange, disabled = false, variant = 'tile' }: PhotoPickerProps) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -32,10 +32,11 @@ export function PhotoPicker({ label, value, onChange, disabled = false }: PhotoP
   }
   return <>
     <Pressable accessibilityRole="button" accessibilityLabel={`${value ? 'Modifier' : 'Ajouter'} la photo : ${label}`}
-      disabled={disabled} style={styles.tile} onPress={() => { setError(''); setOpen(true); }}>
-      {value ? <Image source={{ uri: value }} style={styles.photo} resizeMode="cover" /> :
+      disabled={disabled} style={[styles.tile, variant === 'frame' && styles.frame]} onPress={() => { setError(''); setOpen(true); }}>
+      {value ? <Image source={{ uri: value }} fadeDuration={0} style={[styles.photo, variant === 'frame' && { bottom: 0 }]} resizeMode="cover" /> :
         <View style={styles.camera}><Symbol name="camera" size={30} color="textSecondary" /><View style={styles.plus}><Symbol name="plus" size={12} color="white" /></View></View>}
-      <Text style={styles.label}>{label}</Text>
+      {variant === 'frame' ? <View pointerEvents="none" style={StyleSheet.absoluteFill}>{[0, 1, 2, 3].map(corner => <View key={corner} style={[styles.corner, corner < 2 ? { top: 20, borderTopWidth: 4 } : { bottom: 20, borderBottomWidth: 4 }, corner % 2 ? { right: 20, borderRightWidth: 4 } : { left: 20, borderLeftWidth: 4 }]} />)}</View> : null}
+      <Text style={[styles.label, variant === 'frame' && styles.frameLabel]}>{label}</Text>
     </Pressable>
     <BottomSheet visible={open} onClose={() => { if (!busy) setOpen(false); }} title={`Photo · ${label}`}>
       <View style={styles.actions}>
@@ -58,4 +59,7 @@ const styles = StyleSheet.create({
   label: { position: 'absolute', bottom: 12, fontFamily: fontFamily.semiBold, fontSize: 12, color: colors.text },
   actions: { gap: 12 }, error: { color: colors.energy, fontFamily: fontFamily.medium, fontSize: 12, lineHeight: 18 },
   help: { color: colors.textSecondary, fontFamily: fontFamily.regular, fontSize: 12, lineHeight: 18 },
+  frame: { flex: 0, flexBasis: 'auto', flexShrink: 0, width: '100%', aspectRatio: 0.83, borderRadius: 24, borderWidth: 0 },
+  corner: { position: 'absolute', width: 35, height: 35, borderColor: colors.white, borderRadius: 8 },
+  frameLabel: { bottom: 26, backgroundColor: colors.textSecondary, color: colors.white, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 24, overflow: 'hidden' },
 });

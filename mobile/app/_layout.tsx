@@ -11,7 +11,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 
-import { preloadAppImages } from '@/config/preloadAssets';
+import { imageAssets, preloadAppImages } from '@/config/preloadAssets';
+import { ImageWarmup } from '@/components/ImageWarmup';
 import { AppProviders } from '@/providers/AppProviders';
 import { colors } from '@/theme/colors';
 
@@ -19,6 +20,7 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [imagesDecoded, setImagesDecoded] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Montserrat_400Regular,
     Montserrat_500Medium,
@@ -42,13 +44,13 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && imagesLoaded) {
+    if ((fontsLoaded || fontError) && imagesLoaded && imagesDecoded) {
       void SplashScreen.hideAsync();
     }
-  }, [fontError, fontsLoaded, imagesLoaded]);
+  }, [fontError, fontsLoaded, imagesLoaded, imagesDecoded]);
 
-  if ((!fontsLoaded && !fontError) || !imagesLoaded) {
-    return null;
+  if ((!fontsLoaded && !fontError) || !imagesLoaded || !imagesDecoded) {
+    return imagesDecoded ? null : <ImageWarmup sources={imageAssets} onReady={() => setImagesDecoded(true)} />;
   }
 
   return (

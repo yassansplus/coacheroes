@@ -1,0 +1,1 @@
+export { XPRewardCard } from './XPRewardCard';

@@ -16,6 +16,7 @@
       "expo-router",
       "expo-font",
       "expo-splash-screen",
+      ["expo-camera", { "cameraPermission": "Autorise Coac Heroes à photographier ton repas dans l’application.", "microphonePermission": false, "recordAudioAndroid": false, "barcodeScannerEnabled": false }],
       [
         "expo-image-picker",
         {

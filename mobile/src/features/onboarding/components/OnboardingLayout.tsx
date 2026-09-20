@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { IconButton } from '@/components/IconButton';
+import { Motion } from '@/components/Motion';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Symbol } from '@/components/Symbol';
 import { colors, gradients } from '@/theme/colors';
@@ -12,6 +13,7 @@ import { fontFamily } from '@/theme/typography';
 
 type OnboardingLayoutProps = {
   step: number;
+  editing?: boolean;
   children: ReactNode;
   onBack: () => void;
   onNext?: () => void;
@@ -24,7 +26,7 @@ type OnboardingLayoutProps = {
   contentStyle?: StyleProp<ViewStyle>;
 };
 
-export function OnboardingLayout({ step, children, onBack, onNext, onSkip, onOptions,
+export function OnboardingLayout({ step, editing = false, children, onBack, onNext, onSkip, onOptions,
   nextLabel = 'Continuer', error, footer, completed = false, contentStyle }: OnboardingLayoutProps) {
   const scroll = useRef<ScrollView>(null);
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [step, completed]);
@@ -38,18 +40,18 @@ export function OnboardingLayout({ step, children, onBack, onNext, onSkip, onOpt
       <KeyboardAvoidingView style={styles.safeArea} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {step > 1 && !completed ? <View style={styles.header}>
           <View style={styles.headerRow}>
-            {step !== 15 ? <IconButton accessibilityLabel="Étape précédente" variant="ghost" icon={<Symbol name="back" />} onPress={onBack} /> : <View style={styles.headerSpacer} />}
-            <Text accessibilityLiveRegion="polite" style={styles.step}>{step} sur 16</Text>
+            {step !== 15 ? <IconButton accessibilityLabel={editing ? 'Retour au profil sans enregistrer' : 'Étape précédente'} variant="ghost" icon={<Symbol name="back" />} onPress={onBack} /> : <View style={styles.headerSpacer} />}
+            <Text accessibilityLiveRegion="polite" style={styles.step}>{editing ? 'Modifier mon profil' : `${step} sur 16`}</Text>
             <View style={styles.headerAction}>
               {onSkip ? <Button variant="secondary" backgroundColor="transparent" textColor={colors.primary} text={step === 10 ? 'Ignorer' : 'Passer'} onPress={onSkip} style={styles.skip} textStyle={styles.skipText} /> :
                 onOptions ? <IconButton accessibilityLabel="Options de l’étape" variant="surface" icon={<Symbol name="more" />} onPress={onOptions} /> : null}
             </View>
           </View>
-          {step !== 15 ? <ProgressBar progress={step / 16 * 100} height={6} trackColor={colors.border} style={styles.progress} /> : null}
+          {step !== 15 && !editing ? <ProgressBar progress={step / 16 * 100} height={6} trackColor={colors.border} style={styles.progress} /> : null}
         </View> : null}
         <ScrollView ref={scroll} style={styles.scroll} contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
-          <View style={[styles.content, step === 1 && styles.welcomeContent, contentStyle]}>{children}</View>
+          <Motion trigger={step} style={[styles.content, step === 1 && styles.welcomeContent, contentStyle]}>{children}</Motion>
         </ScrollView>
         {onNext || footer ? <View style={styles.footer}>
           {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text> : null}

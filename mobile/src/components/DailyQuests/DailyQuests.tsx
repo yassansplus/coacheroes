@@ -1,3 +1,4 @@
+import { feedback } from '@/utils/feedback';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
@@ -82,6 +83,12 @@ function DailyQuestItem({
   const countAnimation = useRef(new Animated.Value(0)).current;
   const rewardAnimation = useRef(new Animated.Value(0)).current;
   const rewardEntrance = useRef(new Animated.Value(0)).current;
+  const wasCompleted = useRef(currentValue >= targetValue && targetValue > 0);
+  useEffect(() => {
+    const complete = targetValue > 0 && currentValue >= targetValue;
+    if (complete && !wasCompleted.current) feedback('success');
+    wasCompleted.current = complete;
+  }, [currentValue, targetValue]);
   const progress = targetValue > 0 ? (currentValue / targetValue) * 100 : 0;
   const rewardParts = useMemo(() => getRewardParts(reward), [reward]);
   const visibleCurrentValue = animated ? displayedCurrentValue : currentValue;

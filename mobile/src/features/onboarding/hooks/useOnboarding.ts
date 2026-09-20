@@ -1,12 +1,17 @@
 import { useCallback, useState } from 'react';
 
-import { createInitialProfile, foods } from '../data';
+import { updateProfileSummary } from '@/store/profileSummary';
+import { createInitialProfile, foods, goals } from '../data';
 import type { FoodInputs, FoodSection, OnboardingProfile } from '../types';
 import { commitFoodInputs, setFoodSelections, validateStep } from '../utils';
 
-export function useOnboarding() {
-  const [profile, setProfile] = useState(createInitialProfile);
-  const [step, setStep] = useState(1);
+let savedProfile: OnboardingProfile | null = null;
+
+export function useOnboarding(editStep?: number, onSaved?: () => void) {
+  const [profile, setProfile] = useState(() => savedProfile ?? (editStep ? {
+    ...createInitialProfile(), age: '28', height: '177', weight: '78', goal: ['recomposition'] as OnboardingProfile['goal'],
+  } : createInitialProfile()));
+  const [step, setStep] = useState(editStep ?? 1);
   const [editingStep, setEditingStep] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
@@ -21,13 +26,18 @@ export function useOnboarding() {
   const next = useCallback(() => {
     const message = validateStep(step, profile);
     if (message) { setError(message); return; }
-    setProfile(previous => ({ ...previous, ...(step === 12 ? commitFoodInputs(previous, foodInputs, foods) : {}),
-      skippedSteps: previous.skippedSteps.filter(value => value !== step) }));
+    const committed = { ...profile, ...(step === 12 ? commitFoodInputs(profile, foodInputs, foods) : {}),
+      skippedSteps: profile.skippedSteps.filter(value => value !== step) };
+    savedProfile = committed;
+    setProfile(committed);
+    updateProfileSummary({ ...(committed.age ? { age: committed.age } : {}), ...(committed.height ? { height: committed.height } : {}),
+      ...(committed.goal.length ? { goals: goals.filter(goal => committed.goal.includes(goal.value)).map(goal => goal.title).join(' · ') } : {}) });
     if (step === 12) setFoodInputs({ liked: '', avoided: '' });
     setError(null);
+    if (editStep) { onSaved?.(); return; }
     setStep(editingStep ? 14 : Math.min(16, step + 1));
     setEditingStep(null);
-  }, [editingStep, foodInputs, profile, step]);
+  }, [editStep, onSaved, editingStep, foodInputs, profile, step]);
   const back = useCallback(() => {
     setError(null);
     if (completed) { setCompleted(false); return; }

@@ -6,6 +6,8 @@ export const colors = {
   energy: '#ff5a3d',
   success: '#0fc68c',
   successSurface: '#e6fbf2',
+  successText: '#008575',
+  energySurface: '#fff0ee',
   text: '#091440',
   textSecondary: '#61739c',
   textMuted: '#8c9bbe',
@@ -21,7 +23,12 @@ export const colors = {
   googleGreen: '#34a853',
   googleYellow: '#fbbc05',
   googleRed: '#ea4335',
+  energyVeryLow: '#f45b69',
+  energyLow: '#9387c4',
+  energyHigh: '#20b6c1',
 } as const;
+
+export const energyLevelColors = [colors.energyVeryLow, colors.energyLow, colors.primary, colors.energyHigh, colors.success] as const;
 
 export const gradients = {
   primary: [colors.primary, colors.accent],

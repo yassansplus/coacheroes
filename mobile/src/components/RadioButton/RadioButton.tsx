@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     width: 12,
   },
   label: {
+    flexShrink: 1,
     color: '#141b41',
     fontFamily: fontFamily.semiBold,
     fontSize: 14,

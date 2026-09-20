@@ -3,7 +3,8 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { colors, resolveColor, type AppColor } from '@/theme/colors';
 
 export type SymbolName = 'arrow' | 'back' | 'check' | 'plus' | 'minus' | 'search' | 'edit' |
-  'info' | 'close' | 'chevron' | 'clock' | 'more' | 'camera' | 'lock' | 'warning' | 'apple' | 'google';
+  'info' | 'close' | 'chevron' | 'clock' | 'more' | 'camera' | 'lock' | 'warning' | 'apple' | 'google' | 'waist' | 'chest' | 'arm' | 'thigh' | 'users' | 'sparkles' |
+  'home' | 'clipboard' | 'dumbbell' | 'chart' | 'user' | 'bell' | 'calendar' | 'layers' | 'list' | 'flash' | 'image' | 'flip' | 'history' | 'send' | 'attachment' | 'microphone' | 'battery' | 'target' | 'eye' | 'robot' | 'heart' | 'shield' | 'download';
 
 type SymbolProps = { name: SymbolName; size?: number; color?: AppColor };
 
@@ -20,6 +21,35 @@ export function Symbol({ name, size = 22, color = 'text' }: SymbolProps) {
     <Path fill={stroke} d="M17.1 12.5c0-2 1.6-3 1.7-3.1-1-1.5-2.6-1.7-3.1-1.7-1.3-.2-2.6.8-3.3.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.9 1.1 9.1.7 1 1.5 2.1 2.7 2 .9 0 1.4-.6 2.8-.6 1.3 0 1.8.6 2.9.6 1.2 0 1.9-1 2.6-2 .8-1.2 1.2-2.4 1.2-2.5-.1 0-2-.8-2-4ZM15.2 6.2c.6-.8 1.1-1.9 1-3-1 .1-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.5 2.8-1.4Z" />
   </Svg>;
   const paths: Partial<Record<SymbolName, string>> = {
+    heart: 'M12 21 3 12C-3 5 6-1 12 6c6-7 15-1 9 6Z',
+    shield: 'M12 2 3 6v6c0 5 5 8 9 10 4-2 9-5 9-10V6ZM12 2v20',
+    download: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
+    sparkles: 'm9 3 2.5 6.5L18 12l-6.5 2.5L9 21l-2.5-6.5L0 12l6.5-2.5ZM20 1v6M17 4h6M20 17v6M17 20h6',
+    users: 'M9 7a3 3 0 1 0 6 0 3 3 0 0 0-6 0M5 21v-3a7 7 0 0 1 14 0v3ZM4 5a3 3 0 0 0 0 6M20 5a3 3 0 0 1 0 6M2 14q-2 2-1 6h2M22 14q2 2 1 6h-2',
+    waist: 'M7 2c3 7 1 11 0 20M17 2c-3 7-1 11 0 20M1 12h5m-2-2 2 2-2 2M23 12h-5m2-2-2 2 2 2M10 12h1m2 0h1',
+    chest: 'M8 2v3L4 7Q2 8 2 12v10M16 2v3l4 2q2 1 2 5v10M6 11l1 11M18 11l-1 11M9 12q3 3 6 0M12 15v5',
+    arm: 'M21 17q-2-6-8-3l-4 2 2-8 3 1 1-3-3-3-3 2-6 13q0 3 6 3l7-1 4 2M10 10l3 1',
+    thigh: 'M6 2h12q4 8 1 20M6 2Q2 10 5 22M9 22l3-12 3 12M12 10l2-2',
+    history: 'M3 11a9 9 0 1 1 2 7M3 5v6h6M12 7v6l4 2',
+    send: 'm3 3 19 9-19 9 4-9Zm4 9h15',
+    attachment: 'm8 13 7-7a3 3 0 0 1 4 4L9 20a5 5 0 0 1-7-7L13 2M5 15l10-10',
+    microphone: 'M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0ZM5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8',
+    battery: 'M2 6h17v12H2ZM21 10v4M5 9h7v6H5Z',
+    target: 'M19 12a7 7 0 1 1-7-7M12 9a3 3 0 1 0 3 3M12 12l9-9M17 3h4v4',
+    eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Zm10-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6',
+    robot: 'M4 7h16v13H4ZM12 3v4M9 11v3M15 11v3M9 17h6M1 11v5M23 11v5',
+    flash: 'm13 2-9 12h7l-1 8 10-13h-7Z',
+    image: 'M3 3h18v18H3ZM3 17l6-6 4 4 3-3 5 5M7 7h.01',
+    flip: 'M20 8a8 8 0 0 0-14-3L3 8m0-5v5h5M4 16a8 8 0 0 0 14 3l3-3m0 5v-5h-5',
+    home: 'm3 10 9-7 9 7v11h-6v-7H9v7H3Z',
+    clipboard: 'M9 4H5v17h14V4h-4M9 2h6v5H9ZM8 11h8M8 15h8',
+    dumbbell: 'M2 9v6M5 6v12M19 6v12M22 9v6M5 12h14',
+    chart: 'M5 14v7M12 8v13M19 3v18',
+    user: 'M4 21v-2a8 8 0 0 1 16 0v2ZM12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8',
+    bell: 'M5 10a7 7 0 0 1 14 0v5l2 3H3l2-3ZM10 21h4M12 1v2',
+    calendar: 'M3 5h18v16H3ZM3 10h18M7 2v5M17 2v5',
+    layers: 'm3 7 9-5 9 5-9 5ZM3 12l9 5 9-5M3 17l9 5 9-5',
+    list: 'M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1',
     arrow: 'M4 12h15M13 5l7 7-7 7', back: 'm15 4-8 8 8 8', check: 'm5 12 4.5 4.5L19 7',
     plus: 'M12 4v16M4 12h16', minus: 'M4 12h16', search: 'm16 16 5 5',
     edit: 'm14 5 5 5M4 20l5-1L20 8a2.1 2.1 0 0 0-4-4L5 15l-1 5Z',

@@ -1,26 +1,32 @@
+import type { ImageSourcePropType } from 'react-native';
+
+export type SvgIllustration = { readonly type: 'svg'; readonly source: number };
+const svg = (source: number): SvgIllustration => ({ type: 'svg', source });
+
 /** Static requires keep the same asset registry available to Metro and the preloader. */
 export const illustrations = {
-  camera: require('../../10_Assets_3D/01_Camera.png'),
-  logo: require('../../10_Assets_3D/02_Logo_eclair.png'),
-  calendar: require('../../10_Assets_3D/03_Calendrier.png'),
-  boxing: require('../../10_Assets_3D/04_Gants_de_boxe.png'),
-  coach: require('../../10_Assets_3D/05_Coach_IA.png'),
-  sleep: require('../../10_Assets_3D/06_Sommeil.png'),
-  shoe: require('../../10_Assets_3D/07_Chaussure.png'),
-  shaker: require('../../10_Assets_3D/08_Shaker.png'),
+  benchPress: require('../../assets/program/bench-press.png'),
+  camera: svg(require('../../assets/icones/camera.svg')),
+  logo: svg(require('../../assets/icones/logo-eclair.svg')),
+  calendar: svg(require('../../assets/icones/calendrier.svg')),
+  boxing: svg(require('../../assets/icones/gants-boxe.svg')),
+  coach: svg(require('../../assets/icones/coach.svg')),
+  sleep: svg(require('../../assets/icones/sommeil.svg')),
+  shoe: svg(require('../../assets/icones/chaussure.svg')),
+  shaker: svg(require('../../assets/icones/shaker.svg')),
   lock: require('../../10_Assets_3D/09_Cadenas.png'),
-  cutlery: require('../../10_Assets_3D/10_Couverts.png'),
-  apple: require('../../10_Assets_3D/11_Pomme.png'),
+  cutlery: svg(require('../../assets/icones/couverts.svg')),
+  apple: svg(require('../../assets/icones/pomme.svg')),
   brain: require('../../10_Assets_3D/12_Cerveau.png'),
   trophy: require('../../10_Assets_3D/13_Trophee.png'),
-  dumbbell: require('../../10_Assets_3D/14_Halteres.png'),
-  firstAid: require('../../10_Assets_3D/15_Trousse_de_secours.png'),
-  water: require('../../10_Assets_3D/16_Hydratation.png'),
-  moon: require('../../10_Assets_3D/17_Lune.png'),
+  dumbbell: svg(require('../../assets/icones/halteres.svg')),
+  firstAid: svg(require('../../assets/icones/trousse-secours.svg')),
+  water: svg(require('../../assets/icones/hydratation.svg')),
+  moon: svg(require('../../assets/icones/lune.svg')),
   tape: require('../../10_Assets_3D/18_Metre_ruban.png'),
   star: require('../../10_Assets_3D/19_Etoile.png'),
   scale: require('../../10_Assets_3D/20_Balance.png'),
-  flame: require('../../10_Assets_3D/21_Flamme.png'),
+  flame: svg(require('../../assets/icones/flamme.svg')),
   bodyFront: require('../../10_Assets_3D/22_Corps_face.png'),
   bodyBack: require('../../10_Assets_3D/23_Corps_dos.png'),
   welcome: require('../../assets/onboarding/welcome.png'),
@@ -61,3 +67,5 @@ export const illustrations = {
 } as const;
 
 export type IllustrationName = keyof typeof illustrations;
+export const isSvgIllustration = (source: ImageSourcePropType | SvgIllustration): source is SvgIllustration =>
+  typeof source === 'object' && source !== null && 'type' in source && source.type === 'svg';

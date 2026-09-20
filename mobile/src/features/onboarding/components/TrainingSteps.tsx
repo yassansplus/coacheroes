@@ -76,7 +76,7 @@ export function SportsStep({ profile, update }: StepProps) {
   return <>
     <StepHeading title="Quels sports veux-tu pratiquer ?" subtitle="La musculation est la base. Ajoute d’autres sports si tu le souhaites." centered />
     <ChoiceCard title="Musculation uniquement" description="Aucun sport complémentaire."
-      selected={!profile.sports.some(sport => sport !== 'strength')} onPress={() => update({ sports: ['strength'] })}
+      selected={profile.sports.includes('strength')} onPress={() => update({ sports: ['strength'] })}
       icon={<Illustration name="dumbbell" size={48} />} layout="row" indicatorPosition="trailing" titleStyle={styles.sportTitle} />
     <SectionHeading title="Sports complémentaires" subtitle="Facultatif : sélectionne un ou plusieurs sports." />
     <View style={s.grid}>{complementarySports.map(sport => <ChoiceCard key={sport} title={sports[sport].title}
