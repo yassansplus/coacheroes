@@ -16,6 +16,8 @@ type SelectableCardProps = {
   description?: string;
   disabled?: boolean;
   icon?: ReactNode;
+  iconStyle?: StyleProp<ViewStyle>;
+  cardStyle?: StyleProp<ViewStyle>;
   onPress: () => void;
   selected: boolean;
   selectedBackgroundColor?: AppColor;
@@ -31,6 +33,8 @@ export function SelectableCard({
   description,
   disabled = false,
   icon,
+  iconStyle,
+  cardStyle,
   onPress,
   selected,
   selectedBackgroundColor = 'successSurface',
@@ -46,8 +50,8 @@ export function SelectableCard({
       onPress={onPress}
       style={({ pressed }) => [styles.pressable, pressed && !disabled && styles.pressed, style]}
     >
-      <Card style={[styles.card, selected && { backgroundColor: selectedBackground }]}>
-        {icon ? <View style={styles.icon}>{icon}</View> : null}
+      <Card style={[styles.card, selected && { backgroundColor: selectedBackground }, cardStyle]}>
+        {icon ? <View style={[styles.icon, iconStyle]}>{icon}</View> : null}
         {title ? <Text style={styles.title}>{title}</Text> : null}
         {description ? <Text style={styles.description}>{description}</Text> : null}
       </Card>

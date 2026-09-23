@@ -11,7 +11,7 @@ import { useChartEntrance } from '../useChartEntrance';
 export type TrendPoint = { label: string; value: number; detail?: string };
 export type TrendSeries = { label: string; color: string; points: TrendPoint[]; kind?: 'line' | 'dots' | 'bar'; gradient?: boolean };
 /** Shared SVG chart: bundled runtime, touch selection, responsive labels and empty state. */
-export function TrendChart({ series, height = 220, unit = '', showValues = false, hideAxis = false, domain }: { series: TrendSeries[]; height?: number; unit?: string; showValues?: boolean; hideAxis?: boolean; domain?: [number, number] }) {
+export function TrendChart({ series, height = 220, unit = '', showValues = false, hideAxis = false, domain, groupedBars = false, showLegend = true }: { series: TrendSeries[]; height?: number; unit?: string; showValues?: boolean; hideAxis?: boolean; domain?: [number, number]; groupedBars?: boolean; showLegend?: boolean }) {
   const [width, setWidth] = useState(0);
   const [selected, setSelected] = useState<{ series: number; point: number } | null>(null);
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -24,7 +24,7 @@ export function TrendChart({ series, height = 220, unit = '', showValues = false
   const low = domain?.[0] ?? (valid.some(item => item.kind === 'bar') ? 0 : Math.floor(Math.min(...all) - Math.max(range * 0.15, 1)));
   const high = domain?.[1] ?? Math.ceil(Math.max(...all) + Math.max(range * 0.15, 1));
   const left = hideAxis ? 10 : 39, right = Math.max(left + 1, width - 20), top = 26, bottom = height - 30;
-  const x = (index: number, count: number) => count < 2 ? (left + right) / 2 : left + index / (count - 1) * (right - left);
+  const x = (index: number, count: number) => groupedBars ? left + (index + 0.5) / Math.max(1, count) * (right - left) : count < 2 ? (left + right) / 2 : left + index / (count - 1) * (right - left);
   const y = (value: number) => bottom - (value - low) / Math.max(1, high - low) * (bottom - top);
   const format = (value: number) => value.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
   const active = selected ? valid[selected.series]?.points[selected.point] : undefined;
@@ -41,7 +41,7 @@ export function TrendChart({ series, height = 220, unit = '', showValues = false
         const lastX = x(item.points.length - 1, item.points.length);
         return <G key={seriesIndex}>
           {item.kind !== 'bar' && item.kind !== 'dots' && item.points.length > 1 ? <G clipPath={`url(#${uid}reveal)`}><Path d={`${path} L${lastX},${bottom} L${left},${bottom}Z`} fill={`url(#${uid}g${seriesIndex})`} opacity={0.09 * entrance.line} /><Path d={path} fill="none" stroke={`url(#${uid}g${seriesIndex})`} strokeWidth={2.7} strokeLinejoin="round" /></G> : null}
-          {item.points.map((point, index) => { const px = x(index, item.points.length), py = y(point.value), isSelected = selected?.series === seriesIndex && selected.point === index; const barWidth = Math.min(42, (right - left) / Math.max(1, item.points.length) * 0.6); const reveal = entrance.point(index, item.points.length); if (!reveal.visible) return null; return <G key={index} opacity={reveal.opacity} transform={`translate(${px} ${py}) scale(${reveal.scale}) translate(${-px} ${-py})`}>
+          {item.points.map((point, index) => { const groupWidth = (right - left) / Math.max(1, item.points.length) * 0.7; const barWidth = groupedBars ? Math.min(28, groupWidth / valid.length - 2) : Math.min(42, (right - left) / Math.max(1, item.points.length) * 0.6); const px = x(index, item.points.length) + (groupedBars ? (seriesIndex - (valid.length - 1) / 2) * (barWidth + 2) : 0), py = y(point.value), isSelected = selected?.series === seriesIndex && selected.point === index; const reveal = entrance.point(index, item.points.length); if (!reveal.visible) return null; return <G key={index} opacity={reveal.opacity} transform={`translate(${px} ${py}) scale(${reveal.scale}) translate(${-px} ${-py})`}>
             {item.kind === 'bar' ? <Rect x={px - barWidth / 2} y={py} width={barWidth} height={Math.max(0, bottom - py)} rx={5} fill={`url(#${uid}g${seriesIndex})`} onPress={() => setSelected({ series: seriesIndex, point: index })} /> : <Circle cx={px} cy={py} r={isSelected ? 6 : item.kind === 'dots' ? 2.5 : item.points.length > 12 ? 0 : 4.5} fill={item.kind === 'dots' ? colors.textMuted : item.color} stroke={item.kind === 'dots' ? 'none' : colors.white} strokeWidth={1.5} opacity={item.kind === 'dots' ? 0.5 : 1} />}
             {showValues ? <Text x={px} y={py - 12} textAnchor="middle" fill={colors.text} fontFamily={fontFamily.semiBold} fontSize={10}>{format(point.value)}{unit ? ` ${unit}` : ''}</Text> : null}
             <Circle cx={px} cy={py} r={12} fill="transparent" onPress={() => { feedback(); setSelected({ series: seriesIndex, point: index }); }} />
@@ -49,7 +49,7 @@ export function TrendChart({ series, height = 220, unit = '', showValues = false
         </G>;
       })}
     </Svg> : <View style={{ height }} />}
-    {valid.length > 1 ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>{valid.map((item, index) => <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color }} /><Label style={{ fontFamily: fontFamily.medium, color: colors.textSecondary, fontSize: 10 }}>{item.label}</Label></View>)}</View> : null}
+    {showLegend && valid.length > 1 ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>{valid.map((item, index) => <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color }} /><Label style={{ fontFamily: fontFamily.medium, color: colors.textSecondary, fontSize: 10 }}>{item.label}</Label></View>)}</View> : null}
   </View>;
 }
 function ViewGrid({ left, right, y, text }: { left: number; right: number; y: number; text: string }) { return <G><Line x1={left} x2={right} y1={y} y2={y} stroke={colors.border} strokeDasharray="3 3" />{text ? <Text x={left - 8} y={y + 3} textAnchor="end" fontSize={9} fontFamily={fontFamily.medium} fill={colors.textMuted}>{text}</Text> : null}</G>; }

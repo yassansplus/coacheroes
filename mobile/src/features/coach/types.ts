@@ -3,7 +3,9 @@ export type ProposalStatus = 'pending' | 'applied' | 'declined';
 export type Proposal = {
   id: string;
   status: ProposalStatus;
-  scope?: 'week' | 'ongoing';
+  kind: 'program_exercise' | 'meal_portion';
+  description: string;
+  change: Record<string, unknown>;
   createdAt: number;
 };
 export type CoachMessage = {

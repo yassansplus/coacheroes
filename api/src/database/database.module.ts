@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+import { entities } from './entities';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -14,7 +16,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         username: config.getOrThrow<string>('DATABASE_USER'),
         password: config.getOrThrow<string>('DATABASE_PASSWORD'),
         database: config.getOrThrow<string>('DATABASE_NAME'),
-        autoLoadEntities: true,
+        entities,
+        uuidExtension: 'pgcrypto' as const,
+        installExtensions: false,
+        migrations: [join(__dirname, 'migrations', '*{.ts,.js}')],
         synchronize: config.get<boolean>('DATABASE_SYNCHRONIZE', false),
         migrationsRun: config.get<boolean>('DATABASE_MIGRATIONS_RUN', false),
       }),

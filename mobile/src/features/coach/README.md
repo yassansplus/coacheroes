@@ -1,4 +1,17 @@
-# Coach — parcours frontend
+# Coach IA — parcours connecté
+
+La route `/coach` conserve les questions rapides et le chat. Les suggestions
+envoient une question libre au backend ; l’historique, les messages et les
+propositions viennent désormais de `/api/coach` et persistent après redémarrage.
+Le coach dispose du profil d’onboarding, d’outils de lecture des repas,
+entraînements, programme et anciens conseils, et d’une mémoire résumée tous les
+cinq messages utilisateur. Une proposition n’applique rien avant acceptation.
+Les corrections prises en charge dans ce lot sont les séries/RIR d’un exercice
+existant et la quantité d’un aliment d’un repas enregistré. Les anciennes
+maquettes statiques ci-dessous restent comme archives du prototype, mais ne sont
+plus affichées par la route. Le chat ne transmet pas encore de photo.
+
+# Ancien prototype visuel
 
 Entrée `/coach`, depuis « Jouer le coach » dans la bibliothèque.
 

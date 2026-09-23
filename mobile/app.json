@@ -16,7 +16,15 @@
       "expo-router",
       "expo-font",
       "expo-splash-screen",
-      ["expo-camera", { "cameraPermission": "Autorise Coac Heroes à photographier ton repas dans l’application.", "microphonePermission": false, "recordAudioAndroid": false, "barcodeScannerEnabled": false }],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Autorise Coac Heroes à photographier ton repas dans l’application.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -24,7 +32,23 @@
           "cameraPermission": "Autorise Coac Heroes à prendre une photo pour suivre ton évolution.",
           "microphonePermission": false
         }
-      ]
-    ]
+      ],
+      "expo-apple-authentication",
+      "expo-secure-store",
+      "expo-notifications"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "271f7d30-577a-4a17-b697-54e98addbe85"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.yassansplus.coacheroes",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "usesAppleSignIn": true
+    }
   }
 }

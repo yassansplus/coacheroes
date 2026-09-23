@@ -13,6 +13,8 @@ import { fontFamily } from '@/theme/typography';
 
 type OnboardingLayoutProps = {
   step: number;
+  busy?: boolean;
+  locked?: boolean;
   editing?: boolean;
   children: ReactNode;
   onBack: () => void;
@@ -27,7 +29,7 @@ type OnboardingLayoutProps = {
 };
 
 export function OnboardingLayout({ step, editing = false, children, onBack, onNext, onSkip, onOptions,
-  nextLabel = 'Continuer', error, footer, completed = false, contentStyle }: OnboardingLayoutProps) {
+  nextLabel = 'Continuer', busy = false, locked = false, error, footer, completed = false, contentStyle }: OnboardingLayoutProps) {
   const scroll = useRef<ScrollView>(null);
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [step, completed]);
   return <View style={styles.root}>
@@ -40,23 +42,23 @@ export function OnboardingLayout({ step, editing = false, children, onBack, onNe
       <KeyboardAvoidingView style={styles.safeArea} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {step > 1 && !completed ? <View style={styles.header}>
           <View style={styles.headerRow}>
-            {step !== 15 ? <IconButton accessibilityLabel={editing ? 'Retour au profil sans enregistrer' : 'Étape précédente'} variant="ghost" icon={<Symbol name="back" />} onPress={onBack} /> : <View style={styles.headerSpacer} />}
+            {step !== 15 ? <IconButton accessibilityLabel={editing ? 'Retour au profil sans enregistrer' : 'Étape précédente'} variant="ghost" icon={<Symbol name="back" />} disabled={busy || locked} onPress={onBack} /> : <View style={styles.headerSpacer} />}
             <Text accessibilityLiveRegion="polite" style={styles.step}>{editing ? 'Modifier mon profil' : `${step} sur 16`}</Text>
             <View style={styles.headerAction}>
-              {onSkip ? <Button variant="secondary" backgroundColor="transparent" textColor={colors.primary} text={step === 10 ? 'Ignorer' : 'Passer'} onPress={onSkip} style={styles.skip} textStyle={styles.skipText} /> :
-                onOptions ? <IconButton accessibilityLabel="Options de l’étape" variant="surface" icon={<Symbol name="more" />} onPress={onOptions} /> : null}
+              {onSkip ? <Button variant="secondary" backgroundColor="transparent" textColor={colors.primary} text={step === 10 ? 'Ignorer' : 'Passer'} disabled={busy || locked} onPress={onSkip} style={styles.skip} textStyle={styles.skipText} /> :
+                onOptions ? <IconButton accessibilityLabel="Options de l’étape" variant="surface" icon={<Symbol name="more" />} disabled={busy || locked} onPress={onOptions} /> : null}
             </View>
           </View>
           {step !== 15 && !editing ? <ProgressBar progress={step / 16 * 100} height={6} trackColor={colors.border} style={styles.progress} /> : null}
         </View> : null}
         <ScrollView ref={scroll} style={styles.scroll} contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
-          <Motion trigger={step} style={[styles.content, step === 1 && styles.welcomeContent, contentStyle]}>{children}</Motion>
+          <View pointerEvents={busy || locked ? "none" : "auto"} style={{ flexGrow: 1 }}><Motion trigger={step} style={[styles.content, step === 1 && styles.welcomeContent, contentStyle]}>{children}</Motion></View>
         </ScrollView>
         {onNext || footer ? <View style={styles.footer}>
           {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text> : null}
           {footer}
-          {onNext ? <Button hapticFeedback text={nextLabel} onPress={onNext} radius={24}
+          {onNext ? <Button disabled={busy} hapticFeedback text={nextLabel} onPress={onNext} radius={24}
             style={styles.continue} textStyle={styles.continueText} trailing={<Symbol name="arrow" color="white" size={23} />} /> : null}
         </View> : null}
       </KeyboardAvoidingView>

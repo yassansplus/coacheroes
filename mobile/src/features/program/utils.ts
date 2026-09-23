@@ -13,7 +13,7 @@ export function summarize(exercises: Exercise[]) {
   return { sets: sets.length, volume: sets.reduce((sum, set) => sum + set.weight * set.reps, 0),
     completedExercises: complete, xp: sets.length * 16,
     records: exercises.filter(exercise => exercise.previous.reps.length > 0 && exercise.sets.some(set => set && !set.warmup &&
-      (set.weight > exercise.previous.weight || (set.weight === exercise.previous.weight && set.reps > Math.max(...exercise.previous.reps))))).length };
+      (set.weight > (exercise.previous.recordWeight ?? exercise.previous.weight) || (set.weight === (exercise.previous.recordWeight ?? exercise.previous.weight) && set.reps > (exercise.previous.recordReps ?? Math.max(...exercise.previous.reps)))))).length };
 }
 export function saveSet(exercises: Exercise[], draft: SetDraft, nextWeight?: number): Exercise[] {
   const { weight, reps } = draft.value;

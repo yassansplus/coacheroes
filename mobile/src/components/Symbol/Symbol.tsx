@@ -2,8 +2,8 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors, resolveColor, type AppColor } from '@/theme/colors';
 
-export type SymbolName = 'arrow' | 'back' | 'check' | 'plus' | 'minus' | 'search' | 'edit' |
-  'info' | 'close' | 'chevron' | 'clock' | 'more' | 'camera' | 'lock' | 'warning' | 'apple' | 'google' | 'waist' | 'chest' | 'arm' | 'thigh' | 'users' | 'sparkles' |
+export type SymbolName = 'arrow' | 'back' | 'check' | 'plus' | 'minus' | 'search' | 'barcode' | 'edit' |
+  'info' | 'close' | 'chevron' | 'clock' | 'more' | 'camera' | 'lock' | 'warning' | 'apple' | 'google' | 'waist' | 'chest' | 'arm' | 'thigh' | 'users' | 'sparkles' | 'settings' |
   'home' | 'clipboard' | 'dumbbell' | 'chart' | 'user' | 'bell' | 'calendar' | 'layers' | 'list' | 'flash' | 'image' | 'flip' | 'history' | 'send' | 'attachment' | 'microphone' | 'battery' | 'target' | 'eye' | 'robot' | 'heart' | 'shield' | 'download';
 
 type SymbolProps = { name: SymbolName; size?: number; color?: AppColor };
@@ -21,6 +21,7 @@ export function Symbol({ name, size = 22, color = 'text' }: SymbolProps) {
     <Path fill={stroke} d="M17.1 12.5c0-2 1.6-3 1.7-3.1-1-1.5-2.6-1.7-3.1-1.7-1.3-.2-2.6.8-3.3.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.9 1.1 9.1.7 1 1.5 2.1 2.7 2 .9 0 1.4-.6 2.8-.6 1.3 0 1.8.6 2.9.6 1.2 0 1.9-1 2.6-2 .8-1.2 1.2-2.4 1.2-2.5-.1 0-2-.8-2-4ZM15.2 6.2c.6-.8 1.1-1.9 1-3-1 .1-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.5 2.8-1.4Z" />
   </Svg>;
   const paths: Partial<Record<SymbolName, string>> = {
+    settings: 'm9 2-1 3-3 1-2 3 2 3-2 3 2 3 3 1 1 3h6l1-3 3-1 2-3-2-3 2-3-2-3-3-1-1-3ZM8 12a4 4 0 1 0 8 0 4 4 0 0 0-8 0',
     heart: 'M12 21 3 12C-3 5 6-1 12 6c6-7 15-1 9 6Z',
     shield: 'M12 2 3 6v6c0 5 5 8 9 10 4-2 9-5 9-10V6ZM12 2v20',
     download: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
@@ -52,6 +53,7 @@ export function Symbol({ name, size = 22, color = 'text' }: SymbolProps) {
     list: 'M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1',
     arrow: 'M4 12h15M13 5l7 7-7 7', back: 'm15 4-8 8 8 8', check: 'm5 12 4.5 4.5L19 7',
     plus: 'M12 4v16M4 12h16', minus: 'M4 12h16', search: 'm16 16 5 5',
+    barcode: 'M2 5v14M5 5v14M8 5v14M11 5v14M14 5v14M17 5v14M20 5v14M22 5v14',
     edit: 'm14 5 5 5M4 20l5-1L20 8a2.1 2.1 0 0 0-4-4L5 15l-1 5Z',
     info: 'M12 11v6M12 7v.1', close: 'm6 6 12 12M6 18 18 6', chevron: 'm9 5 7 7-7 7',
     clock: 'M12 6v6l4 2', camera: 'M4 7h3l2-3h6l2 3h3v13H4Z',

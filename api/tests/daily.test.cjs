@@ -1,0 +1,70 @@
+require('reflect-metadata');
+const {test}=require('node:test'),assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),fs=require('node:fs'),path=require('node:path');
+const {DataSource}=require('typeorm'),{ConfigService}=require('@nestjs/config');
+const {createTestDriver}=require('./pglite-driver.cjs');
+const {entities,User,Onboarding,JournalEntry,Session}=require('../dist/database/entities');
+const {TrainingProgram}=require('../dist/program/program.entity');
+const {DailyService}=require('../dist/daily/daily.service');
+const {DailyReminder}=require('../dist/daily/daily-reminder');
+const {localClock,dailyWriteSchema}=require('../dist/daily/daily.schema');
+const migrations=fs.readdirSync(path.join(__dirname,'../dist/database/migrations')).filter(f=>f.endsWith('.js')).sort().flatMap(f=>Object.values(require('../dist/database/migrations/'+f)));
+const data=()=>({weightKg:78,weightSkipped:false,sleepMinutes:480,sleepQuality:4,energy:4,soreness:'light',pains:[]});
+const input=(date,revision=0)=>({date,timezone:'UTC',revision,requestId:randomUUID(),data:data(),adjustment:'none',proposalId:null});
+async function database(t){const db=new DataSource({type:'postgres',driver:createTestDriver(),database:'postgres',entities,migrations,synchronize:false,installExtensions:false,uuidExtension:'pgcrypto'});await db.initialize();await db.runMigrations();t.after(()=>db.destroy());return db;}
+test('daily clock respects local 7h/9h, midnight and daylight saving time; input validates weight omission',()=>{
+ assert.deepEqual(localClock('Europe/Paris',new Date('2026-09-22T05:00:00Z')),{date:'2026-09-22',hour:7,minute:0});
+ assert.equal(localClock('Europe/Paris',new Date('2026-10-25T08:00:00Z')).hour,9);
+ assert.equal(localClock('Europe/Paris',new Date('2026-09-22T22:05:00Z')).date,'2026-09-23');
+ assert.equal(dailyWriteSchema.safeParse({...input('2026-09-22'),data:{...data(),weightKg:null,weightSkipped:true}}).success,true);
+ assert.equal(dailyWriteSchema.safeParse({...input('2026-09-22'),data:{...data(),weightKg:null}}).success,false);
+ assert.equal(dailyWriteSchema.safeParse({...input('2026-09-22'),timezone:'invalid'}).success,false);
+});
+test('daily persists a single row, claims opening once, uses prior actual weights, audits corrections and fences retries',async t=>{
+ const db=await database(t),service=new DailyService(db),user=await db.getRepository(User).save({appleSubject:'daily'}),other=await db.getRepository(User).save({appleSubject:'other'});
+ await db.getRepository(Onboarding).save({userId:user.id,profile:{weight:'79,4'}});
+ const today=localClock('UTC').date;
+ assert.equal((await service.today(user.id,'UTC')).reference.weight,79.4);
+ assert.equal((await service.opened(user.id,'UTC',new Date(today+'T06:59:00Z'))).open,false);
+ assert.equal((await service.opened(user.id,'UTC',new Date(today+'T07:00:00Z'))).open,true);
+ assert.equal((await service.opened(user.id,'UTC',new Date(today+'T08:00:00Z'))).open,false);
+ const first=input(today);await service.save(user.id,first);await service.save(user.id,first);
+ assert.equal((await db.query('SELECT * FROM daily_check_ins WHERE user_id=$1',[user.id])).length,1);
+ assert.equal((await service.today(user.id,'UTC')).row.revision,1);
+ await assert.rejects(service.save(user.id,{...first,data:{...first.data,weightKg:80}}),{status:409});
+ await assert.rejects(service.save(user.id,input(today)),{status:409});
+ const corrected={...input(today,1),data:{...data(),weightKg:77.9}};await service.save(user.id,corrected);
+ const journal=await db.getRepository(JournalEntry).findOneByOrFail({userId:user.id,type:'daily.corrected'});
+ assert.equal(journal.payload.before.data.weightKg,78);assert.equal(journal.payload.after.data.weightKg,77.9);
+ await db.query('DELETE FROM journal_entries WHERE user_id=$1',[user.id]);await service.save(user.id,corrected);assert.equal((await service.today(user.id,'UTC')).row.revision,2);
+ assert.equal((await service.today(other.id,'UTC')).row,null);
+ const yesterday=new Date(today+'T12:00:00Z');yesterday.setUTCDate(yesterday.getUTCDate()-1);const date=yesterday.toISOString().slice(0,10);
+ await db.query('INSERT INTO daily_check_ins(user_id,date,timezone,data,completed_at) VALUES($1,$2,$3,$4,now())',[user.id,date,'UTC',JSON.stringify({...data(),weightKg:78.2})]);
+ assert.deepEqual((await service.today(user.id,'UTC')).reference,{date,weight:78.2});
+ await service.save(user.id,{...input(today,2),data:{...data(),weightKg:null,weightSkipped:true}});
+ assert.equal((await service.today(user.id,'UTC')).history.length,1);
+ await db.query(`CREATE FUNCTION fail_daily_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.type='daily.corrected' THEN RAISE EXCEPTION 'audit failure'; END IF; RETURN NEW; END; $$; CREATE TRIGGER fail_daily_audit BEFORE INSERT ON journal_entries FOR EACH ROW EXECUTE FUNCTION fail_daily_audit();`);
+ await assert.rejects(service.save(user.id,input(today,3)),/audit failure/);
+ assert.equal((await service.today(user.id,'UTC')).row.revision,3);
+});
+test('daily reminders send once at 9h, not for completed or logged-out users; provider receipts revoke invalid tokens',async t=>{
+ const db=await database(t),service=new DailyService(db),worker=new DailyReminder(db,new ConfigService()),date=localClock('UTC').date;
+ const users=await Promise.all(['done','pending','logout'].map(appleSubject=>db.getRepository(User).save({appleSubject})));
+ for(let i=0;i<users.length;i++){const tokenHash=String(i).repeat(64);await db.getRepository(Session).save({tokenHash,userId:users[i].id,expiresAt:new Date(Date.now()+86400000),revokedAt:i===2?new Date():null});await service.device(users[i].id,tokenHash,'UTC',`ExpoPushToken[test-${i}]`);}
+ await service.save(users[0].id,input(date));await service.opened(users[1].id,'UTC',new Date(date+'T07:00:00Z'));
+ const oldFetch=global.fetch,calls=[];global.fetch=async(url,options)=>{calls.push({url,body:JSON.parse(options.body)});return new Response(JSON.stringify(url.endsWith('getReceipts')?{data:{ticket:{status:'error',details:{error:'DeviceNotRegistered'}}}}:{data:{status:'ok',id:'ticket'}}),{status:200});};t.after(()=>global.fetch=oldFetch);
+ await worker.tick(new Date(date+'T08:59:00Z'));assert.equal(calls.length,0);
+ await worker.tick(new Date(date+'T09:00:00Z'));await worker.tick(new Date(date+'T09:01:00Z'));assert.equal(calls.length,1);assert.equal(calls[0].body.to,'ExpoPushToken[test-1]');
+ await db.query("UPDATE daily_reminders SET created_at=now()-interval '16 minutes'");await worker.receipts();assert.equal(calls.length,2);
+ assert.equal((await db.query('SELECT 1 FROM daily_push_devices WHERE user_id=$1',[users[1].id])).length,0);
+});
+test('daily adjustment uses the actual plan and requires the exact accepted proposal without mutating the plan',async t=>{
+ const db=await database(t),service=new DailyService(db),user=await db.getRepository(User).save({appleSubject:'adjust'}),date=localClock('UTC').date;
+ const result={sessions:[{weekday:(new Date(date+'T12:00:00Z').getUTCDay()+6)%7,exercises:[{exerciseId:1,sets:4,rir:2}],blocks:[]} ]};
+ const program=await db.getRepository(TrainingProgram).save({userId:user.id,sourceRevision:0,status:'ready',phase:'validating',runId:randomUUID(),context:{},output:{result},acceptedAt:new Date()});
+ const tired={...data(),energy:1,sleepMinutes:300};const proposal=await service.proposal(user.id,'UTC',tired);
+ assert.equal(proposal.exercises[0].sets,3);assert.equal(proposal.exercises[0].rir,3);
+ await assert.rejects(service.save(user.id,{...input(date),data:tired,adjustment:'accepted',proposalId:'wrong'}),{status:409});
+ await service.save(user.id,{...input(date),data:tired,adjustment:'accepted',proposalId:proposal.id});
+ assert.equal((await service.today(user.id,'UTC')).row.adjustment.proposal.programVersionId,program.runId);
+ assert.equal((await db.getRepository(TrainingProgram).findOneByOrFail({userId:user.id})).output.result.sessions[0].exercises[0].sets,4);
+});

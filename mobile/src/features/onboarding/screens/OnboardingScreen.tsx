@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, Text, View } from 'react-native';
 
-import { AppModal } from '@/components/AppModal';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
-import { Toast } from '@/components/Toast';
 
-import { GenerationStep } from '../components/GenerationStep';
+import { Banner } from '@/components/Banner';
+import { ProgramProposal } from '@/components/ProgramProposal';
+import { useTrainingProgram } from '@/hooks/useTrainingProgram';
+import { ErrorState } from '@/components/ErrorState';
+import { LoadingState } from '@/components/LoadingState';
+import { useSession } from '@/providers/SessionProvider';
 import { MeasurementsStep } from '../components/MeasurementsStep';
 import { EatingHabitsStep, FoodPreferencesStep } from '../components/NutritionSteps';
 import { OnboardingLayout } from '../components/OnboardingLayout';
 import { GoalStep, LevelStep, ProfileStep } from '../components/ProfileSteps';
-import { ProgramStep } from '../components/ProgramStep';
 import { DailyLifeStep, PainStep } from '../components/RecoverySteps';
 import { ReviewStep } from '../components/ReviewStep';
 import { stepStyles } from '../components/StepContent';
@@ -19,24 +21,29 @@ import { AvailabilityStep, EquipmentStep, PerformanceStep, SportsStep } from '..
 import { WelcomeStep } from '../components/WelcomeStep';
 import { useOnboarding } from '../hooks/useOnboarding';
 
-export function OnboardingScreen({ onOpenLibrary, editStep, onCloseEdit }: { onOpenLibrary: () => void; editStep?: number; onCloseEdit?: () => void }) {
+export function OnboardingScreen({ onOpenLibrary, onFinish, editStep, onCloseEdit }: { onOpenLibrary: () => void; onFinish: () => void; editStep?: number; onCloseEdit?: () => void }) {
+  const session = useSession();
   const flow = useOnboarding(editStep, onCloseEdit);
-  const goBack = editStep && onCloseEdit ? onCloseEdit : flow.back;
-  const [loginVisible, setLoginVisible] = useState(false);
+  const generation = useTrainingProgram(flow.step === 16 && !editStep, true);
+  const goBack = editStep && onCloseEdit ? onCloseEdit : flow.step === 16 ? () => void flow.reload(14) : flow.back;
   const [optionsVisible, setOptionsVisible] = useState(false);
-  const [detailVisible, setDetailVisible] = useState(false);
-  const [demoNotice, setDemoNotice] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
   const [profileFocus, setProfileFocus] = useState<{ field: 'age' | 'height' | 'weight'; request: number } | null>(null);
-  const hideDemoNotice = useCallback(() => setDemoNotice(false), []);
   const props = { profile: flow.profile, update: flow.update };
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (flow.step === 1) return false;
+      if (flow.busy || flow.retryPending || flow.conflict) return true;
       goBack(); return true;
     });
     return () => subscription.remove();
-  }, [goBack, flow.step]);
-  function start() { setLoginVisible(false); flow.next(); setDemoNotice(true); }
+  }, [goBack, flow.step, flow.busy, flow.retryPending, flow.conflict]);
+  function start() { void session.signIn(); }
+  async function finish() {
+    setFinishError(null);
+    try { await session.refresh(); onFinish(); }
+    catch (e) { setFinishError(e instanceof Error ? e.message : 'Impossible d’ouvrir ton compte.'); }
+  }
   const next = useCallback(() => {
     if (flow.step === 3) {
       const field = (['age', 'height', 'weight'] as const).find(key => !flow.profile[key].trim());
@@ -49,7 +56,7 @@ export function OnboardingScreen({ onOpenLibrary, editStep, onCloseEdit }: { onO
   }, [flow.next, flow.profile, flow.step]);
   function renderStep() {
     switch (flow.step) {
-      case 1: return <WelcomeStep onStart={start} onLogin={() => setLoginVisible(true)} onOpenLibrary={onOpenLibrary} />;
+      case 1: return <><WelcomeStep busy={session.busy} onStart={start} onLogin={start} onOpenLibrary={onOpenLibrary} />{session.error ? <Banner variant="error" message={session.error} /> : null}</>;
       case 2: return <GoalStep {...props} />;
       case 3: return <ProfileStep {...props} focusField={profileFocus?.field} focusRequest={profileFocus?.request} />;
       case 4: return <LevelStep {...props} />;
@@ -63,29 +70,26 @@ export function OnboardingScreen({ onOpenLibrary, editStep, onCloseEdit }: { onO
       case 12: return <FoodPreferencesStep {...props} foodInputs={flow.foodInputs} onFoodChange={flow.changeFoodInput} />;
       case 13: return <MeasurementsStep {...props} />;
       case 14: return <ReviewStep profile={flow.profile} onEdit={flow.edit} />;
-      case 15: return <GenerationStep onDone={flow.generationDone} />;
-      case 16: return <ProgramStep profile={flow.profile} completed={flow.completed} detailVisible={detailVisible}
-        onCloseDetail={() => setDetailVisible(false)} onEdit={flow.review} onOpenLibrary={onOpenLibrary} />;
+      case 16: return <ProgramProposal {...generation} onRetry={() => void generation.start()} onRefresh={generation.refresh} onAccept={() => { void generation.accept().then(ok => { if (ok) void finish(); }); }} onEditProfile={() => void flow.reload(14)} />;
     }
   }
+  if (session.loading || flow.loading) return <LoadingState label="Chargement de tes réponses…" />;
+  if (flow.loadFailed) return <ErrorState description={flow.error ?? undefined} onRetry={() => void flow.reload()} />;
+  if (flow.conflict) return <ErrorState title="Ton profil a été modifié ailleurs" description={flow.error ?? undefined} retryLabel="Recharger les réponses enregistrées" onRetry={() => void flow.reload()} />;
   return <>
-    <OnboardingLayout step={flow.step} editing={Boolean(editStep)} completed={flow.completed} onBack={goBack} error={flow.error}
+    <OnboardingLayout step={flow.step === 16 && (generation.program?.status === 'queued' || generation.program?.status === 'generating') ? 15 : flow.step} editing={Boolean(editStep)} completed={flow.step === 16 && generation.program?.status === 'ready'} onBack={goBack} error={flow.error ?? finishError}
       contentStyle={[7, 10, 11].includes(flow.step) ? { gap: 12, paddingTop: 8 } : undefined}
-      onNext={flow.step === 1 || flow.step === 15 || flow.completed ? undefined : flow.step === 16 ? onOpenLibrary : next}
-      nextLabel={editStep || flow.editingStep ? 'Enregistrer les modifications' : flow.step === 14 ? 'Créer mon programme' : flow.step === 16 ? 'Terminer' : 'Continuer'}
+      busy={flow.busy} locked={flow.retryPending}
+      onNext={flow.step === 1 ? undefined : flow.step === 16 ? generation.program?.acceptedAt ? () => void finish() : undefined : next}
+      nextLabel={flow.busy ? 'Enregistrement…' : flow.retryPending ? 'Réessayer l’enregistrement' : editStep || flow.editingStep ? 'Enregistrer les modifications' : flow.step === 14 ? 'Créer mon programme' : flow.step === 16 ? 'Accéder à mon compte' : 'Continuer'}
       onSkip={!editStep && [5, 7, 8, 10].includes(flow.step) ? flow.skip : undefined}
       onOptions={flow.step === 11 ? () => setOptionsVisible(true) : undefined}
-      footer={flow.step === 16 && !flow.completed ? <Button text="Voir le détail" variant="outline" onPress={() => setDetailVisible(true)} style={{ minHeight: 49 }} /> : undefined}>
+>
       {renderStep()}
     </OnboardingLayout>
-    <AppModal visible={loginVisible} onClose={() => setLoginVisible(false)} title="Ravi de te retrouver !"
-      actions={<Button text="Découvrir le parcours" onPress={start} />}>
-      <Text style={stepStyles.body}>La connexion à ton compte sera disponible prochainement. Tu peux déjà découvrir l’onboarding et préparer ton profil dans cet aperçu.</Text>
-    </AppModal>
     <BottomSheet visible={optionsVisible} onClose={() => setOptionsVisible(false)} title="Tes habitudes, à ton rythme">
       <View style={stepStyles.stack}><Text style={stepStyles.body}>Ces réponses permettent de comprendre ton quotidien. Tu peux les modifier depuis le récapitulatif avant de créer ton programme.</Text>
         <Button text="Compris" onPress={() => setOptionsVisible(false)} /></View>
     </BottomSheet>
-    <Toast visible={demoNotice} onHide={hideDemoNotice} message="Mode aperçu · aucune connexion effectuée." variant="info" />
   </>;
 }

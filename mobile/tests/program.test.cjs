@@ -72,3 +72,27 @@ test('free workouts have no strength sets and timers clamp zero', () => {
   assert.equal(clockLabel(125), '02:05');
   assert.equal(clockLabel(-1), '00:00');
 });
+
+test('generated sessions preserve server prescriptions, Monday indexing and never invent previous performances', () => {
+  const { generatedWorkout } = require('../src/features/program/generatedAdapter.ts');
+  const program = { status: 'ready', stale: false, sourceRevision: 5,
+    result: { summary: 'Programme personnalisé', sessions: [{ name: 'Séance A', weekday: 0, estimatedMinutes: 45, warmupMinutes: 8, warmup: 'Préparation progressive',
+      exercises: [{ exerciseId: 42, sets: 3, minReps: 8, maxReps: 12, restSeconds: 120, rir: 3, guidance: 'Calibrer', progression: 'Progression conditionnelle' }] }] },
+    exercises: [{ id: 42, name: 'Exercice réel', muscles: [{ id: 4, name: 'Pectoraux' }], equipment: [{ id: 3, name: 'Haltères' }] }] };
+  const workout = generatedWorkout(program, 0);
+  assert.equal(workout.name, 'Musculation'); assert.equal(workout.description, 'Musculation');
+  assert.equal(workout.day, 1); assert.equal(workout.warmupMinutes, 8);
+  assert.equal(workout.prescribedExercises[0].name, 'Exercice réel'); assert.equal(workout.prescribedExercises[0].restSeconds, 120);
+  assert.equal(workout.prescribedExercises[0].rir, 3); assert.deepEqual(workout.prescribedExercises[0].sets, [null, null, null]);
+  assert.deepEqual(workout.prescribedExercises[0].previous, { weight: 0, reps: [] });
+  assert.equal(generatedWorkout({ ...program, stale: true }, 0), null);
+  assert.equal(generatedWorkout({ ...program, exercises: [] }, 0), null);
+});
+
+test('generated boxing preserves timed blocks without inventing strength exercises', () => {
+  const { generatedWorkout } = require('../src/features/program/generatedAdapter.ts');
+  const blocks = [{ title: 'Technique', minutes: 30, intensity: 'moderate', instruction: 'Suis ton coach.' }];
+  const workout = generatedWorkout({ status: 'ready', stale: false, sourceRevision: 2, exercises: [], result: { summary: 'Ta semaine', sessions: [{ sport: 'boxing', name: 'Boxe', weekday: 1, estimatedMinutes: 35, warmupMinutes: 5, warmup: 'Mobilité', exercises: [], blocks }] } }, 0);
+  assert.equal(workout.kind, 'free'); assert.deepEqual(workout.sportBlocks, blocks);
+  assert.deepEqual(workout.prescribedExercises, []); assert.equal(workout.name, 'Boxe');
+});

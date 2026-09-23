@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Illustration } from '@/components/Illustration';
@@ -6,9 +8,15 @@ import { Symbol } from '@/components/Symbol';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
-export function WelcomeStep({ onStart, onLogin, onOpenLibrary }: {
-  onStart: () => void; onLogin: () => void; onOpenLibrary: () => void;
+export function WelcomeStep({ onStart, onLogin, onOpenLibrary, busy = false }: {
+  busy?: boolean; onStart: () => void; onLogin: () => void; onOpenLibrary: () => void;
 }) {
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (Platform.OS === 'ios') void AppleAuthentication.isAvailableAsync().then(value => { if (active) setAppleAvailable(value); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   const { height, width } = useWindowDimensions();
   return <View style={styles.container}>
     <View style={[styles.brand, { paddingTop: Math.max(26, Math.min(74, height * 0.07)) }]}>
@@ -18,10 +26,14 @@ export function WelcomeStep({ onStart, onLogin, onOpenLibrary }: {
     </View>
     <Illustration name="welcome" style={[styles.hero, { height: Math.min(360, Math.max(215, Math.min(width * 0.76, height * 0.34))) }]} />
     <View style={styles.actions}>
-      <Button text="Continuer avec Apple" leading={<Symbol name="apple" size={26} color="white" />}
-        onPress={onStart} style={styles.button} textStyle={styles.buttonText} />
+      {appleAvailable ? <View pointerEvents={busy ? 'none' : 'auto'} style={{ opacity: busy ? 0.5 : 1 }}>
+        <AppleAuthentication.AppleAuthenticationButton buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK} cornerRadius={23}
+          onPress={onStart} style={{ width: '100%', height: 56 }} />
+      </View> : <Button disabled={busy} text="Continuer avec Apple" backgroundColor={colors.text}
+        leading={<Symbol name="apple" size={26} color="white" />} onPress={onStart} style={styles.button} textStyle={styles.buttonText} />}
       <View style={styles.loginRow}><View style={styles.line} />
-        <Button text="J’ai déjà un compte" variant="secondary" backgroundColor="transparent" textColor={colors.primary}
+        <Button disabled={busy} text="J’ai déjà un compte" variant="secondary" backgroundColor="transparent" textColor={colors.primary}
           onPress={onLogin} textStyle={styles.loginText} style={styles.login} />
         <View style={styles.line} />
       </View>

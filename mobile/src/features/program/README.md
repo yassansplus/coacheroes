@@ -1,7 +1,23 @@
+# Programme connecté
+
+`/program` affiche `ProgramProposal` tant que le programme n'est pas validé :
+récapitulatif, chat de questions/ajustements et bouton « Valider mon programme ».
+Après validation serveur, `GeneratedProgramScreen` affiche l'interface historique
+`ProgramScreen` / `ProgramOverview`, alimentée par le programme réel via
+`generatedAdapter.ts`. Les cartes et le calendrier utilisent les jours, durées et
+nombres d'exercices reçus ; la semaine courante part de la validation.
+Les semaines du bloc reprennent le même planning et les prescriptions initiales ;
+l'adaptation hebdomadaire automatique n'est pas implémentée.
+
+Les données distantes restent dans les hooks/services partagés, hors `src/store`.
+Les séries réalisées restent en mémoire : leur persistance est un prochain lot.
+Les remplacements et analyses de démonstration restent masqués pour les séances IA.
+Voir `docs/onboarding-chat.md` pour le parcours et les garanties de persistance.
+
 # Programme — prototype frontend
 
-Entrée : `/program`, depuis « Jouer le programme » dans le catalogue. Aucun
-backend, aucune persistance, aucune nouvelle dépendance native. Les données
+Description historique du prototype, conservé pour le catalogue. La route `/program`
+utilise désormais les données serveur et le parcours de validation décrit ci-dessus. Les données
 historiques et les propositions du coach sont explicitement des exemples.
 
 ## Parcours
@@ -57,3 +73,8 @@ et Chromium avec son port de debugging local 9223. Il parcourt les 20 séries,
 contrôle les erreurs JavaScript et capture les 14 vues ainsi qu’un aperçu à
 320 px dans `/tmp/coacheroes-program-review/`. Les captures web ne remplacent
 pas une vérification du cache d’images et des haptics sur appareil natif.
+
+La préparation peut ouvrir `PreparationChat` pour compléter les informations
+manquantes avant génération. Les réponses sont enregistrées côté serveur et
+historisées ; recharger le profil avant de revenir au formulaire. Tous les sports
+partagent le nombre total de séances. Voir `docs/onboarding-chat.md` à la racine.

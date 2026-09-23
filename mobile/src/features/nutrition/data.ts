@@ -16,6 +16,13 @@ export const foods: Food[] = [
   { id: 'eggs', name: 'Œuf', icon: 'eggs', baseUnit: 'g', per100: { calories: 155, protein: 13, carbs: 1.1, fat: 11 }, portion: 60, units: [{ label: 'g', amount: 1 }, { label: 'pièce', amount: 60 }] },
 ];
 export const foodById = Object.fromEntries(foods.map(food => [food.id, food])) as Record<string, Food>;
+export function addNutritionFoods(values: Food[]) {
+  for (const food of values) {
+    foodById[food.id] = food;
+    if (!foods.some(current => current.id === food.id)) foods.push(food);
+  }
+}
+export function setNutritionGoals(value: Nutrients) { Object.assign(goals, value); }
 export function exampleItems() { return ['chicken', 'rice', 'sauce', 'cola'].map(foodId => ({ id: foodId, foodId, amount: foodById[foodId].portion })); }
 export function initialMeals(date: string): Meal[] {
   return moments.map((moment, index) => ({ id: `example-${index}`, date, moment, time: ['08:10', '13:10', '16:45', '20:30'][index], source: 'example', items: index === 1 ? exampleItems() : [{ id: `item-${index}`, foodId: ['yogurt', 'chicken', 'snack', 'dinner'][index], amount: [250, 220, 200, 400][index] }] }));

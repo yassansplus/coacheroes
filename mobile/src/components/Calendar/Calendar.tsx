@@ -8,6 +8,7 @@ import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
 type CalendarProps = {
+  showAdjacentDays?: boolean;
   renderDay?: (date: Date, selected: boolean) => ReactNode;
   disabledDate?: (date: Date) => boolean;
   initialMonth?: Date;
@@ -35,7 +36,7 @@ function isSameDay(first: Date | null | undefined, second: Date) {
   );
 }
 
-function getMonthDays(month: Date) {
+function getMonthDays(month: Date, showAdjacentDays = false) {
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
   const leadingEmptyDays = (firstDay.getDay() + 6) % 7;
   const totalDays = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -49,10 +50,13 @@ function getMonthDays(month: Date) {
     cells.push(null);
   }
 
+  if (showAdjacentDays) return cells.map((date, index) => date ?? new Date(month.getFullYear(), month.getMonth(), index - leadingEmptyDays + 1));
+
   return cells;
 }
 
 export function Calendar({
+  showAdjacentDays = false,
   renderDay,
   disabledDate,
   initialMonth,
@@ -68,7 +72,7 @@ export function Calendar({
     const source = initialMonth ?? selectedDate ?? new Date();
     return new Date(source.getFullYear(), source.getMonth(), 1);
   });
-  const days = useMemo(() => getMonthDays(displayedMonth), [displayedMonth]);
+  const days = useMemo(() => getMonthDays(displayedMonth, showAdjacentDays), [displayedMonth, showAdjacentDays]);
   const minimum = minimumDate ? startOfDay(minimumDate) : undefined;
   const maximum = maximumDate ? startOfDay(maximumDate) : undefined;
   const monthTitle = displayedMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' });

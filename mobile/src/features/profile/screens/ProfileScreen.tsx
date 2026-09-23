@@ -7,14 +7,20 @@ import { Card } from '@/components/Card';
 import { IconButton } from '@/components/IconButton';
 import { Illustration, type IllustrationName } from '@/components/Illustration';
 import { Symbol, type SymbolName } from '@/components/Symbol';
-import { useProfileSummary } from '@/store/profileSummary';
+import { useGameProgress } from '@/store/gameProgress';
+import { useProfileSummary } from '../hooks/useProfileSummary';
+import { useSession } from '@/providers/SessionProvider';
+import { Banner } from '@/components/Banner';
+import { ErrorState } from '@/components/ErrorState';
+import { LoadingState } from '@/components/LoadingState';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 import { feedback } from '@/utils/feedback';
 
-type Props = { onTab: (tab: AppNavTab) => void; onEdit: (step: number) => void; onLibrary: () => void };
+type Props = { onTab: (tab: AppNavTab) => void; onEdit: (step: number) => void; onLibrary: () => void; onSquad: () => void; onLevel: () => void; onNutrition: () => void };
 function Avatar({ size }: { size: number }) {
-  return <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2 }]}><Illustration name="coach" size={size} /></View>;
+  const game = useGameProgress();
+  return <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: game.equipment.frame === 'cobalt' ? colors.squadPurple : colors.primary }]}><Illustration name="coach" size={size} /></View>;
 }
 function RoundIcon({ illustration, symbol, color, background, size = 32 }: {
   illustration?: IllustrationName; symbol?: SymbolName; color: string; background: string; size?: number;
@@ -31,9 +37,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   return <View style={{ gap: 7 }}><Text style={s.sectionTitle}>{title}</Text><Card style={s.list}>{children}</Card></View>;
 }
 
-export function ProfileScreen({ onTab, onEdit, onLibrary }: Props) {
+export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNutrition }: Props) {
   const profile = useProfileSummary();
-  return <SafeAreaView style={s.screen}><View style={s.frame}>
+  const session = useSession();
+  const game = useGameProgress();
+  return <SafeAreaView style={[s.screen, game.equipment.theme === 'violet' && { backgroundColor: colors.accentSurface }]}><View style={s.frame}>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
       <View style={s.brandRow}>
         <Illustration name="logo" size={34} />
@@ -41,15 +49,16 @@ export function ProfileScreen({ onTab, onEdit, onLibrary }: Props) {
         <View style={s.bell}><Symbol name="bell" size={23} /><View style={s.dot} /></View>
         <Avatar size={44} />
       </View>
-      <View style={s.titleRow}><Text style={s.title}>Profil</Text><IconButton variant="ghost" accessibilityLabel="Modifier mes informations personnelles" icon={<Symbol name="edit" size={24} color="textSecondary" />} onPress={() => onEdit(3)} /></View>
-      <Card style={[s.card, s.identity]}>
+      <View style={s.titleRow}><IconButton variant="ghost" accessibilityLabel="Modifier mes informations personnelles" icon={<Symbol name="edit" size={24} color="textSecondary" />} onPress={() => onEdit(3)} /></View>
+      {profile.error ? <ErrorState description={profile.error} onRetry={profile.retry} /> : null}
+      {profile.loading ? <LoadingState label="Chargement du profil…" /> : <Card style={[s.card, s.identity]}>
         <Avatar size={70} />
         <View style={[s.grow, { gap: 4 }]}>
-          <Text style={s.name}>Yassine</Text><Text style={s.subtitle}>{profile.age} ans · {profile.height} cm</Text>
+          <Text style={s.name}>Mon compte</Text><Text style={[s.membership, { color: colors.squadPurple }]}>{game.equipment.title === 'regular' ? 'Assidu' : 'Confirmé'}</Text><Text style={s.subtitle}>{profile.age} ans · {profile.height} cm</Text>
           <View style={s.goalBadge}><Symbol name="target" color="success" size={16} /><Text style={s.goalBadgeText}>{profile.goals}</Text></View>
-          <Text style={s.membership}>Membre depuis 12 semaines</Text>
+          <Text style={s.membership}>{session.user?.createdAt ? `Membre depuis le ${new Date(session.user.createdAt).toLocaleDateString('fr-FR')}` : ''}</Text>
         </View>
-      </Card>
+      </Card>}
       <Card style={[s.card, s.objective]}>
         <RoundIcon symbol="target" color={colors.primary} background={colors.primaryTint} size={54} />
         <View style={[s.grow, { gap: 4 }]}><Text style={s.subtitle}>Objectif actuel</Text><Text style={s.objectiveTitle}>Boxeur athlétique</Text><Text style={s.subtitle}>74 kg cible · juin 2027</Text></View>
@@ -61,11 +70,11 @@ export function ProfileScreen({ onTab, onEdit, onLibrary }: Props) {
       </Section>
       <Section title="Mon alimentation">
         <SettingsRow label="Préférences alimentaires" icon={<RoundIcon illustration="cutlery" color={colors.success} background={colors.successSurface} />} onPress={() => onEdit(12)} />
-        <SettingsRow label="Objectifs calories et macros" icon={<RoundIcon illustration="flame" color={colors.energy} background={colors.energySurface} />} last />
+        <SettingsRow label="Objectifs calories et macros" icon={<RoundIcon illustration="flame" color={colors.energy} background={colors.energySurface} />} onPress={onNutrition} last />
       </Section>
       <Section title="Communauté">
-        <SettingsRow label="Niveau et XP" value="Niveau 8" icon={<RoundIcon illustration="trophy" color={colors.warning} background={colors.warningSurface} />} />
-        <SettingsRow label="Squad" value="4 membres" icon={<RoundIcon symbol="users" color={colors.primary} background={colors.primarySurface} />} last />
+        <SettingsRow label="Niveau et XP" value={`Niveau ${game.level}`} onPress={onLevel} icon={<RoundIcon illustration="trophy" color={colors.warning} background={colors.warningSurface} />} />
+        <SettingsRow label="Squad" value="4 membres" icon={<RoundIcon symbol="users" color={colors.primary} background={colors.primarySurface} />} onPress={onSquad} last />
       </Section>
       <Section title="Données et application">
         <SettingsRow label="Apple Santé" icon={<RoundIcon symbol="heart" color={colors.energyVeryLow} background={colors.energySurface} />} />
@@ -73,6 +82,8 @@ export function ProfileScreen({ onTab, onEdit, onLibrary }: Props) {
         <SettingsRow label="Confidentialité et données" icon={<RoundIcon symbol="shield" color={colors.successText} background={colors.successSurface} />} />
         <SettingsRow label="Exporter mes données" icon={<RoundIcon symbol="download" color={colors.accent} background={colors.accentSurface} />} last />
       </Section>
+      {session.error ? <Banner variant="error" message={session.error} /> : null}
+      <Button text={session.busy ? 'Déconnexion…' : 'Se déconnecter'} variant="outline" disabled={session.busy} onPress={() => void session.signOut()} />
       <Pressable accessibilityRole="link" onPress={onLibrary} hitSlop={8} style={s.library}><Text style={s.libraryText}>Bibliothèque de composants</Text></Pressable>
     </ScrollView>
     <AppNavbar includeCoach value="profile" onChange={onTab} style={{ marginHorizontal: 14, marginBottom: 5 }} />
@@ -89,8 +100,7 @@ const s = StyleSheet.create({
   avatar: { overflow: 'hidden', backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center' },
   bell: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.onboardingBackground, alignItems: 'center', justifyContent: 'center' },
   dot: { position: 'absolute', top: 3, right: 3, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.energy, borderWidth: 1, borderColor: colors.white },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontFamily: fontFamily.bold, fontSize: 28, color: colors.text },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
   card: { padding: 12, borderWidth: 1, borderColor: colors.primarySurface, borderRadius: 16 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   name: { fontFamily: fontFamily.bold, fontSize: 17, color: colors.text },

@@ -1,0 +1,35 @@
+const { progression }=require('../dist/workouts/progression');
+const fakeAi={analyze:async(snapshot,history)=>progression(snapshot,history.map(snapshot=>({snapshot})))};
+require('reflect-metadata');
+const {test}=require('node:test');const assert=require('node:assert/strict');const {randomUUID}=require('node:crypto');const {DataSource}=require('typeorm');
+const {createTestDriver}=require('./pglite-driver.cjs');const {entities,User,JournalEntry}=require('../dist/database/entities');const {WorkoutSession,ProgramBlock}=require('../dist/workouts/workout.entity');const {WorkoutService}=require('../dist/workouts/workout.service');const {writeSchema}=require('../dist/workouts/workout.schema');
+const migrations=[['1790000000000-IdentityAndOnboarding','IdentityAndOnboarding1790000000000'],['1790100000000-TrainingPrograms','TrainingPrograms1790100000000'],['1790200000000-CoachingChat','CoachingChat1790200000000'],['1790300000000-ProgramAcceptance','ProgramAcceptance1790300000000'],['1790400000000-AllowJournalDeletion','AllowJournalDeletion1790400000000'],['1790500000000-WorkoutHistory','WorkoutHistory1790500000000'],['1790600000000-DailyCheckIns','DailyCheckIns1790600000000'],['1790700000000-Nutrition','Nutrition1790700000000'],['1790800000000-NutritionCoachOpinions','NutritionCoachOpinions1790800000000']].map(([f,n])=>require('../dist/database/migrations/'+f)[n]);
+const {snapshot}=require('./workout-fixtures.cjs');
+const write=(s,revision,requestId=randomUUID())=>writeSchema.parse({snapshot:s,revision,requestId});
+test('workouts persist corrections, completion and real history, fence retries and isolate accounts',async t=>{
+ const db=new DataSource({type:'postgres',driver:createTestDriver(),database:'postgres',entities,migrations,synchronize:false,installExtensions:false,uuidExtension:'pgcrypto'});await db.initialize();await db.runMigrations();t.after(()=>db.destroy());
+ const user=await db.getRepository(User).save({appleSubject:'workout-user'}),other=await db.getRepository(User).save({appleSubject:'workout-other'});const service=new WorkoutService(db,fakeAi);const id=randomUUID(),s=snapshot();
+ await service.save(user.id,id,write(s,0));assert.equal((await service.get(user.id,id)).revision,1);
+ const time=new Date().toISOString();s.exercises[0].sets[0]={id:randomUUID(),occurredAt:time,updatedAt:time,weight:10,reps:8,feeling:'correct',warmup:false};
+ const request=write(s,1);await service.save(user.id,id,request);await service.save(user.id,id,request);assert.equal(await db.getRepository(WorkoutSession).count(),1);assert.equal((await service.get(user.id,id)).revision,2);
+ await assert.rejects(service.save(user.id,id,write(s,1)),{status:409});await assert.rejects(service.get(other.id,id),{status:404});await assert.rejects(service.save(other.id,id,write(s,0)),{status:404});
+ await db.query('DELETE FROM journal_entries WHERE request_id=$1',[request.requestId]);await service.save(user.id,id,request);assert.equal((await service.get(user.id,id)).revision,2);
+ s.exercises[0].sets[0].reps=10;await service.save(user.id,id,write(s,2));assert.equal((await service.get(user.id,id)).summary.volume,100);
+ const latest=(await db.getRepository(JournalEntry).find({where:{type:'workout.updated'},order:{recordedAt:'DESC'}}))[0];assert.equal(latest.payload.before.snapshot.exercises[0].sets[0].reps,8);
+ const erased=structuredClone(s);erased.exercises[0].sets[0]=null;await assert.rejects(service.save(user.id,id,write(erased,3)),{status:400});
+ const failure=randomUUID();await db.query(`CREATE FUNCTION fail_workout_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.request_id='${failure}'::uuid THEN RAISE EXCEPTION 'audit failure'; END IF; RETURN NEW; END; $$; CREATE TRIGGER fail_workout_audit BEFORE INSERT ON journal_entries FOR EACH ROW EXECUTE FUNCTION fail_workout_audit();`);
+ await assert.rejects(service.save(user.id,id,write(s,3,failure)),/audit failure/);assert.equal((await service.get(user.id,id)).revision,3);
+ s.status='completed';s.endedAt=Date.now();s.debrief.comment='Bonne séance';await service.save(user.id,id,write(s,3));const history=await service.history(user.id,'wger-1');assert.equal(history.length,1);assert.equal(history[0].exercise.sets[0].reps,10);assert.equal(history[0].debrief.comment,'Bonne séance');assert.equal(history[0].record.weight,10);assert.equal((await service.get(user.id,id)).summary.xp,16);assert.equal((await service.get(user.id,id)).summary.records,0);
+ const analysis=await service.analyze(user.id,id);await service.applyAnalysis(user.id,id,analysis.sourceRevision);assert.ok((await service.history(user.id,'wger-1'))[0].next);await assert.rejects(service.applyAnalysis(user.id,id,analysis.sourceRevision-1),{status:409});assert.deepEqual(await service.history(other.id,'wger-1'),[]);
+ s.debrief.comment='Commentaire corrigé';await service.save(user.id,id,write(s,4));assert.equal((await service.get(user.id,id)).analysis,null);assert.equal((await service.get(user.id,id)).analysisAppliedAt,null);
+ await assert.rejects(service.applyAnalysis(user.id,id,analysis.sourceRevision),{status:409});
+ assert.equal((await db.driver.createSchemaBuilder().log()).upQueries.length,0);
+});
+test('free sessions retain explicit measurements and block accounting keeps interrupted sessions distinct',async t=>{
+ const db=new DataSource({type:'postgres',driver:createTestDriver(),database:'postgres',entities,migrations,synchronize:false,installExtensions:false,uuidExtension:'pgcrypto'});await db.initialize();await db.runMigrations();t.after(()=>db.destroy());const user=await db.getRepository(User).save({appleSubject:'sports-user'});const service=new WorkoutService(db,fakeAi);const blockId=randomUUID();
+ await db.getRepository(ProgramBlock).save({id:blockId,userId:user.id,prescription:{output:{result:{sessions:[{weekday:0,sport:'running'}]}}},startedAt:new Date(Date.now()-29*86400000),endsAt:new Date(Date.now()-86400000),extensions:0});
+ const s=snapshot();s.workout={...s.workout,kind:'free',programVersionId:blockId,sessionIndex:0,week:1};s.exercises=[];s.status='completed';s.endedAt=Date.now();s.debrief.comment='Distance : 5,2 km';await service.save(user.id,randomUUID(),write(s,0));
+ assert.equal((await service.list(user.id))[0].snapshot.sportMetrics.distanceMeters,5200);assert.equal((await service.list(user.id))[0].snapshot.sportMetrics.rounds,null);
+ const stopped=structuredClone(s);stopped.status='abandoned';stopped.workout.week=2;await service.save(user.id,randomUUID(),write(stopped,0));const progress=await service.block(user.id,blockId);assert.equal(progress.completed,1);assert.equal(progress.abandoned,1);assert.equal(progress.due,true);assert.equal(progress.occurrences.filter(o=>o.status==='completed').length,1);
+ await service.extend(user.id,blockId);await service.extend(user.id,blockId);assert.equal((await service.block(user.id,blockId)).weeks,6);assert.equal((await service.block(user.id,blockId)).due,false);
+});

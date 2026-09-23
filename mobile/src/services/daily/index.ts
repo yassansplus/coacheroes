@@ -1,0 +1,13 @@
+import { apiRequest } from '@/services/http';
+export type DailyData = { weightKg:number|null;weightSkipped:boolean;sleepMinutes:number;sleepQuality:number;energy:number;soreness:'none'|'light'|'strong';pains:string[] };
+export type DailyProposal = { id:string|null;date:string;programVersionId:string|null;sessionIndex:number;changes:{title:string;before:string;after:string}[];exercises:{exerciseId:string;sets:number;rir:number}[];blocks:{title:string;minutes:number;intensity:'easy'|'moderate'|'hard';instruction:string}[]|null;reason:string };
+export type DailyRow = { date:string;revision:number;opened_at:string|null;completed_at:string|null;data:DailyData|null;adjustment:{decision:'none'|'accepted'|'declined';proposal:DailyProposal|null}|null };
+export type DailyStatus = {date:string;timezone:string;row:DailyRow|null;reference:{weight:number;date:string|null}|null;history:{date:string;weight:number}[];shouldOpen:boolean};
+export type DailyWrite = {date:string;timezone:string;revision:number;requestId:string;data:DailyData;adjustment:'none'|'accepted'|'declined';proposalId:string|null};
+export const dailyTimezone=()=>Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+export const dailyDate=(now=new Date())=>`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+export const loadDaily=()=>apiRequest<DailyStatus>(`/daily?timezone=${encodeURIComponent(dailyTimezone())}`);
+export const markDailyOpened=()=>apiRequest<{open:boolean;date:string}>('/daily/opened',{method:'POST',body:{timezone:dailyTimezone()}});
+export const saveDaily=(body:DailyWrite)=>apiRequest<DailyRow>('/daily',{method:'PUT',body});
+export const proposeDaily=(data:DailyData)=>apiRequest<DailyProposal>('/daily/proposal',{method:'POST',body:{timezone:dailyTimezone(),data}});
+export const registerDailyDevice=(token:string|null)=>apiRequest('/daily/device',{method:'PUT',body:{token,timezone:dailyTimezone()}});

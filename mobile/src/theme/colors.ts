@@ -26,6 +26,11 @@ export const colors = {
   energyVeryLow: '#f45b69',
   energyLow: '#9387c4',
   energyHigh: '#20b6c1',
+  squadPurple: '#7254ff',
+  squadCoral: '#ff8179',
+  squadGreen: '#55c9a2',
+  squadGold: '#ffbd32',
+  squadOutline: '#aaaee0',
 } as const;
 
 export const energyLevelColors = [colors.energyVeryLow, colors.energyLow, colors.primary, colors.energyHigh, colors.success] as const;

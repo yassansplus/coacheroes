@@ -14,7 +14,7 @@ export const s = StyleSheet.create({
   body: { fontFamily: fontFamily.medium, color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
   small: { fontFamily: fontFamily.medium, color: colors.textMuted, fontSize: 10, lineHeight: 15 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  ''''''''''''''''''wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   grow: { flex: 1, minWidth: 0 },
   card: { padding: 16, gap: 14 },
   actions: { gap: 10, marginTop: 8 },

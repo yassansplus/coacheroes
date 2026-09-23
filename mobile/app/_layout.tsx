@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 
 import { imageAssets, preloadAppImages } from '@/config/preloadAssets';
 import { ImageWarmup } from '@/components/ImageWarmup';
+import { SessionGate } from '@/providers/SessionGate';
 import { AppProviders } from '@/providers/AppProviders';
 import { colors } from '@/theme/colors';
 
@@ -56,7 +57,7 @@ export default function RootLayout() {
   return (
     <AppProviders>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background }, headerShown: false }} />
+      <Stack screenLayout={({ children }) => <SessionGate>{children}</SessionGate>} screenOptions={{ contentStyle: { backgroundColor: colors.background }, headerShown: false }} />
     </AppProviders>
   );
 }

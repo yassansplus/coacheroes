@@ -1,3 +1,5 @@
+import { aiContexts, resolveAiModel, type AiContext } from './ai-models';
+
 type Environment = Record<string, string | number | boolean | undefined>;
 
 const required = [
@@ -31,6 +33,10 @@ export function validateEnvironment(config: Record<string, unknown>): Environmen
 
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  for (const context of Object.keys(aiContexts) as AiContext[]) {
+    resolveAiModel(context, environment[aiContexts[context].variable]);
   }
 
   return {

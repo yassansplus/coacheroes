@@ -11,6 +11,9 @@ export default function ProfileRoute() {
       else if (tab === 'progress') router.push('/progression' as Href);
     }}
     onEdit={step => router.push({ pathname: '/onboarding', params: { edit: String(step) } })}
+    onLevel={() => router.push('/game?from=profile' as Href)}
+    onNutrition={() => router.push({ pathname: '/nutrition', params: { from: 'profile' } })}
     onLibrary={() => router.push('/components')}
+    onSquad={() => router.push({ pathname: '/squad', params: { from: 'profile' } } as Href)}
   />;
 }

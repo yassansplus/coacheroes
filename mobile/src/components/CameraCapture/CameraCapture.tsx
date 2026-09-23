@@ -68,7 +68,8 @@ export function CameraCapture({ value, onChange, label = 'Place le repas dans le
     if (locked.current) return;
     locked.current = true; setBusy(true); setError('');
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: false });
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85, allowsEditing: false,
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible });
       if (mounted.current && !result.canceled && result.assets[0]?.uri) { setReady(false); onChange(result.assets[0].uri); }
     } catch { if (mounted.current) setError('Impossible d’ouvrir la galerie. Réessaie.'); }
     finally { locked.current = false; if (mounted.current) setBusy(false); }

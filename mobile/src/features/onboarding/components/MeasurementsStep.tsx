@@ -15,8 +15,8 @@ export function MeasurementsStep({ profile, update }: StepProps) {
     <Card style={s.section}>
       <SectionHeading title="Photos facultatives" subtitle="Ajoute jusqu’à 3 photos pour suivre ton évolution." />
       <View style={s.row}>{([['front', 'Face'], ['side', 'Profil'], ['back', 'Dos']] as const).map(([key, label]) =>
-        <PhotoPicker key={key} label={label} value={profile.photos[key]} onChange={uri => update({ photos: { ...profile.photos, [key]: uri } })} />)}</View>
-      <View style={s.row}><Illustration name="lock" size={25} /><Text style={[s.body, s.grow]}>Conservées sur ton appareil pendant cette session.</Text></View>
+        <PhotoPicker key={key} privacyText="Cette photo sera enregistrée dans ton compte à la validation de l’étape." label={label} value={profile.photos[key]} onChange={uri => update({ photos: { ...profile.photos, [key]: uri } })} />)}</View>
+      <View style={s.row}><Illustration name="lock" size={25} /><Text style={[s.body, s.grow]}>Enregistrées dans ton compte à la validation de cette étape.</Text></View>
     </Card>
     <Card style={s.section}>
       <SectionHeading title="Mensurations" subtitle="Renseigne tes principales mensurations actuelles." />

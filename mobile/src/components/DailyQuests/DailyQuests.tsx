@@ -2,6 +2,7 @@ import { feedback } from '@/utils/feedback';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -14,10 +15,14 @@ import {
   ProgressBar,
   type ProgressBarGradientColors,
 } from '@/components/ProgressBar';
-import { resolveColor, type AppColor } from '@/theme/colors';
+import { colors, resolveColor, type AppColor } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
 export type DailyQuest = {
+  onPress?: () => void;
+  expanded?: boolean;
+  status?: string;
+  hideProgress?: boolean;
   currentValue: number;
   icon?: ReactNode;
   iconBackgroundColor?: AppColor;
@@ -77,6 +82,10 @@ function DailyQuestItem({
   rewardColor = 'primary',
   targetValue,
   title,
+  onPress,
+  expanded = false,
+  status,
+  hideProgress = false,
 }: DailyQuestItemProps) {
   const [displayedCurrentValue, setDisplayedCurrentValue] = useState(0);
   const [displayedRewardValue, setDisplayedRewardValue] = useState(0);
@@ -171,6 +180,20 @@ function DailyQuestItem({
     rewardParts,
   ]);
 
+  if (expanded) {
+    const content = <Card style={{ padding: 16, gap: 12, borderRadius: 22 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+        {icon}
+        <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Text style={[styles.questTitle, { flex: 1, fontSize: 15 }]}>{title}</Text>{reward ? <View style={{ paddingHorizontal: 9, paddingVertical: 7, borderRadius: 12, backgroundColor: resolveColor(rewardBackgroundColor) }}><Text style={{ fontFamily: fontFamily.semiBold, fontSize: 12, color: resolveColor(rewardColor) }}>{reward}</Text></View> : null}</View>
+          <Text style={[styles.progressLabel, { fontSize: 13 }]}>{progressLabel ?? `${Math.round(visibleCurrentValue)} / ${targetValue}`}</Text>
+          {status ? <Text style={{ alignSelf: 'flex-start', borderRadius: 12, padding: 7, backgroundColor: colors.successSurface, color: colors.successText, fontFamily: fontFamily.semiBold, fontSize: 12 }}>{status}</Text> : null}
+          {!hideProgress ? <ProgressBar progress={progress} height={12} animationDelay={animationDelay} animationDuration={animationDuration} /> : null}
+        </View>
+      </View>
+    </Card>;
+    return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={() => { feedback(); onPress(); }}>{content}</Pressable> : content;
+  }
   return (
     <Card style={styles.quest}>
       {icon ? (

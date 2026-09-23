@@ -1,3 +1,4 @@
+import type { ExerciseHistoryEntry } from '@/services/workouts';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { BodyPainSelector, type BodyPainSelection, type BodyPainSide } from '@/components/BodyPainSelector';
@@ -47,26 +48,28 @@ export function PainForm({ exerciseId, onSave, onCancel }: { exerciseId: string;
     <Text style={s.section}>Intensité</Text><PillSelector value={String(intensity)} onChange={value => setIntensity(Number(value))} items={[1, 2, 3, 4, 5].map(value => ({ value: String(value), label: String(value) }))} />
     <Text style={s.section}>Quand ressens-tu cette douleur ?</Text><PillSelector value={timing} onChange={setTiming} items={['Pendant la série', 'Après la série'].map(value => ({ value, label: value }))} />
     <TextField label="Précision facultative" placeholder="Ajoute un détail si besoin…" value={note} onChangeText={setNote} maxLength={200} multiline helperText={`${note.length} / 200`} />
-    <Text style={s.caption}>Ce signalement reste local et ne constitue pas un avis médical.</Text>
+    <Text style={s.caption}>Ce signalement est conservé avec ta séance. Il ne constitue pas un avis médical.</Text>
     <Button text="Enregistrer et adapter" disabled={!zones.length} onPress={() => onSave({ exerciseId, zones, intensity, timing, note })} />
     <Button text="Annuler" variant="secondary" onPress={onCancel} />
   </View>;
 }
 
-export function ExerciseHistory({ exercise }: { exercise: Exercise }) {
+export function ExerciseHistory({ exercise, rows = [], error }: { exercise: Exercise; rows?: ExerciseHistoryEntry[]; error?: string | null }) {
   const [tab, setTab] = useState('sessions');
   const [expanded, setExpanded] = useState<number | null>(null);
   const logged = exercise.sets.filter(set => set && !set.warmup);
-  const previous = exercise.previous;
-  const labels = ['11 août', '18 août', '25 août', '1 sept.', '8 sept.', '15 sept.'];
-  const history = previous.reps.length ? [0.75, 5 / 6, 0.875, 23 / 24, 1, 1].map((ratio, index) => ({ day: index, label: labels[index], value: Math.round(previous.weight * ratio * 2) / 2 })) : [];
+  const recent=rows.slice(0,6).reverse();
+  const labels=recent.map(r=>new Date(r.startedAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}));
+  const history=recent.map((row,day)=>({day,label:labels[day],value:Math.max(0,...row.exercise.sets.filter(s=>s&&!s.warmup).map(s=>s!.weight))}));
+  const lastSets=rows[0]?.exercise.sets.filter(s=>s&&!s.warmup)??[];
+  const previous={weight:lastSets.at(-1)?.weight??0,reps:lastSets.map(s=>s!.reps)};
   return <View style={s.stack}>
     <Text style={s.title}>{exercise.name}</Text>
     <TabSelector value={tab} onChange={setTab} items={[{ value: 'sessions', label: 'Séances' }, { value: 'progress', label: 'Progression' }]} />
-    {previous.reps.length ? <StatTiles ribbon items={[{ label: 'Dernière charge', value: `${previous.weight} kg`, icon: 'dumbbell' }, { label: 'Meilleure série', value: `${previous.weight} × ${Math.max(...previous.reps)}`, icon: 'chart' }, { label: 'Volume', value: `${previous.weight * previous.reps.reduce((a, b) => a + b, 0)} kg`, icon: 'layers' }]} /> : null}
-    <Card style={s.stack}><View style={s.row}><Text style={[s.section, s.grow]}>Charge de travail</Text><Text style={s.caption}>kg</Text></View><LineChart data={history} color={colors.accent} accessibilityLabel="Charge de travail sur six séances d’exemple, en kilogrammes" /></Card>
-    {previous.reps.length && tab === 'sessions' ? <><Text style={s.section}>Dernières séances</Text>{[5, 4, 3].map((session, index) => <Card key={session} style={s.compact}><Pressable accessibilityRole="button" accessibilityLabel={`Détail du ${labels[session]}`} onPress={() => setExpanded(expanded === session ? null : session)} style={s.row}><View><Text style={s.label}>{labels[session]}</Text><Text style={s.body}>{history[session].value} kg</Text></View><View style={[s.row, s.grow, { gap: 5, justifyContent: 'center' }]}>{previous.reps.map((reps, i) => <View key={i} style={{ padding: 8, backgroundColor: [colors.primarySurface, colors.successSurface, colors.accentSurface][index], borderRadius: 7 }}><Text style={s.label}>{reps}</Text></View>)}</View><Symbol name="chevron" size={16} color="textMuted" /></Pressable>{expanded === session ? <Text style={s.body}>{previous.reps.length} séries · {history[session].value * previous.reps.reduce((a, b) => a + b, 0)} kg de volume</Text> : null}</Card>)}</> : !previous.reps.length ? <EmptyState title="Pas encore d’historique" description="Cet exercice vient d’être ajouté à ta séance." /> : null}
+    {previous.reps.length ? <StatTiles ribbon items={[{ label: 'Dernière charge', value: `${previous.weight} kg`, icon: 'dumbbell' }, { label: 'Meilleure série', value: `${rows[0]?.record?.weight??previous.weight} × ${rows[0]?.record?.reps??Math.max(...previous.reps)}`, icon: 'chart' }, { label: 'Volume', value: `${lastSets.reduce((n,s)=>n+s!.weight*s!.reps,0)} kg`, icon: 'layers' }]} /> : null}
+    <Card style={s.stack}><View style={s.row}><Text style={[s.section, s.grow]}>Charge de travail</Text><Text style={s.caption}>kg</Text></View><LineChart data={history} color={colors.accent} accessibilityLabel="Charge de travail sur les dernières séances, en kilogrammes" /></Card>
+    {previous.reps.length && tab === 'sessions' ? <><Text style={s.section}>Dernières séances</Text>{recent.map((_, i)=>recent.length-1-i).slice(0,3).map((session, index) => <Card key={session} style={s.compact}><Pressable accessibilityRole="button" accessibilityLabel={`Détail du ${labels[session]}`} onPress={() => setExpanded(expanded === session ? null : session)} style={s.row}><View><Text style={s.label}>{labels[session]}</Text><Text style={s.body}>{history[session].value} kg</Text></View><View style={[s.row, s.grow, { gap: 5, justifyContent: 'center' }]}>{recent[session].exercise.sets.filter(s=>s&&!s.warmup).map((set, i) => <View key={i} style={{ padding: 8, backgroundColor: [colors.primarySurface, colors.successSurface, colors.accentSurface][index], borderRadius: 7 }}><Text style={s.label}>{set!.reps}</Text></View>)}</View><Symbol name="chevron" size={16} color="textMuted" /></Pressable>{expanded === session ? <Text style={s.body}>{recent[session].exercise.sets.filter(s=>s&&!s.warmup).length} séries · {recent[session].exercise.sets.reduce((n,s)=>n+(s&&!s.warmup?s.weight*s.reps:0),0)} kg de volume</Text> : null}</Card>)}</> : !previous.reps.length ? <EmptyState title="Pas encore d’historique" description="Cet exercice vient d’être ajouté à ta séance." /> : null}
     {logged.length ? <Card style={s.stack}><Text style={s.section}>Cette séance</Text>{logged.map((set, index) => <Text key={index} style={s.body}>Série {index + 1} · {set!.weight} kg × {set!.reps} reps</Text>)}</Card> : null}
-    <Text style={s.caption}>Historique de démonstration · sans données distantes</Text>
+    <Text style={s.caption}>{error ?? 'Historique des séances enregistrées'}</Text>
   </View>;
 }

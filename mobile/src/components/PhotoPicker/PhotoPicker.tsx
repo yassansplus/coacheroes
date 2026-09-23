@@ -8,10 +8,10 @@ import { Symbol } from '@/components/Symbol';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
-type PhotoPickerProps = { label: string; value?: string; onChange: (uri: string | undefined) => void; disabled?: boolean; variant?: 'tile' | 'frame' };
+type PhotoPickerProps = { privacyText?: string; label: string; value?: string; onChange: (uri: string | undefined) => void; disabled?: boolean; variant?: 'tile' | 'frame'; inlineActions?: boolean };
 
 /** The parent owns the URI; this component never uploads or persists a photo. */
-export function PhotoPicker({ label, value, onChange, disabled = false, variant = 'tile' }: PhotoPickerProps) {
+export function PhotoPicker({ label, value, onChange, disabled = false, variant = 'tile', inlineActions = false, privacyText = 'Cette photo reste sur ton appareil pendant cette session.' }: PhotoPickerProps) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,24 +30,24 @@ export function PhotoPicker({ label, value, onChange, disabled = false, variant 
     } catch { setError('Impossible d’ouvrir les photos. Tu peux réessayer ou passer cette étape.'); }
     finally { setBusy(false); }
   }
-  return <>
+  const actions = <View style={styles.actions}>
+    <Button disabled={busy} text="Choisir une photo" onPress={() => void pick(false)} />
+    {Platform.OS !== 'web' ? <Button disabled={busy} variant="outline" text="Prendre une photo" onPress={() => void pick(true)} /> : null}
+    {value ? <Button disabled={busy} variant="secondary" text="Retirer la photo" onPress={() => { onChange(undefined); setOpen(false); }} /> : null}
+    {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+    {inlineActions ? <Button disabled={busy} text="Fermer les options" variant="secondary" onPress={() => setOpen(false)} /> : null}
+    <Text style={styles.help}>{privacyText}</Text>
+  </View>;
+  const tile = <>
     <Pressable accessibilityRole="button" accessibilityLabel={`${value ? 'Modifier' : 'Ajouter'} la photo : ${label}`}
-      disabled={disabled} style={[styles.tile, variant === 'frame' && styles.frame]} onPress={() => { setError(''); setOpen(true); }}>
+      disabled={disabled || busy} style={[styles.tile, variant === 'frame' && styles.frame, inlineActions && { flex: 0, width: '100%', aspectRatio: 2 }]} onPress={() => { setError(''); setOpen(true); }}>
       {value ? <Image source={{ uri: value }} fadeDuration={0} style={[styles.photo, variant === 'frame' && { bottom: 0 }]} resizeMode="cover" /> :
         <View style={styles.camera}><Symbol name="camera" size={30} color="textSecondary" /><View style={styles.plus}><Symbol name="plus" size={12} color="white" /></View></View>}
       {variant === 'frame' ? <View pointerEvents="none" style={StyleSheet.absoluteFill}>{[0, 1, 2, 3].map(corner => <View key={corner} style={[styles.corner, corner < 2 ? { top: 20, borderTopWidth: 4 } : { bottom: 20, borderBottomWidth: 4 }, corner % 2 ? { right: 20, borderRightWidth: 4 } : { left: 20, borderLeftWidth: 4 }]} />)}</View> : null}
       <Text style={[styles.label, variant === 'frame' && styles.frameLabel]}>{label}</Text>
     </Pressable>
-    <BottomSheet visible={open} onClose={() => { if (!busy) setOpen(false); }} title={`Photo · ${label}`}>
-      <View style={styles.actions}>
-        <Button disabled={busy} text="Choisir une photo" onPress={() => void pick(false)} />
-        {Platform.OS !== 'web' ? <Button disabled={busy} variant="outline" text="Prendre une photo" onPress={() => void pick(true)} /> : null}
-        {value ? <Button disabled={busy} variant="secondary" text="Retirer la photo" onPress={() => { onChange(undefined); setOpen(false); }} /> : null}
-        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-        <Text style={styles.help}>Cette photo reste sur ton appareil pendant cette session.</Text>
-      </View>
-    </BottomSheet>
   </>;
+  return inlineActions ? <View style={{ width: '100%', gap: 12 }}>{tile}{open ? actions : null}</View> : <>{tile}<BottomSheet visible={open} onClose={() => { if (!busy) setOpen(false); }} title={`Photo · ${label}`}>{actions}</BottomSheet></>;
 }
 
 const styles = StyleSheet.create({

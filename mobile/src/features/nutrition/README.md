@@ -1,30 +1,22 @@
-# Nutrition — prototype frontend
+# Nutrition
 
-Entrée `/nutrition`, bouton « Jouer la nutrition » du catalogue. Les repas sont
-en mémoire pendant la session, avec une journée d’exemple à la date locale.
-Aucun appel réseau métier ni persistance. `expo-camera` utilise la version
-compatible avec le SDK Expo installé, sans mise à jour du SDK.
+La route `/nutrition` garde le parcours et les composants existants : tableau de
+bord, description ou photo, validation, édition des quantités, journal et
+historique. Les repas viennent désormais de `GET /api/nutrition` ; les anciennes
+fixtures restent dans `data.ts` pour les tests visuels, mais ne sont plus chargées
+comme repas du compte. Les objectifs fixes ne sont jamais présentés comme
+personnalisés : les anneaux et calories restantes apparaissent seulement après
+la génération de l'objectif lié au programme validé.
 
-Parcours : tableau de bord → texte/photo → validation → éditeur d’aliment →
-journal. Le détail permet édition, duplication (à confirmer) et suppression.
-Le menu en haut donne accès à l’ajout, à l’historique et aux calories restantes.
-L’historique propose jour/semaine/mois, sélection de date et partage natif.
+Le texte et la photo sont analysés sur le serveur. La photo est téléversée en
+privé, et les aliments et macros estimés par l'IA sont proposés sur l'écran de
+validation sans correspondance forcée avec le catalogue. Une marque identifiable
+peut être recherchée sur le web ; sa source est consultable dans l'éditeur.
+La recherche manuelle interroge l'API, accepte un nom ou un code
+EAN/UPC, et le lecteur de code-barres utilise `expo-camera` déjà installé. Le
+serveur reste responsable des valeurs par 100 g/ml et des calculs. Les corrections
+de repas sont enregistrées dans la même ligne métier avec une révision et un
+journal séparé. Le client n'enregistre plus ses repas en mémoire seule.
 
-Les maquettes 4 et 4 bis sont fusionnées : quantités, portions et unités sont
-configurées par aliment. Le changement d’unité conserve la quantité de base.
-Les cuisses indiquent un poids comestible sans os; la sauce se règle séparément.
-Les valeurs nutritionnelles et conversions sont des fixtures illustratives.
-
-L’analyse texte/photo est explicitement simulée avec un exemple fixe après
-confirmation. Le chemin manuel permet de composer un repas depuis le catalogue.
-La caméra utilise le composant partagé CameraCapture : aperçu intégré au cadre,
-déclencheur, flash arrière et retournement. L’import galerie reste disponible,
-même sans permission caméra. L’aperçu s’arrête en arrière-plan, après capture
-ou en quittant l’onglet Photo. Le PhotoPicker d’onboarding reste inchangé.
-
-Tous les totaux dérivent des aliments; une correction n’écrase jamais le journal
-avant validation. Les modifications d’un aliment restent locales jusqu’à son
-enregistrement puis la validation du repas. Le retour système Android est géré.
-
-Vérification : `node --experimental-strip-types tests/nutrition.test.cjs`,
-`./node_modules/.bin/tsc --noEmit`.
+Voir [docs/nutrition.md](../../../../docs/nutrition.md) pour les sources, les
+limites des estimations et les endpoints.

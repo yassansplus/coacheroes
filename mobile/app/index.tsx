@@ -12,7 +12,8 @@ export default function IndexRoute() {
     onAddMeal={() => router.push({ pathname: '/nutrition', params: { action: 'add' } })}
     onCheckIn={() => router.push('/today')}
     onNotifications={() => pending('notifications')}
-    onMissions={() => pending('missions')}
-    onSquad={() => pending('squad')}
+    onMissions={() => router.push('/game?page=daily' as Href)}
+    onLevel={() => router.push('/game' as Href)}
+    onSquad={() => router.push('/squad' as Href)}
   />;
 }

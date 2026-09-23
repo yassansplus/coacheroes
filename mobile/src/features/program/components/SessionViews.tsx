@@ -37,10 +37,12 @@ export function SessionDetail({ p, editing, showAll, onHistory }: { p: Program; 
     <Card style={s.row}><Illustration name={p.workout.icon} size={82} /><View style={[s.grow, { gap: 8 }]}><Text style={s.section}>{p.workout.description}</Text><Text style={s.body}>{p.workout.minutes} min · {p.exercises.length ? `${p.exercises.length} exercices` : 'Séance libre'}</Text>
       {p.exercises.length ? <View style={[s.wrap, { gap: 6 }]}><CardHighlight icon={null} title="Force & volume" backgroundColor="successSurface" color={colors.successText} style={s.chip} /><CardHighlight icon={null} title={`RIR ${p.rir}`} backgroundColor="accentSurface" color={colors.text} style={s.chip} /></View> : null}
     </View></Card>
-    <Text style={[s.section, { marginTop: 10 }]}>Exercices</Text>
+    {p.workout.generated ? <Text style={s.body}>{p.exercises.length ? 'Choisis tes charges à ton rythme pour cette première séance.' : 'Suis les étapes ci-dessous, à ton rythme.'}</Text> : null}
+    <Text style={[s.section, { marginTop: 10 }]}>{p.workout.sportBlocks?.length ? 'Ta séance' : 'Exercices'}</Text>
+    {p.workout.sportBlocks?.map((block, i) => <Card key={i} style={s.stack}><Text style={s.label}>{block.title} · {block.minutes} min</Text><Text style={s.body}>{block.instruction}</Text></Card>)}
     {editing ? <Text style={s.body}>Choisis l’exercice à remplacer.</Text> : null}
     <View style={{ gap: 9 }}>{p.exercises.slice(0, showAll ? undefined : 6).map((exercise, index) => <Pressable key={exercise.id} accessibilityRole="button" accessibilityLabel={`${exercise.name}, ${editing ? 'remplacer' : 'historique'}`} onPress={() => editing ? p.editExercise(index) : onHistory(exercise)} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
-      <Card style={[s.row, { padding: 12, gap: 9 }]}><View style={{ width: 27, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: tints[index % 4] }}><Text style={[s.label, { color: inks[index % 4] }]}>{index + 1}</Text></View><Illustration name={exercise.icon} size={35} /><View style={s.grow}><Text style={s.label}>{exercise.name}</Text><Text style={s.body}>{exercise.sets.filter(set => !set?.warmup).length} × {exercise.minReps}–{exercise.maxReps}</Text></View><Text style={s.label}>{exercise.weight} kg</Text><Symbol name="chevron" size={16} color="textMuted" /></Card>
+      <Card style={[s.row, { padding: 12, gap: 9 }]}><View style={{ width: 27, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: tints[index % 4] }}><Text style={[s.label, { color: inks[index % 4] }]}>{index + 1}</Text></View><Illustration name={exercise.icon} size={35} /><View style={s.grow}><Text style={s.label}>{exercise.name}</Text><Text style={s.body}>{exercise.sets.filter(set => !set?.warmup).length} × {exercise.minReps}–{exercise.maxReps}</Text></View><Text style={s.label}>{exercise.weight ? `${exercise.weight} kg` : 'À calibrer'}</Text><Symbol name="chevron" size={16} color="textMuted" /></Card>
     </Pressable>)}</View>
     {!p.exercises.length ? <Card><Text style={s.body}>Enregistre ta durée et ton ressenti à la fin de cette séance libre.</Text></Card> : null}
   </>;
@@ -53,22 +55,23 @@ export function SessionReady({ p, totalSets }: { p: Program; totalSets: number }
       {[{ name: 'list' as const, text: p.exercises.length ? `${p.exercises.length} exercices` : 'Séance libre' }, { name: 'layers' as const, text: `${totalSets} séries` }, { name: 'clock' as const, text: `Durée estimée ${p.workout.minutes} min` }, { name: 'chart' as const, text: `Intensité RIR ${p.rir}` }].filter((_, i) => p.exercises.length || (i !== 1 && i !== 3)).map((item, i) => <View key={item.name} style={[s.row, i > 0 && s.divider, { paddingTop: i ? 8 : 0 }]}><Glyph name={item.name} index={i + 1} size={36} /><Text style={[s.section, s.grow]}>{item.text}</Text></View>)}
     </Card>
     <Text style={s.section}>Options</Text>
-    <Card style={[s.row, s.compact]}><Glyph name="chart" index={1} /><View style={s.grow}><Toggle label="Échauffement guidé" value={p.guidedWarmup} onValueChange={p.setGuidedWarmup} /><Text style={s.body}>5 minutes</Text></View></Card>
+    <Card style={[s.row, s.compact]}><Glyph name="chart" index={1} /><View style={s.grow}><Toggle label="Échauffement guidé" value={p.guidedWarmup} onValueChange={p.setGuidedWarmup} /><Text style={s.body}>{p.workout.warmupMinutes ?? 5} minutes</Text></View></Card>
     {p.exercises.length ? <Card style={[s.row, s.compact]}><Glyph name="clock" index={3} /><View style={s.grow}><Toggle label="Chronomètre automatique" value={p.autoRest} onValueChange={p.setAutoRest} /><Text style={s.body}>Après chaque série</Text></View></Card> : null}
-    <Card style={[s.row, s.compact]}><Glyph name="info" /><Text style={[s.body, s.grow]}>Les charges proposées utilisent la dernière séance d’exemple.</Text></Card>
+    <Card style={[s.row, s.compact]}><Glyph name="info" /><Text style={[s.body, s.grow]}>{p.workout.generated ? 'Calibre tes charges selon les consignes et les répétitions en réserve. Les séries saisies restent sur cet écran : leur sauvegarde sera disponible dans une prochaine version.' : 'Les charges proposées utilisent la dernière séance d’exemple.'}</Text></Card>
   </>;
 }
 
 export function SessionTraining({ p }: { p: Program }) {
   const exercise = p.current;
-  if (!exercise) return <><Illustration name="boxing" size={145} style={{ alignSelf: 'center' }} /><Text style={s.title}>Ta séance libre</Text><Card style={s.row}><Glyph name="clock" /><Text style={s.value}>{clockLabel(p.elapsed)}</Text></Card></>;
+  if (!exercise) return <><Illustration name={p.workout.icon} size={145} style={{ alignSelf: 'center' }} /><Text style={s.title}>{p.workout.name}</Text>{p.workout.sportBlocks?.map((block, i) => <Card key={i} style={s.stack}><Text style={s.label}>{block.title} · {block.minutes} min</Text><Text style={s.body}>{block.instruction}</Text></Card>)}<Card style={s.row}><Glyph name="clock" /><Text style={s.value}>{clockLabel(p.elapsed)}</Text></Card></>;
   const first = exercise.sets.findIndex(set => !set);
   const count = exercise.sets.filter(set => !set?.warmup).length;
   return <>
     <View style={s.row}><ProgressBar style={s.grow} progress={(p.exerciseIndex + 1) / p.exercises.length * 100} height={10} /><Text style={s.caption}>Exercice {p.exerciseIndex + 1} sur {p.exercises.length}</Text></View>
     <Text style={s.title}>{exercise.name}</Text>
     <View style={s.wrap}><CardHighlight icon={<Symbol name="dumbbell" color="success" size={18} />} title={exercise.muscle} color={colors.successText} backgroundColor="successSurface" style={s.chip} /><CardHighlight icon={<Symbol name="chart" color="accent" size={18} />} title={`${count} × ${exercise.minReps}–${exercise.maxReps}`} color={colors.accent} backgroundColor="accentSurface" style={s.chip} /></View>
-    <Card style={s.row}><Illustration name="target" size={53} /><View style={[s.grow, { gap: 5 }]}><Text style={s.label}>Objectif</Text><Text style={s.section}>{exercise.weight} kg · viser {Array.from({ length: count }, () => exercise.targetReps).join(' / ')}</Text>{exercise.previous.reps.length ? <Text style={s.body}>Dernière séance : {exercise.previous.reps.join(' / ')}</Text> : null}</View></Card>
+    {exercise.guidance ? <Card style={s.stack}><Text style={s.body}>{exercise.guidance}</Text><Text style={s.body}>Garde {exercise.rir} répétitions en réserve.</Text></Card> : null}
+    <Card style={s.row}><Illustration name="target" size={53} /><View style={[s.grow, { gap: 5 }]}><Text style={s.label}>Objectif</Text><Text style={s.section}>{exercise.weight ? `${exercise.weight} kg` : 'À calibrer'} · viser {Array.from({ length: count }, () => exercise.targetReps).join(' / ')}</Text>{exercise.previous.reps.length ? <Text style={s.body}>Dernière séance : {exercise.previous.reps.join(' / ')}</Text> : null}</View></Card>
     <Text style={s.section}>Séries</Text>
     <Card style={{ padding: 12, gap: 6 }}><View style={[s.row, { gap: 6, paddingBottom: 6 }]}><Text style={[s.caption, { width: 32 }]}>Série</Text><Text style={[s.caption, s.grow, s.center]}>Charge</Text><Text style={[s.caption, s.grow, s.center]}>Répétitions</Text><Text style={[s.caption, { width: 56, textAlign: 'center' }]}>Ressenti</Text></View>
       {exercise.sets.map((set, index) => {
@@ -92,7 +95,7 @@ export function SessionDebrief({ p }: { p: Program }) {
     <Card style={{ gap: 8, padding: 18 }}><Text style={s.section}>Énergie</Text><Text style={s.body}>Comment te sens-tu ?</Text><PillSelector variant="filled" itemStyle={{ flex: 1 }} value={p.debrief.energy} onChange={energy => p.setDebrief({ ...p.debrief, energy })} items={[1, 2, 3, 4, 5].map(value => ({ value: String(value), label: String(value) }))} /><View style={s.row}><Text style={[s.caption, s.grow]}>Très faible</Text><Text style={s.caption}>Excellente</Text></View></Card>
     <Card style={{ gap: 8, padding: 18 }}><Text style={s.section}>Difficulté globale</Text><Text style={s.body}>Comment était la séance globalement ?</Text><TabSelector value={p.debrief.difficulty} onChange={difficulty => p.setDebrief({ ...p.debrief, difficulty })} items={[{ value: 'easy', label: 'Facile' }, { value: 'adapted', label: 'Adaptée' }, { value: 'hard', label: 'Trop difficile' }]} /></Card>
     <Card style={{ gap: 8, padding: 18 }}><Text style={s.section}>Douleur inhabituelle</Text><Text style={s.body}>As-tu ressenti une douleur inhabituelle ?</Text><TabSelector value={p.debrief.pain ? 'yes' : 'no'} onChange={value => p.setDebrief({ ...p.debrief, pain: value === 'yes' })} items={[{ value: 'no', label: 'Non' }, { value: 'yes', label: 'Oui' }]} />{p.debrief.pain ? <Button variant="outline" text="Préciser la douleur" onPress={p.openPain} /> : null}{p.painReports.length ? <Text style={s.caption}>{p.painReports.length} signalement(s) enregistré(s)</Text> : null}</Card>
-    <Card style={{ gap: 8, padding: 18 }}><Text style={s.section}>Commentaire facultatif</Text><TextField multiline maxLength={500} placeholder="Ajoute un commentaire si tu le souhaites…" value={p.debrief.comment} onChangeText={comment => p.setDebrief({ ...p.debrief, comment })} /><Text style={[s.caption, { textAlign: 'right' }]}>{p.debrief.comment.length} / 500</Text></Card>
+    <Card style={{ gap: 8, padding: 18 }}><Text style={s.section}>Commentaire facultatif</Text><TextField multiline maxLength={500} placeholder={p.workout.kind==='free'?'Ex. Distance : 5 km ; 6 rounds':'Ajoute un commentaire si tu le souhaites…'} value={p.debrief.comment} onChangeText={comment => p.setDebrief({ ...p.debrief, comment })} /><Text style={[s.caption, { textAlign: 'right' }]}>{p.debrief.comment.length} / 500</Text></Card>
   </>;
 }
 
@@ -100,6 +103,7 @@ export function SessionSummary({ p, onHistory }: { p: Program; onHistory: (exerc
   const [expanded, setExpanded] = useState(false);
   return <>
     <Text style={s.title}>{p.workout.name}</Text>
+    <XPRewardCard gainedXP={p.workout.kind === 'free' ? 80 : p.stats.xp} animated={!p.rewardPlayed} haptics={!p.rewardPlayed} />
     <StatTiles items={[{ label: 'Durée', value: `${Math.floor(p.elapsed / 60)} min`, icon: 'clock' }, { label: 'Volume', value: `${p.stats.volume.toLocaleString('fr-FR')} kg`, icon: 'dumbbell' }, { label: 'Séries', value: p.stats.sets, icon: 'layers' }, { label: 'Records', value: p.stats.records, icon: 'chart' }]} />
     {p.exercises.length ? <><Text style={s.section}>Progression</Text><Card style={{ gap: 12, padding: 16 }}>{p.exercises.slice(0, expanded ? undefined : 3).map((exercise, index) => {
       const sets = exercise.sets.filter(set => set && !set.warmup);
@@ -109,7 +113,6 @@ export function SessionSummary({ p, onHistory }: { p: Program; onHistory: (exerc
       const progress = !exercise.previous.reps.length ? 'Nouveau' : delta > 0 ? `+${delta} kg` : delta === 0 && reps > 0 ? `+${reps} reps` : delta < 0 ? `${delta} kg` : 'Stable';
       return <Pressable key={exercise.id} accessibilityRole="button" accessibilityLabel={`${exercise.name}, historique`} onPress={() => onHistory(exercise)} style={({ pressed }) => [s.row, index > 0 && s.divider, { paddingTop: index ? 12 : 0, opacity: pressed ? 0.6 : 1 }]}><Illustration name={exercise.icon} size={36} /><Text style={[s.label, s.grow]}>{exercise.name}</Text><CardHighlight icon={null} title={progress} backgroundColor={delta > 0 || reps > 0 ? 'successSurface' : 'accentSurface'} color={delta > 0 || reps > 0 ? colors.successText : colors.textSecondary} style={s.chip} /></Pressable>;
     })}{p.exercises.length > 3 ? <Button text={expanded ? 'Réduire' : `Voir les ${p.exercises.length - 3} autres exercices`} variant="secondary" backgroundColor="transparent" textColor={colors.primary} onPress={() => setExpanded(!expanded)} /> : null}</Card></> : null}
-    <XPRewardCard gainedXP={p.workout.kind === 'free' ? 80 : p.stats.xp} animated={!p.rewardPlayed} haptics={!p.rewardPlayed} />
   </>;
 }
 
@@ -119,14 +122,10 @@ export function CoachAnalysis({ p }: { p: Program }) {
   return <>
     <View style={s.row}><Illustration name="coach" size={64} /><Text style={[s.title, s.grow]}>Analyse du coach</Text></View>
     <StatTiles ribbon items={[{ label: 'Exercices', value: `${p.stats.completedExercises}/${p.exercises.length}`, icon: 'dumbbell' }, { label: 'Records', value: p.stats.records, icon: 'chart' }, { label: 'Douleur signalée', value: p.debrief.pain || p.painReports.length ? 'Oui' : 'Non', icon: 'warning' }]} />
-    <Card style={s.stack}><Text style={s.section}>Décisions</Text>{p.exercises.map(exercise => {
-      const working = exercise.sets.filter(set => set && !set.warmup);
-      const increase = !p.debrief.pain && !p.painReports.length && working.length > 0 && working.every(set => set && set.reps >= exercise.maxReps && set.feeling === 'easy');
-      return <View key={exercise.id} style={[s.divider, { paddingTop: 12 }]}><Pressable accessibilityRole="button" accessibilityLabel={`Détail pour ${exercise.name}`} onPress={() => setDetail(detail === exercise.id ? null : exercise.id)} style={s.row}><Illustration name={exercise.icon} size={37} /><View style={s.grow}><Text style={s.label}>{exercise.name}</Text><Text style={[s.body, increase && s.link]}>{increase ? `${exercise.weight} → ${exercise.weight + 2.5} kg` : 'Charge conservée'}</Text></View><Symbol name="chevron" size={18} color="textMuted" /></Pressable>{detail === exercise.id ? <Text style={[s.body, { marginTop: 10 }]}>{increase ? 'Haut de fourchette atteint avec aisance sur toutes les séries.' : 'Consolider les répétitions avant une augmentation de charge.'}</Text> : null}</View>;
-    })}{!p.exercises.length ? <Text style={s.body}>Séance libre : pas de charge à ajuster.</Text> : null}</Card>
+    <Card style={s.stack}><Text style={s.section}>Décisions</Text>{p.analysisError?<Text style={s.body}>{p.analysisError}</Text>:!p.analysis?<Text style={s.body}>Lecture de ta séance…</Text>:<><Text style={s.body}>{p.analysis.reply}</Text>{p.exercises.map(exercise=>{const change=p.analysis!.recommendations.find(r=>r.exerciseId===exercise.id);return <View key={exercise.id} style={[s.divider,{paddingTop:12}]}><Pressable accessibilityRole="button" accessibilityLabel={`Détail pour ${exercise.name}`} onPress={()=>setDetail(detail===exercise.id?null:exercise.id)} style={s.row}><Illustration name={exercise.icon} size={37}/><View style={s.grow}><Text style={s.label}>{exercise.name}</Text><Text style={s.body}>{change?`${change.weight} kg · ${change.targetReps} reps`:'Charge à calibrer'}</Text></View><Symbol name="chevron" size={18} color="textMuted"/></Pressable>{detail===exercise.id?<Text style={[s.body,{marginTop:10}]}>{change?.reason}</Text>:null}</View>;})}</>}</Card>
     <Button text="Données utilisées" leading={<Symbol name="clipboard" color="textMuted" />} trailing={<Symbol name="chevron" color="textMuted" />} variant="secondary" onPress={() => setDataVisible(!dataVisible)} />
-    {dataVisible ? <Card><Text style={s.body}>Charges, répétitions, ressenti des séries et douleurs du bilan. Énergie : {p.debrief.energy}/5. Les données restent en mémoire pendant ce parcours.</Text></Card> : null}
-    <Text style={s.caption}>Analyse de démonstration · règles locales, sans coach connecté.</Text>
-    {p.coachApplied ? <Text style={s.link}>Modifications appliquées au programme local.</Text> : null}
+    {dataVisible ? <Card><Text style={s.body}>Charges, répétitions, ressenti des séries et douleurs du bilan. Énergie : {p.debrief.energy}/5. Les données sont conservées avec la séance.</Text></Card> : null}
+    <Text style={s.caption}>Bilan fondé sur tes performances enregistrées.</Text>
+    {p.coachApplied ? <Text style={s.link}>Consignes enregistrées pour les prochaines séances.</Text> : null}
   </>;
 }

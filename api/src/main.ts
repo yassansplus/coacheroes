@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { raw } from 'express';
 
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -11,6 +12,8 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const corsOrigin = config.getOrThrow<string>('CORS_ORIGIN');
 
+  app.use('/api/onboarding/photos', raw({ type: 'application/octet-stream', limit: '8mb' }));
+  app.use('/api/nutrition/photos', raw({ type: 'application/octet-stream', limit: '8mb' }));
   app.setGlobalPrefix('api');
   app.enableCors({
     origin:

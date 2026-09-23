@@ -4,7 +4,9 @@ import { Children, createContext, useContext, useCallback, useEffect, useRef, us
 import { AccessibilityInfo, Animated, BackHandler, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { feedback } from '@/utils/feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { updateHomeSummary, useHomeSummary } from '@/store/homeSummary';
+import { useDaily } from '@/providers/DailyProvider';
+import { proposeDaily, type DailyData, type DailyProposal } from '@/services/daily';
+import { LoadingState } from '@/components/LoadingState';
 import { AppHeader } from '@/components/AppHeader';
 import { Banner } from '@/components/Banner';
 import { BodyPainSelector, type BodyPainSelection, type BodyPainSide } from '@/components/BodyPainSelector';
@@ -32,19 +34,25 @@ function Button(props: ComponentProps<typeof SharedButton>) {
 }
 const minutesLabel = (minutes: number) => `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
 const weightLabel = (weight: number) => weight.toFixed(1).replace('.', ',');
-const history = [78.5, 78.2, 77.9, 77.6, 77.4, 77.3, 77.5].map((value, day) => ({ day, value, label: ['L', 'M', 'M', 'J', 'V', 'S', 'D'][day] }));
+
 
 export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
-  const homeSummary = useHomeSummary();
-  const complete = () => { feedback('success'); updateHomeSummary({ sleepMinutes: sleep, energy: Number(energy), checkedIn: true }); onFinish(); };
+  const daily = useDaily();
+  const initialized = useRef<string | null>(null);
+  const [proposal, setProposal] = useState<DailyProposal | null>(null);
+  const [proposalBusy, setProposalBusy] = useState(false);
+  const [proposalError, setProposalError] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const draftRef = useRef<DailyData | null>(null);
+  const close = useCallback(async () => { try { if (draftRef.current) await daily.saveDraft(draftRef.current); onFinish(); } catch { setDraftError('Impossible de garder tes réponses. Réessaie avant de fermer.'); } }, [daily.saveDraft, onFinish]);
   const [page, setPage] = useState<Page>('overview');
   const [previousPage, setPreviousPage] = useState<Page>('overview');
-  const [weight, setWeight] = useState(77.5);
+  const [weight, setWeight] = useState(70);
   const [savedWeight, setSavedWeight] = useState<number | null>(null);
   const [weightSkipped, setWeightSkipped] = useState(false);
-  const [sleep, setSleep] = useState(homeSummary.sleepMinutes);
-  const [quality, setQuality] = useState('2');
-  const [energy, setEnergy] = useState(String(homeSummary.energy));
+  const [sleep, setSleep] = useState(480);
+  const [quality, setQuality] = useState('3');
+  const [energy, setEnergy] = useState('3');
   const [soreness, setSoreness] = useState('light');
   const [pains, setPains] = useState<BodyPainSelection[]>([]);
   const [side, setSide] = useState<BodyPainSide>('left');
@@ -61,15 +69,45 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
   const scroll = useRef<ScrollView>(null);
   const back = useCallback(() => {
     if (painVisible) { setPainVisible(false); return; }
-    if (page === 'overview') onFinish();
+    if (page === 'overview') void close();
     else setPage(page === 'adjustment' ? previousPage : 'overview');
-  }, [onFinish, page, painVisible, previousPage]);
+  }, [close, page, painVisible, previousPage]);
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => { back(); return true; });
     return () => subscription.remove();
   }, [back]);
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [page]);
-  function openAdjustment() { setPreviousPage(page); setPage('adjustment'); }
+  const data: DailyData = { weightKg: savedWeight, weightSkipped: savedWeight === null ? weightSkipped : false, sleepMinutes: sleep, sleepQuality: Number(quality), energy: Number(energy), soreness: soreness as DailyData['soreness'], pains };
+  draftRef.current = initialized.current ? data : null;
+  useEffect(() => {
+    if (daily.loading || !daily.status || initialized.current === daily.status.date) return;
+    const value = daily.draft ?? daily.status.row?.data;
+    setWeight(value?.weightKg ?? daily.status.reference?.weight ?? 70);
+    setSavedWeight(value?.weightKg ?? null); setWeightSkipped(value?.weightSkipped ?? false);
+    setSleep(value?.sleepMinutes ?? 480); setQuality(String(value?.sleepQuality ?? 3)); setEnergy(String(value?.energy ?? 3));
+    setSoreness(value?.soreness ?? 'light'); setPains((value?.pains ?? []) as BodyPainSelection[]);
+    initialized.current = daily.status.date;
+  }, [daily.loading, daily.status?.date, daily.draft]);
+  const serialized = JSON.stringify(data);
+  useEffect(() => {
+    if (!initialized.current || daily.loading) return;
+    const timer = setTimeout(() => { void daily.saveDraft(JSON.parse(serialized)).catch(() => undefined); }, 200);
+    return () => clearTimeout(timer);
+  }, [serialized, daily.loading, daily.saveDraft]);
+  async function complete(decision: 'none' | 'accepted' | 'declined' = 'none') {
+    const input = { ...data, weightSkipped: savedWeight === null };
+    if (await daily.complete(input, decision, decision === 'accepted' ? proposal : null)) { feedback('success'); onFinish(); }
+  }
+  function openAdjustment() {
+    setPreviousPage(page); setPage('adjustment'); setProposal(null); setProposalError(null); setProposalBusy(true);
+    void proposeDaily({ ...data, weightSkipped: savedWeight === null }).then(setProposal).catch(e => setProposalError(e.message)).finally(() => setProposalBusy(false));
+  }
+  const dayTime = Date.parse(`${daily.status?.date ?? new Date().toISOString().slice(0, 10)}T12:00:00Z`);
+  const recent = (daily.status?.history ?? []).filter(row => dayTime - Date.parse(`${row.date}T12:00:00Z`) < 7 * 86400000);
+  const previous = (daily.status?.history ?? []).filter(row => { const age = dayTime - Date.parse(`${row.date}T12:00:00Z`); return age >= 7 * 86400000 && age < 14 * 86400000; });
+  const average = recent.length ? recent.reduce((sum, row) => sum + row.weight, 0) / recent.length : null;
+  const delta = average !== null && previous.length ? average - previous.reduce((sum, row) => sum + row.weight, 0) / previous.length : null;
+  const history = recent.map(row => ({ day: Date.parse(`${row.date}T12:00:00Z`) / 86400000, value: row.weight, label: new Date(`${row.date}T12:00:00Z`).toLocaleDateString('fr-FR', { weekday: 'short' }) }));
   const step = page === 'overview' ? 1 : page === 'weight' ? 2 : 3;
   return <ReducedMotion.Provider value={reducedMotion}><View style={s.root}>
     <LinearGradient colors={gradients.onboarding} style={StyleSheet.absoluteFill} />
@@ -79,6 +117,10 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
         leading={<IconButton accessibilityLabel={page === 'overview' ? 'Fermer le bilan' : 'Retour'} variant="surface" icon={<Symbol name={page === 'overview' ? 'close' : 'back'} />} onPress={() => { selectionFeedback(); back(); }} />} />
         {page !== 'adjustment' ? <ProgressBar progress={step / 3 * 100} height={5} style={{ marginTop: 14, marginBottom: 8 }} /> : null}</View>
       <ScrollView ref={scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {daily.loading ? <LoadingState label="Chargement de ton bilan…" /> : null}
+        {draftError ? <Banner variant="error" message={draftError} /> : null}
+        {daily.error ? <Banner variant="error" message={daily.error} /> : null}
+        {!daily.status && !daily.loading ? <Button text="Réessayer" onPress={() => void daily.refresh()} /> : null}
         {page === 'overview' ? <EntranceGroup>
           <Text style={s.title}>Ton état ce matin</Text>
           <Text style={s.date}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
@@ -86,15 +128,16 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
           <SummaryCard icon="sleep" title="Sommeil" value={minutesLabel(sleep)} subtitle="À confirmer dans ton bilan" onPress={() => setPage('recovery')} />
           <SummaryCard icon="person" title="État physique" value="Faire le point avec le coach" onPress={openAdjustment} />
           <Banner message="Fais le point sur ton état pour préparer ta séance du jour." />
-          <Text style={s.caption}>Aperçu · les valeurs proposées sont des exemples modifiables.</Text>
+          <Text style={s.caption}>Confirme tes informations du jour avant de terminer.</Text>
         </EntranceGroup> : null}
         {page === 'weight' ? <EntranceGroup>
           <Text style={s.title}>Quel est ton poids ?</Text>
+          {daily.status?.reference ? <Text style={s.caption}>{daily.status.reference.date ? `Dernière pesée · ${new Date(`${daily.status.reference.date}T12:00:00Z`).toLocaleDateString('fr-FR')}` : 'Poids renseigné à l’inscription'} : {weightLabel(daily.status.reference.weight)} kg</Text> : null}
           <WeightSelectorV2 value={weight} onChange={setWeight} minimum={30} maximum={350} />
           <Card style={s.stack}><Text style={s.sectionTitle}>Moyenne sur 7 jours</Text>
-            <View style={s.row}><Text style={s.largeValue}>77,8 <Text style={s.body}>kg</Text></Text><Text style={s.trend}>−0,3 kg ↓</Text></View>
-            <LineChart data={history} accessibilityLabel="Exemple de poids sur sept jours : 78,5 ; 78,2 ; 77,9 ; 77,6 ; 77,4 ; 77,3 ; 77,5 kilogrammes." />
-            <Text style={s.caption}>Historique d’exemple</Text></Card>
+            <View style={s.row}><Text style={s.largeValue}>{average === null ? '—' : weightLabel(average)} <Text style={s.body}>kg</Text></Text>{delta === null ? null : <Text style={s.trend}>{delta > 0 ? '+' : ''}{weightLabel(delta)} kg</Text>}</View>
+            <LineChart data={history} accessibilityLabel="Tes pesées enregistrées sur les sept derniers jours" />
+            <Text style={s.caption}>{recent.length} pesée(s) sur les 7 derniers jours</Text></Card>
           <Banner message="La tendance compte plus qu’une variation quotidienne." />
         </EntranceGroup> : null}
         {page === 'recovery' ? <EntranceGroup>
@@ -114,22 +157,23 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
           <Card style={[s.row, s.recovery]}><Illustration name="sleep" size={58} /><View style={s.grow}><Text style={s.eyebrow}>RÉCUPÉRATION</Text>
             <Text style={s.sectionTitle}>Sommeil : {minutesLabel(sleep)}</Text><Text style={s.body}>Énergie : {energy}/5</Text></View></Card>
           <Text style={s.sectionTitle}>Modifications proposées</Text>
-          <ChangeCard icon="dumbbell" title="Volume total" before="16 séries" after="12 séries" />
-          <ChangeCard icon="performance" title="Intensité" before="RIR 1–2" after="RIR 2–3" />
-          <ChangeCard icon="flame" title="Finisher cardio" before="8 min" after="Retiré" removed />
-          <Button text="Pourquoi ces changements ?" variant="secondary" leading={<Symbol name="info" color="primary" />} onPress={() => setExplanationVisible(value => !value)} />
-          {explanationVisible ? <Entrance><Card><Text style={s.body}>Cet exemple illustre une séance allégée : moins de séries, davantage de répétitions en réserve (RIR) et aucun finisher cardio. Le coach pourra proposer un ajustement à partir de ton bilan lorsque le service sera connecté.</Text></Card></Entrance> : null}
-          <Text style={s.caption}>Proposition d’exemple · aucune séance réelle n’est modifiée.</Text>
+          {proposalBusy ? <LoadingState label="Préparation de l’ajustement…" /> : null}
+          {proposalError ? <><Banner variant="error" message={proposalError} /><Button text="Réessayer" onPress={openAdjustment} /></> : null}
+          {proposal?.changes.map((change, index) => <ChangeCard key={change.title} icon={index ? 'performance' : 'dumbbell'} {...change} />)}
+          {proposal && !proposal.changes.length ? <Banner message={proposal.reason} /> : null}
+          {proposal?.changes.length ? <Button text="Pourquoi ces changements ?" variant="secondary" leading={<Symbol name="info" color="primary" />} onPress={() => setExplanationVisible(value => !value)} /> : null}
+          {explanationVisible && proposal ? <Entrance><Card><Text style={s.body}>{proposal.reason}</Text></Card></Entrance> : null}
+          <Text style={s.caption}>L’ajustement concerne uniquement la séance du jour, après ta validation.</Text>
         </EntranceGroup> : null}
       </ScrollView>
       <View style={s.footer}>
         <Entrance key={page}>
-        {page === 'overview' ? <><Button text="Continuer" onPress={() => setPage(savedWeight !== null || weightSkipped ? 'recovery' : 'weight')} /><Button text="Plus tard" variant="secondary" backgroundColor="transparent" onPress={onFinish} /></> : null}
+        {page === 'overview' ? <><Button text="Continuer" onPress={() => setPage(savedWeight !== null || weightSkipped ? 'recovery' : 'weight')} /><Button text="Plus tard" variant="secondary" backgroundColor="transparent" onPress={() => void close()} /></> : null}
         {page === 'weight' ? <><Button text="Enregistrer mon poids" onPress={() => { setSavedWeight(weight); setWeightSkipped(false); setPage('recovery'); }} />
           <Button text="Ignorer aujourd’hui" variant="secondary" backgroundColor="transparent" onPress={() => { setWeightSkipped(savedWeight === null); setPage('recovery'); }} /></> : null}
-        {page === 'recovery' ? <View style={s.actions}><Button text="Terminer mon bilan" onPress={complete} style={s.grow} textStyle={s.actionText} />
+        {page === 'recovery' ? <View style={s.actions}><Button text="Terminer mon bilan" disabled={daily.busy || daily.loading || !daily.status} onPress={() => void complete()} style={s.grow} textStyle={s.actionText} />
           <Button text="Adapter ma séance" variant="outline" onPress={openAdjustment} style={s.grow} textStyle={s.actionText} /></View> : null}
-        {page === 'adjustment' ? <><Button text="Appliquer l’ajustement" onPress={complete} /><Button text="Garder la séance initiale" variant="outline" onPress={complete} /></> : null}
+        {page === 'adjustment' ? <><Button text="Appliquer l’ajustement" disabled={daily.busy || proposalBusy || !proposal?.id || !proposal.changes.length} onPress={() => void complete('accepted')} /><Button text="Garder la séance initiale" variant="outline" disabled={daily.busy || daily.loading || !daily.status} onPress={() => void complete('declined')} /></> : null}
         </Entrance>
       </View>
     </SafeAreaView>

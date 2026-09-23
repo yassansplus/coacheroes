@@ -41,9 +41,32 @@ métier. Le layout Expo Router est toujours nommé `_layout.tsx`.
   précharge les PNG 3D avec `Image.prefetch` afin d'éviter leur apparition
   progressive au premier affichage.
 - `AppProviders` accueille les providers applicatifs partagés; il contient
-  actuellement `SafeAreaProvider`.
+  actuellement `SafeAreaProvider` et `SessionProvider`. `SessionGate` protège les écrans selon la session et la finalisation de l’onboarding.
 - Les groupes `(auth)` et `(app)` sont réservés aux routes publiques et
   connectées. Les créer au moment où leurs premières routes existent.
+
+### Développement iOS avec la development build
+
+- La connexion Apple réelle se teste dans la development build iOS Coac Heroes,
+  pas dans Expo Go : Expo Go utilise un identifiant d’application différent et
+  ses jetons Apple ne correspondent pas à `com.yassansplus.coacheroes`.
+- La build est installée une fois via EAS. Pour développer ensuite, démarrer
+  l’API dans un terminal avec `cd api && npm run start:dev`, puis Metro dans un
+  autre avec `cd mobile && npx expo start --dev-client --lan`. Scanner le QR
+  code Metro, ou saisir l’URL `exp://…`, dans la development build. Le champ
+  manuel de la development build ne reçoit jamais l’URL HTTP de l’API.
+- L’iPhone et le poste doivent être sur le même réseau. En développement,
+  `mobile/.env.local` définit `EXPO_PUBLIC_API_URL` avec l’adresse LAN du poste,
+  par exemple `http://192.168.1.4:3000/api`; ce fichier reste ignoré par Git.
+- Une modification TypeScript, React, styles, routes, composants ou backend ne
+  nécessite pas de nouvelle build : Metro applique le rechargement rapide et
+  l’API redémarre via son watcher. Après un changement de variable
+  `EXPO_PUBLIC_*`, redémarrer Metro puis recharger l’application suffit en
+  development build.
+- Refaire une development build seulement après une modification native :
+  dépendance contenant du code iOS, plugin Expo, `app.json`/`app.config`,
+  entitlement, permission iOS ou changement de bundle identifier. Une build de
+  production devra naturellement être recréée pour livrer ces changements.
 
 ## Features
 
@@ -289,12 +312,17 @@ visuel des composants, accessible sur `/components`. Il présente les boutons, c
 contrôles de sélection, formulaires, feedback, états d'écran, calendrier et
 primitives de navigation, ainsi qu'un exemple complet de saisie de douleurs.
 
-L'accueil `/` présente désormais l'onboarding. Les 16 maquettes de
-`FitBuddy_Onboarding_01-16` servent de référence. Les réponses et les URI des
-photos restent en mémoire pendant la session : aucune authentification, aucun
-upload, aucune génération IA ni persistance n'est effectuée. Le récapitulatif
-permet de modifier une étape puis d'y revenir. Le programme final est un aperçu,
-avec une semaine dérivée des disponibilités et des sports sélectionnés.
+L’accueil `/` présente le tableau de bord aux comptes ayant terminé leur onboarding.
+Le visiteur et le compte incomplet sont redirigés vers `/onboarding`. Le parcours
+utilise Apple sur iOS et sauvegarde ses étapes dans l’API NestJS/PostgreSQL via
+TypeORM. Les corrections mettent à jour la même ligne métier et sont historisées
+séparément dans une transaction. Les photos sont privées et stockées côté serveur.
+La finalisation enregistre le profil puis lance la génération du programme avec
+l’API OpenAI et les outils de recherche sur `https://wger.de/api/v2/` uniquement
+(aucun hébergement wger). Le loader suit les phases persistées du serveur.
+`/program` affiche le résultat sauvegardé. Les corrections mettent à jour la même
+ligne `training_programs` et conservent les versions dans le journal. Voir
+`docs/program-generation.md` pour les schémas du flux et les limites du lot. Voir `api/README.md` et le README de la feature onboarding.
 
 `ChoiceCard` est la carte de choix avec indicateur visible (rôle `radio` ou
 `checkbox`), déclinée en tuile, ligne ou chip. Elle complète `SelectableCard`
@@ -346,6 +374,8 @@ marqueurs interactifs sont toujours rendus par `BodyPainSelector`.
 
 - `expo-router` : navigation et routes.
 - `expo-haptics` : retour haptique optionnel des boutons.
+- `expo-apple-authentication`, `expo-secure-store` : connexion Apple iOS et session sécurisée.
+- `expo-file-system`, `expo-crypto` : transfert/cache privé des photos et identifiants de sauvegarde.
 - `expo-image-picker` : choix local de photos et prise de vue facultative.
 - `expo-linear-gradient` : dégradé du bouton primaire.
 - `react-native-svg` : anneaux et indicateurs de progression personnalisables.
@@ -387,3 +417,56 @@ Après une modification TypeScript du mobile, exécuter :
 ```bash
 cd mobile && ./node_modules/.bin/tsc --noEmit
 ```
+
+## Chat de préparation et programme multisport
+
+Le chat onboarding utilise `src/components/PreparationChat`, les bulles partagées
+`ChatMessages`, `src/hooks/usePreparationChat` et `src/services/chat`. Les features
+ne doivent pas importer les composants internes de la feature coach. Le backend
+`api/src/chat` conserve la conversation et applique les réponses au profil dans
+une transaction avec historique séparé. Le prénom Apple est facultatif à la
+connexion et demandé par le chat uniquement s’il manque.
+Le budget de séances inclut tous les sports sélectionnés. Les cours fixes sont
+respectés ; les autres jours sont organisés par le générateur. Les séances hors
+musculation utilisent des blocs chronométrés, affichés aussi pendant la séance.
+Les conseils détaillés sont repliés et les textes du coach restent courts.
+Voir `docs/onboarding-chat.md` pour le flux et les tests. Le chat quotidien reste
+un prototype ; ne pas le présenter comme connecté au nouveau backend.
+
+## Proposition et validation du programme
+
+Un programme généré (`ready`) reste une proposition tant que `acceptedAt` est nul.
+`ProgramProposal` porte le récapitulatif, le chat `program_review` et le bouton
+« Valider mon programme ». Après validation serveur de `proposalId`, `/program`
+revient à `ProgramScreen` / `ProgramOverview` avec les séances générées. Ne pas
+remplacer cette interface quotidienne par le récapitulatif. Les questions du chat
+ne modifient rien ; une demande d’ajustement produit une nouvelle proposition
+historisée. Une réponse IA ne peut jamais valider à la place de l’utilisateur.
+La semaine affichée et le nombre d’exercices utilisent les données réelles.
+
+Le chat de revue du programme s’ouvre dans un `BottomSheet` depuis « Discuter
+avec mon coach ». Le champ de saisie reste dans le footer du drawer, séparé des
+messages défilants ; sa fermeture conserve le brouillon et le polling. La
+validation reste sur le récapitulatif. `AppNavbar` utilise `useKeyboardVisible`
+pour se masquer pendant l’affichage du clavier sur tous les écrans.
+
+## Journal et sélection des exercices
+
+Les suppressions explicites dans `journal_entries` sont autorisées par la migration `AllowJournalDeletion1790400000000`. Les UPDATE y restent bloqués ; les corrections métier continuent de mettre à jour leur ligne et de créer une entrée distincte. Les messages de chat restent immuables. Ne pas supprimer de données lors d’une migration de permission.
+
+Le coach choisit directement des exercices simples adaptés au profil, avec priorité aux polyarticulaires sauf restriction ou difficulté technique inadaptée. Les consignes communes sont dans `api/src/program/exercise-policy.ts`. Aucun agent distinct de classification de difficulté n’est utilisé. Voir `docs/ai-model-comparison.md` pour le comparatif documentaire et les limites de validation.
+
+Le routage OpenAI est centralisé dans `api/src/config/ai-models.ts` : Sol/high pour génération et ajustements (`OPENAI_PROGRAM_MODEL`), Terra/medium pour discussion sur le programme (`OPENAI_REVIEW_MODEL`), Luna/low pour extraction onboarding (`OPENAI_ONBOARDING_MODEL`). Astra est exclu. `OPENAI_MODEL` est ignorée. Les traces conservent modèle et effort par appel métier.
+
+Le ton du coach est centralisé dans `api/src/ai/coach-voice.ts` : style SMS, une idée et 5 à 25 mots par défaut, 40 maximum si nécessaire. Les détails viennent sur demande explicite. Le prompt contient des exemples et interdit les introductions administratives, les encouragements systématiques et la répétition du prénom. Les champs techniques gardent leur précision.
+
+## Entraînements enregistrés
+
+La persistance des séances est dans `api/src/workouts/` : une ligne `workout_sessions` par séance, snapshot validé avec UUID stables par série, révision et journal transactionnel. Les reçus `workout_write_receipts` survivent à une suppression du journal. `program_blocks` archive chaque programme validé. Ne pas mélanger prescription et réalisation.
+Le mobile passe par `src/services/workouts/` et `src/storage/workouts.ts` (cache persistant par compte, file de synchronisation et reprise). Les composants existants conservent leur mise en page. Voir `docs/workout-history.md`, notamment les mesures inconnues, les conflits de révision et la projection anonyme autorisée explicitement pour l’analyse IA et le renouvellement des programmes.
+
+L’envoi à OpenAI des données utiles des séances, ressentis, douleurs et bilans a été explicitement autorisé le 22 septembre 2026, sans nom ni email. Utiliser `api/src/workouts/ai-context.ts`, Sol/high et les schémas existants. Les tests simulent les réponses ; ne pas lancer de générations payantes pour tester sans nécessité autorisée.
+
+## Bilan quotidien
+
+Le parcours `daily-check-in` utilise `DailyProvider`, `src/services/daily/` et `src/storage/daily.ts`, avec le backend `api/src/daily/`. Une ligne métier par compte/date locale, corrections historisées et requêtes idempotentes. Distinguer « ouvert » de « terminé » : ouverture automatique après 7 h une seule fois, rappel push à 9 h uniquement si non terminé. L’accueil présente un **IconButton uniquement**, calendrier avec halo discret, même après une séance terminée ; il disparaît après validation du bilan. Ne pas le remplacer par un bouton texte. Le poids de référence vient de la veille, sinon de la dernière pesée puis de l’inscription ; aucune mesure manquante n’est inventée. Les ajustements acceptés concernent uniquement la séance du jour avant démarrage. Voir `docs/daily-check-in.md` pour les règles, les notifications, le rebuild natif requis et les limites hors ligne.

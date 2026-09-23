@@ -8,7 +8,7 @@ export const questionGroups: { title: string; questions: { text: string; icon: I
     { text: 'Puis-je ajouter une séance de boxe ?', icon: 'boxing', tone: 'red' },
   ] },
   { title: 'Nutrition', questions: [
-    { text: 'Que manger avec 430 kcal ?', icon: 'cutlery', tone: 'green' },
+    { text: 'Que manger avec mes calories restantes ?', icon: 'cutlery', tone: 'green' },
     { text: 'Combien de protéines me reste-t-il ?', icon: 'shaker', tone: 'red' },
   ] },
   { title: 'Progression', questions: [
