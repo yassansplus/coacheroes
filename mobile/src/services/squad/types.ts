@@ -1,0 +1,17 @@
+export type SportCount = { sport: string; count: number };
+export type SharedStats = { sessionsWeek: number; sessions28: number | null; attendance: number | null; streak: number | null;
+  weekly: { date: string; count: number }[]; sports: SportCount[]; records: { id: string; title: string; value: string }[] };
+export type SquadPerson = { id: string; name: string; role?: 'owner' | 'member'; details: boolean; isFriend?: boolean;
+  shareActivity: boolean; stats: SharedStats };
+export type SquadGroup = { id: string; name: string; owner_id?: string; ownerId?: string; revision: number; member_count?: number;
+  memberCount?: number; sessionsWeek?: number; attendance?: number | null };
+export type SquadActivity = { id: string; userId: string; at: string; sport: string; minutes: number };
+export type SquadChallenge = { id: string; groupId: string; title: string; targetSessions: number; currentSessions: number;
+  minMinutes: number; startsAt: string; endsAt: string; contributions: { userId: string; count: number }[] };
+export type SquadOverview = { self: SquadPerson; friends: SquadPerson[]; groups: SquadGroup[]; inboxCount: number;
+  preferences: { shareActivity: boolean; shareRecords: boolean; revision: number }; activity: SquadActivity[] };
+export type SquadGroupDetail = { group: SquadGroup; members: SquadPerson[]; activeChallenge: SquadChallenge | null;
+  challengeHistory: SquadChallenge[]; activity: SquadActivity[] };
+export type SquadInvitation = { id: string; kind: 'friend' | 'group'; group_id: string | null; group_name: string | null;
+  inviter_name?: string | null; invitee_name?: string | null; status?: string; created_at: string; expires_at: string };
+export type SquadInvitations = { incoming: SquadInvitation[]; outgoing: SquadInvitation[] };
