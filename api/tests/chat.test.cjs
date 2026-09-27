@@ -4,6 +4,8 @@ const { Nutrition1790700000000 } = require('../dist/database/migrations/17907000
 const { NutritionCoachOpinions1790800000000 } = require('../dist/database/migrations/1790800000000-NutritionCoachOpinions');
 const { CoachConversations1790900000000 } = require('../dist/database/migrations/1790900000000-CoachConversations');
 const { CoachTablePrivileges1791000000000 } = require('../dist/database/migrations/1791000000000-CoachTablePrivileges');
+const { ProgramRenewal1791100000000 } = require('../dist/database/migrations/1791100000000-ProgramRenewal');
+const { Progression1791200000000 } = require('../dist/database/migrations/1791200000000-Progression');
 const { AllowJournalDeletion1790400000000 } = require('../dist/database/migrations/1790400000000-AllowJournalDeletion');
 require('reflect-metadata');
 const { ProgramAcceptance1790300000000 } = require('../dist/database/migrations/1790300000000-ProgramAcceptance');
@@ -81,7 +83,7 @@ test('chat uses strict structured output, concise instructions and no provider s
   finally { global.fetch = original; }
 });
 test('durable onboarding chat persists corrections, deduplicates retries, isolates users and starts generation', async t => {
-  const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities, migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+  const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities, migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
   await db.initialize(); await db.runMigrations(); t.after(() => db.destroy());
   const users = db.getRepository(User), profiles = db.getRepository(Onboarding), conversations = db.getRepository(ChatConversation), messages = db.getRepository(ChatMessage);
   const user = await users.save({ appleSubject: 'chat-owner' }), other = await users.save({ appleSubject: 'chat-other' });

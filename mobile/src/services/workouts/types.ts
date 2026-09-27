@@ -18,6 +18,6 @@ export type WorkoutSnapshot = { workout: Workout; exercises: Exercise[]; started
  resume: {page:'warmup'|'training'|'rest'|'debrief'|'summary'|'coach';exerciseIndex:number;deadline:number|null;timerDuration:number;rir:number;autoRest:boolean;guidedWarmup:boolean;restHaptics:boolean} };
 export type WorkoutRecord = { id:string;revision:number;status:WorkoutSnapshot['status'];snapshot:WorkoutSnapshot;startedAt:string;endedAt:string|null;summary:{volume:number;sets:number;durationSeconds:number;pain:boolean} };
 export type ExerciseHistoryEntry = {record?:{weight:number;reps:number}|null;sessionId:string;startedAt:string;endedAt:string|null;exercise:Exercise;debrief:Debrief;pain:boolean;next?:{weight:number;targetReps:number;reason:string}|null};
-export type BlockProgress = {id:string;currentWeek:number;weeks:number;due:boolean;recommendation:'continue'|'renew'|'review_restrictions';completed:number;abandoned:number;volume:number;durationSeconds:number;pain:boolean;occurrences:{week:number;sessionIndex:number;date:string;status:string}[]};
+export type BlockProgress = {id:string;startedAt:string;endsAt:string;currentWeek:number;weeks:number;due:boolean;recommendation:'continue'|'renew'|'review_restrictions';completed:number;abandoned:number;volume:number;durationSeconds:number;pain:boolean;occurrences:{week:number;sessionIndex:number;date:string;status:string}[]};
 
 export type WorkoutAnalysis={sourceRevision:number;reply:string;recommendations:{exerciseId:string;weight:number;targetReps:number;reason:string}[]};

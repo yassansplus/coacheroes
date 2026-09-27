@@ -6,5 +6,5 @@ export default function ProgramRoute() {
   const onExit = from === 'squad' || from === 'game' ? () => {
     if (router.canGoBack()) router.back(); else router.replace((from === 'game' ? '/game' : '/squad') as Href);
   } : undefined;
-  return <><Stack.Screen options={{ gestureEnabled: false }} /><GeneratedProgramScreen onExit={onExit} onHome={() => router.dismissTo('/')} onProgress={() => router.push('/progression' as Href)} onCoach={() => router.push('/coach')} onProfile={() => router.push('/profile' as Href)} onEditProfile={() => router.push('/onboarding?edit=14' as Href)} /></>;
+  return <><Stack.Screen options={{ gestureEnabled: false }} /><GeneratedProgramScreen onExit={onExit} onHome={() => router.dismissTo('/')} onProgress={() => router.push('/progression' as Href)} onCoach={() => router.push('/coach')} onProfile={() => router.push('/profile' as Href)} onEditProfile={() => router.push('/onboarding?edit=14' as Href)} onBlockReview={blockId => router.push(`/program/renewal?blockId=${encodeURIComponent(blockId)}` as Href)} onHistory={() => router.push('/program/history' as Href)} /></>;
 }

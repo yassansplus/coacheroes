@@ -2,10 +2,10 @@ import { useDaily } from '@/providers/DailyProvider';
 import { useTrainingProgramState } from '@/providers/TrainingProgramProvider';
 import { dailyDate } from '@/services/daily';
 import { DailyCheckInButton } from '../components/DailyCheckInButton';
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useSession } from '@/providers/SessionProvider';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppNavbar, type AppNavTab } from '@/components/AppNavbar';
 import { Button } from '@/components/Button';
@@ -22,10 +22,15 @@ import { fontFamily } from '@/theme/typography';
 import { useGameProgress } from '@/store/gameProgress';
 import { useMetricMotion } from '@/hooks/useMetricMotion';
 import { useCompletedDailyWorkout } from '../hooks/useCompletedDailyWorkout';
+import { blockProgress } from '@/services/workouts';
+import { loadSquad, loadSquadGroup, type SquadChallenge } from '@/services/squad';
+import { readSelectedSquadGroup } from '@/storage/squad';
+import { useProfileAvatar } from '@/hooks/useProfileAvatar';
 
 type Props = {
   onTab: (tab: AppNavTab) => void;
   onWorkout: () => void;
+  onBlockReview: (id: string) => void;
   onNutrition: () => void;
   onAddMeal: () => void;
   onCheckIn: () => void;
@@ -40,8 +45,10 @@ function RoundIcon({ name, glyph, background, color, size = 36 }: { name?: Illus
 function Stat({ icon, children, progress, tint, animated = false }: { icon: ReactNode; children: ReactNode; progress: number; tint: readonly [string, string]; animated?: boolean }) {
   return <View style={s.row}>{icon}<View style={s.grow}><Text numberOfLines={1} adjustsFontSizeToFit style={s.statText}>{children}</Text><ProgressBar progress={progress} animated={animated} height={7} gradientColors={tint} style={{ marginTop: 7 }} /></View></View>;
 }
-export function HomeScreen({ onTab, onWorkout, onNutrition, onAddMeal, onCheckIn, onNotifications, onMissions, onLevel, onSquad }: Props) {
+export function HomeScreen({ onTab, onWorkout, onBlockReview, onNutrition, onAddMeal, onCheckIn, onNotifications, onMissions, onLevel, onSquad }: Props) {
   const { user, refresh } = useSession();
+  const { uri: profileAvatarUri } = useProfileAvatar();
+  const [squad, setSquad] = useState<{ name: string | null; members: number; challenge: SquadChallenge | null }>({ name: null, members: 0, challenge: null });
   const trainingProgram = useTrainingProgramState();
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -55,9 +62,32 @@ export function HomeScreen({ onTab, onWorkout, onNutrition, onAddMeal, onCheckIn
       const targets = data.plan?.status === 'ready' ? data.plan.targets : null;
       updateHomeSummary({ calories: total.calories, protein: total.protein, calorieGoal: targets?.calories ?? null, proteinGoal: targets?.protein ?? null });
     }).catch(() => undefined);
+    if (user?.id) void loadSquad().then(async data => {
+      const selected = await readSelectedSquadGroup(user.id);
+      const group = data.groups.find(item => item.id === selected) ?? data.groups[0];
+      const detail = group ? await loadSquadGroup(group.id) : null;
+      if (active) setSquad({ name: detail?.group.name ?? null, members: detail?.group.memberCount ?? 0, challenge: detail?.activeChallenge ?? null });
+    }).catch(() => { if (active) setSquad({ name: null, members: 0, challenge: null }); });
     return () => { active = false; };
   }, [refresh, trainingProgram.refresh, user?.id]));
   const workoutCompleted = useCompletedDailyWorkout();
+  const program = trainingProgram.program;
+  const activeProgram = program?.acceptedAt && program.status === 'ready' && !program.stale ? program : null;
+  const [dueBlock, setDueBlock] = useState<string | null>(null);
+  useFocusEffect(useCallback(() => {
+    if (!activeProgram) { setDueBlock(null); return; }
+    let alive = true;
+    void blockProgress(activeProgram.proposalId).then(block => { if (alive) setDueBlock(block.due ? activeProgram.proposalId : null); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [activeProgram?.proposalId]));
+  const isDue = Boolean(activeProgram && dueBlock === activeProgram.proposalId);
+  const isPreparing = Boolean(program?.previousBlockId && !program.acceptedAt);
+  const day = (new Date().getDay() + 6) % 7;
+  const todaySession = activeProgram?.result?.sessions.find(session => session.weekday === day);
+  const hasWorkout = Boolean(activeProgram && todaySession && !isDue && !workoutCompleted);
+  const heroTitle = isPreparing ? 'La suite se prépare' : isDue ? 'Bloc terminé !' : workoutCompleted ? 'Bien joué !' : todaySession?.name ?? (activeProgram ? 'Jour de récup' : 'Mon programme');
+  const heroSubtitle = isPreparing ? 'Ton prochain programme arrive. Tu peux revoir le précédent.' : isDue ? 'Ton bilan t’attend dans Mon programme.'
+    : workoutCompleted ? 'Séance du jour validée. Place à la récup !' : todaySession ? `${todaySession.sport === 'strength' ? 'Musculation' : todaySession.sport} · ${todaySession.estimatedMinutes} min` : 'Profite de cette journée pour récupérer.';
   const daily = useDaily();
   const needsDaily = daily.status?.date !== dailyDate() || !daily.status.row?.completed_at;
   const firstName = user?.firstName?.trim();
@@ -75,26 +105,28 @@ export function HomeScreen({ onTab, onWorkout, onNutrition, onAddMeal, onCheckIn
         <Illustration name="logo" size={34} />
         <View style={s.grow}><Text style={s.brand}>Fit<Text style={{ color: colors.googleBlue }}>Buddy</Text></Text><Text style={s.tagline}>Plus forts, ensemble</Text></View>
         <View><IconButton size={42} accessibilityLabel="Notifications" backgroundColor={colors.onboardingBackground} icon={<Symbol name="bell" size={23} />} onPress={onNotifications} /><View pointerEvents="none" style={s.notification} /></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Mon profil" onPress={() => onTab('profile')} style={s.avatar}><Illustration name="coach" size={44} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Mon profil" onPress={() => onTab('profile')} style={s.avatar}>
+          {profileAvatarUri ? <Image source={{ uri: profileAvatarUri }} style={{ width: 44, height: 44 }} resizeMode="cover" /> : <Illustration name="coach" size={44} />}
+        </Pressable>
       </View>
       <View style={{ marginVertical: 7 }}><Text style={s.greeting}>{firstName && firstName !== 'toi' ? `Bonjour ${firstName}` : 'Bonjour'}</Text><Text style={s.date}>Aujourd’hui · {date.charAt(0).toUpperCase() + date.slice(1)}</Text></View>
 
       <Card style={s.workout}>
         <View style={[s.row, { alignItems: 'center' }]}>
           <View style={{ flex: 1.5, gap: 6 }}>
-            <View style={s.badge}><Text style={s.badgeText}>{workoutCompleted ? 'SÉANCE TERMINÉE' : 'SÉANCE DU JOUR'}</Text></View>
-            <Text style={s.workoutTitle}>{workoutCompleted ? 'Bien joué !' : 'Muscu A'}</Text>
-            <Text style={s.date}>{workoutCompleted ? 'Séance du jour validée. Place à la récup !' : 'Haut du corps · 60 min'}</Text>
+            <View style={s.badge}><Text style={s.badgeText}>{isDue ? 'FIN DE BLOC' : isPreparing ? 'PROCHAIN PROGRAMME' : workoutCompleted ? 'SÉANCE TERMINÉE' : todaySession ? 'SÉANCE DU JOUR' : 'MON PROGRAMME'}</Text></View>
+            <Text numberOfLines={2} adjustsFontSizeToFit style={s.workoutTitle}>{heroTitle}</Text>
+            <Text style={s.date}>{heroSubtitle}</Text>
           </View>
-          <View style={s.heroIcon}><Illustration name={workoutCompleted ? "trophy" : "dumbbell"} size={100} /></View>
+          <View style={s.heroIcon}><Illustration name={workoutCompleted || isDue ? "trophy" : "dumbbell"} size={100} /></View>
         </View>
-        {!workoutCompleted ? <><View style={[s.row, { gap: 6 }]}>
-          <View style={s.chip}><RoundIcon name="dumbbell" background={colors.primarySurface} size={29} /><View style={s.grow}><Text style={s.chipTitle}>8 exercices</Text><Text style={s.small}>Haut du corps</Text></View></View>
-          <View style={s.chip}><RoundIcon glyph="target" color={colors.success} background={colors.successSurface} size={29} /><View style={s.grow}><Text style={s.chipTitle}>Objectifs</Text><Text style={s.small}>Force & volume</Text></View></View>
+        {hasWorkout ? <><View style={[s.row, { gap: 6 }]}>
+          <View style={s.chip}><RoundIcon name="dumbbell" background={colors.primarySurface} size={29} /><View style={s.grow}><Text style={s.chipTitle}>{todaySession?.exercises.length ?? 0} exercices</Text><Text style={s.small}>{todaySession?.sport === 'strength' ? 'Musculation' : todaySession?.sport}</Text></View></View>
+          <View style={s.chip}><RoundIcon glyph="target" color={colors.success} background={colors.successSurface} size={29} /><View style={s.grow}><Text style={s.chipTitle}>Séance</Text><Text style={s.small}>{todaySession?.estimatedMinutes ?? 0} min prévues</Text></View></View>
         </View>
         </> : null}
-        {!workoutCompleted || needsDaily ? <View style={[s.row, { gap: 10, flexWrap: 'wrap' }]}>
-          {!workoutCompleted ? <Button text="Commencer la séance" onPress={onWorkout} hapticFeedback="medium" trailing={<Symbol name="arrow" color="white" />} radius={16} containerStyle={{ flex: 1, minWidth: 150 }} /> : null}
+        {hasWorkout || isDue || isPreparing || needsDaily ? <View style={[s.row, { gap: 10, flexWrap: 'wrap' }]}>
+          {hasWorkout || isDue || isPreparing ? <Button text={isDue ? 'Voir mon bilan' : isPreparing ? 'Voir la proposition' : 'Commencer la séance'} onPress={() => isDue && activeProgram ? onBlockReview(activeProgram.proposalId) : onWorkout()} hapticFeedback="medium" trailing={<Symbol name="arrow" color="white" />} radius={16} containerStyle={{ flex: 1, minWidth: 150 }} /> : null}
           {needsDaily ? <DailyCheckInButton onPress={onCheckIn} /> : null}
         </View> : null}
       </Card>
@@ -127,7 +159,7 @@ export function HomeScreen({ onTab, onWorkout, onNutrition, onAddMeal, onCheckIn
       </Pressable><Button text="Voir les missions" variant="secondary" backgroundColor={colors.warningSurface} textColor={colors.energy} onPress={onMissions} hapticFeedback leading={undefined} trailing={<Symbol name="chevron" size={12} color="energy" />} style={{ paddingHorizontal: 8, minHeight: 38, gap: 3 }} textStyle={{ fontSize: 9 }} /></Card>
 
       <Pressable accessibilityRole="button" accessibilityLabel="Squad : voir le challenge collectif" onPress={onSquad}>
-        <Card style={[s.row, { padding: 16, gap: 12 }]}><RoundIcon glyph="users" background={colors.primarySurface} size={50} /><View style={s.grow}><Text style={s.section}>Squad</Text><Text style={[s.date, { marginTop: 2 }]}>Challenge collectif</Text><View style={[s.row, { marginTop: 8, flexWrap: 'wrap', gap: 8 }]}><View style={[s.row, { gap: 4 }]}><Illustration name="shoe" size={22} /><Text style={s.small}><Text style={s.bold}>14</Text> / 20 séances</Text></View><View style={[s.row, { gap: 4 }]}><Symbol name="calendar" size={18} color="energy" /><Text style={s.small}>3 jours restants</Text></View></View></View><Symbol name="chevron" color="textSecondary" size={18} /></Card>
+        <Card style={[s.row, { padding: 16, gap: 12 }]}><RoundIcon glyph="users" background={colors.primarySurface} size={50} /><View style={s.grow}><Text style={s.section}>Squad</Text><Text style={[s.date, { marginTop: 2 }]}>{squad.challenge?.title ?? squad.name ?? 'Amis et groupes'}</Text><View style={[s.row, { marginTop: 8, flexWrap: 'wrap', gap: 8 }]}><View style={[s.row, { gap: 4 }]}><Illustration name="shoe" size={22} /><Text style={s.small}>{squad.challenge ? <><Text style={s.bold}>{squad.challenge.currentSessions}</Text> / {squad.challenge.targetSessions} séances</> : squad.name ? <><Text style={s.bold}>{squad.members}</Text> membres</> : 'Crée ton Squad'}</Text></View><View style={[s.row, { gap: 4 }]}><Symbol name="calendar" size={18} color="energy" /><Text style={s.small}>{squad.challenge ? `${Math.max(0, Math.ceil((Date.parse(squad.challenge.endsAt) - Date.now()) / 86400000))} jours restants` : 'Voir mon Squad'}</Text></View></View></View><Symbol name="chevron" color="textSecondary" size={18} /></Card>
       </Pressable>
     </ScrollView>
     <AppNavbar includeCoach value="today" onChange={onTab} style={{ marginHorizontal: 14, marginBottom: 5 }} />

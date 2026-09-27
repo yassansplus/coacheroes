@@ -2,6 +2,7 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 import { COACH_VOICE } from '../ai/coach-voice';
+import { anonymousData } from '../workouts/ai-context';
 import { aiSettings } from '../config/ai-models';
 import { EXERCISE_SELECTION_POLICY } from '../program/exercise-policy';
 import type { GenerationOutput } from '../program/generator';
@@ -62,7 +63,7 @@ Ne valide jamais le programme : seul le bouton de validation de l'utilisateur le
 Ne délivre aucune autorisation médicale. Ne promets ni résultats ni charges inventées.
 ${EXERCISE_SELECTION_POLICY}
 ${COACH_VOICE}`,
-        input: [{ role: 'user', content: JSON.stringify({ context, program: { result: program.result, exercises: program.exercises }, recentMessages: previous.slice(-12), message: text }) }],
+        input: [{ role: 'user', content: JSON.stringify(anonymousData({ context, program: { result: program.result, exercises: program.exercises }, recentMessages: previous.slice(-12), message: text }, context.firstName)) }],
         text: { format: { type: 'json_schema', name: 'program_review', strict: true, schema } } }),
     });
     if (!response.ok) throw new Error(`CHAT_OPENAI_${response.status}`);

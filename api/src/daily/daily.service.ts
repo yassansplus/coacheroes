@@ -5,6 +5,7 @@ import { JournalEntry, Onboarding, User } from '../database/entities';
 import { ProgramBlock } from '../workouts/workout.entity';
 import { TrainingProgram } from '../program/program.entity';
 import { dailyWriteSchema, localClock, type DailyData } from './daily.schema';
+import { weightTimeline } from '../progression/weight-timeline';
 import type { z } from 'zod';
 
 @Injectable()
@@ -17,12 +18,12 @@ export class DailyService {
     await this.preference(userId,timezone);
     const {date,hour}=localClock(timezone);
     const [row]=await this.db.query('SELECT *, date::text AS date FROM daily_check_ins WHERE user_id=$1 AND date=$2',[userId,date]);
-    const history=await this.db.query(`SELECT date::text AS date,(data->>'weightKg')::float AS weight FROM daily_check_ins WHERE user_id=$1 AND date <= $2 AND completed_at IS NOT NULL AND data->>'weightKg' IS NOT NULL ORDER BY date DESC LIMIT 90`,[userId,date]);
-    const previous=history.find((r:{date:string})=>r.date<date);
+    const history=(await weightTimeline(this.db.manager,userId)).filter(row=>row.date<=date).slice(-90).map(row=>({date:row.date,weight:row.value}));
+    const previous=history.slice().reverse().find(row=>row.date<date);
     const onboarding=await this.db.getRepository(Onboarding).findOneBy({userId});
     const initial=Number(String(onboarding?.profile.weight??'').replace(',','.'));
     const reference=previous?{weight:previous.weight,date:previous.date}:initial>=30&&initial<=350?{weight:initial,date:null}:null;
-    return { date, timezone, row:row??null, reference, history:history.reverse(), shouldOpen:hour>=7&&!row?.opened_at&&!row?.completed_at };
+    return { date, timezone, row:row??null, reference, history, shouldOpen:hour>=7&&!row?.opened_at&&!row?.completed_at };
   }
   async opened(userId:string, timezone:string, now=new Date()) {
     const {date,hour}=localClock(timezone,now);

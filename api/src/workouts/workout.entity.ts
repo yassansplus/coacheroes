@@ -27,5 +27,6 @@ export class ProgramBlock {
  @Column({name:'started_at',type:'timestamptz'}) startedAt!:Date;
  @Column({name:'ends_at',type:'timestamptz'}) endsAt!:Date;
  @Column({default:0}) extensions!:number;
+ @Column({name:'renewal_review',type:'jsonb',nullable:true}) renewalReview!:Record<string,unknown>|null;
  @CreateDateColumn({name:'created_at',type:'timestamptz'}) createdAt!:Date;
 }

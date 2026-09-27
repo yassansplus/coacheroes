@@ -2,6 +2,10 @@ const { WorkoutHistory1790500000000 } = require('../dist/database/migrations/179
 const { DailyCheckIns1790600000000 } = require('../dist/database/migrations/1790600000000-DailyCheckIns');
 const { Nutrition1790700000000 } = require('../dist/database/migrations/1790700000000-Nutrition');
 const { NutritionCoachOpinions1790800000000 } = require('../dist/database/migrations/1790800000000-NutritionCoachOpinions');
+const { ProgramRenewal1791100000000 } = require('../dist/database/migrations/1791100000000-ProgramRenewal');
+const { Progression1791200000000 } = require('../dist/database/migrations/1791200000000-Progression');
+const { CoachConversations1790900000000 } = require('../dist/database/migrations/1790900000000-CoachConversations');
+const { CoachTablePrivileges1791000000000 } = require('../dist/database/migrations/1791000000000-CoachTablePrivileges');
 const { AllowJournalDeletion1790400000000 } = require('../dist/database/migrations/1790400000000-AllowJournalDeletion');
 require('reflect-metadata');
 const { test } = require('node:test');
@@ -52,7 +56,7 @@ test('review responses distinguish a question from an adjustment and reuse the v
 
 test('proposal review is durable, questions do not modify plans and acceptance is explicit, fenced and idempotent', async t => {
   const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities,
-    migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+    migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
   await db.initialize(); await db.runMigrations(); t.after(() => db.destroy());
   const profiles = db.getRepository(Onboarding), programs = db.getRepository(TrainingProgram), chats = db.getRepository(ChatConversation);
   const user = await db.getRepository(User).save({ appleSubject: 'review-owner', firstName: 'Max' });
@@ -102,9 +106,10 @@ test('proposal review is durable, questions do not modify plans and acceptance i
   await assert.rejects(service.accept(user.id, revised.proposalId), { status: 409 });
   generator.generate = async () => output(); await service.start(user.id); await service.tick();
   const next = await service.get(user.id); assert.equal(next.acceptedAt, null);
-  await review.open(user.id); await review.send(user.id, chat.id, randomUUID(), 'Pourquoi ?', next.proposalId);
+  const nextChat = await review.open(user.id); assert.notEqual(nextChat.id, chat.id);
+  await review.send(user.id, nextChat.id, randomUUID(), 'Pourquoi ?', next.proposalId);
   ai.review = async () => { await profiles.update(user.id, { revision: 3 }); return { answer: { action: 'answer', reply: 'Réponse obsolète', instruction: null }, trace: {} }; };
-  await review.tick(); assert.equal((await common.get(user.id, chat.id)).status, 'failed');
-  assert.ok(!(await common.get(user.id, chat.id)).messages.some(m => m.text === 'Réponse obsolète'));
+  await review.tick(); assert.equal((await common.get(user.id, nextChat.id)).status, 'failed');
+  assert.ok(!(await common.get(user.id, nextChat.id)).messages.some(m => m.text === 'Réponse obsolète'));
   assert.equal((await db.driver.createSchemaBuilder().log()).upQueries.length, 0);
 });

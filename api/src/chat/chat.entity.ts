@@ -1,7 +1,8 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
 import type { CoachingQuestion } from './questions';
 @Entity('chat_conversations')
-@Unique('chat_conversations_user_purpose_key', ['userId', 'purpose'])
+@Index('chat_conversations_onboarding_unique', ['userId'], { unique: true, where: "purpose = 'onboarding'" })
+@Index('chat_conversations_review_run_unique', ['userId', 'programRunId'], { unique: true, where: "purpose = 'program_review'" })
 export class ChatConversation {
   @PrimaryGeneratedColumn('uuid') id!: string;
   @Column({ name: 'user_id', type: 'uuid' }) userId!: string;

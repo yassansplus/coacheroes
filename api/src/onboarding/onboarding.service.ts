@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { DataSource, In } from 'typeorm';
 import { hash } from '../auth/auth.service';
 import { JournalEntry, Onboarding, OnboardingPhoto } from '../database/entities';
+import { localClock } from '../daily/daily.schema';
 import { completionError, type SaveInput } from './onboarding.schema';
 
 @Injectable()
@@ -36,6 +37,25 @@ export class OnboardingService {
       if (firstCompletion) row.completedAt = new Date();
       row.revision++;
       await manager.save(row);
+      if (firstCompletion || row.completedAt) {
+        const date = localClock(input.timezone).date;
+        const weight = Number(String(input.profile.weight).replace(',', '.'));
+        if ((firstCompletion || changed.includes('weight')) && weight >= 30 && weight <= 350)
+          await manager.query(`INSERT INTO progression_weights(user_id,date,value_kg,source) VALUES($1,$2,$3,'onboarding')
+            ON CONFLICT(user_id,date) DO UPDATE SET value_kg=EXCLUDED.value_kg,source='profile',revision=progression_weights.revision+1,updated_at=now()`, [userId, date, weight]);
+        if (firstCompletion || changed.includes('measurements')) {
+          const fields = ['waist', 'chest', 'arms', 'thighs'] as const;
+          const measures = fields.map(key => input.profile.measurements[key].trim() ? Number(input.profile.measurements[key].replace(',', '.')) : null);
+          if (measures.some(value => value !== null)) await manager.query(`INSERT INTO progression_measurements(user_id,date,waist_cm,chest_cm,arm_cm,thigh_cm) VALUES($1,$2,$3,$4,$5,$6)
+            ON CONFLICT(user_id,date) DO UPDATE SET waist_cm=EXCLUDED.waist_cm,chest_cm=EXCLUDED.chest_cm,arm_cm=EXCLUDED.arm_cm,thigh_cm=EXCLUDED.thigh_cm,
+              revision=progression_measurements.revision+1,updated_at=now()`, [userId, date, ...measures]);
+        }
+        if (firstCompletion || changed.includes('photos')) {
+          const images = Object.fromEntries([['face', input.profile.photos.front], ['profile', input.profile.photos.side], ['back', input.profile.photos.back]].filter(([, id]) => !!id));
+          if (Object.keys(images).length) await manager.query(`INSERT INTO progression_photos(user_id,date,images) VALUES($1,$2,$3)
+            ON CONFLICT(user_id,date) DO UPDATE SET images=progression_photos.images || EXCLUDED.images,revision=progression_photos.revision+1,updated_at=now()`, [userId, date, JSON.stringify(images)]);
+        }
+      }
       const changes = Object.fromEntries(changed.map(key => [key, { before: before.profile[key] ?? null, after: row.profile[key] }]));
       await manager.save(JournalEntry, manager.create(JournalEntry, {
         userId, requestId: input.requestId, type: firstCompletion ? 'onboarding.completed' : 'onboarding.updated',
@@ -59,7 +79,7 @@ export class OnboardingService {
       const sha256 = hash(content);
       const existing = await manager.findOneBy(OnboardingPhoto, { userId, sha256 });
       if (existing) return { id: existing.id };
-      if (await manager.countBy(OnboardingPhoto, { userId }) >= 100) throw new BadRequestException('Limite de photos de l’onboarding atteinte.');
+      if (await manager.countBy(OnboardingPhoto, { userId }) >= 1000) throw new BadRequestException('Limite de photos du compte atteinte.');
       const photo = await manager.save(OnboardingPhoto, manager.create(OnboardingPhoto, { userId, sha256, contentType: type, content }));
       return { id: photo.id };
     });

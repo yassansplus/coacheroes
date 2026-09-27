@@ -1,4 +1,7 @@
 import { DailyModule } from './daily/daily.module';
+import { ProgressionModule } from './progression/progression.module';
+import { SquadModule } from './squad/squad.module';
+import { ProfileAvatarModule } from './profile-avatar/profile-avatar.module';
 import { CoachModule } from './coach/coach.module';
 import { NutritionModule } from './nutrition/nutrition.module';
 import { WorkoutModule } from './workouts/workout.module';
@@ -22,7 +25,7 @@ import { DatabaseModule } from './database/database.module';
       envFilePath: ['.env.local', '.env'],
       validate: validateEnvironment,
     }),
-    DatabaseModule, DailyModule, WorkoutModule, AuthModule, OnboardingModule, ProgramModule, ChatModule, NutritionModule, CoachModule,
+    DatabaseModule, DailyModule, ProgressionModule, SquadModule, ProfileAvatarModule, WorkoutModule, AuthModule, OnboardingModule, ProgramModule, ChatModule, NutritionModule, CoachModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

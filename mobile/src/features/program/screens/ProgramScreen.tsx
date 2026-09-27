@@ -29,7 +29,7 @@ import { clockLabel } from '../utils';
 
 const titles: Record<Page, string> = { program: '', detail: '', ready: '', warmup: 'Échauffement', training: '', rest: 'Temps de repos', replace: 'Remplacer l’exercice', pain: 'Signaler une douleur', history: 'Historique', debrief: 'Fin de séance', summary: 'Résumé de la séance', coach: '' };
 
-export function ProgramScreen({ onHome, onToday, onProgress, onCoach, onProfile, onExit, initialPreparation = false, initialWorkout, program }: { onHome: () => void; onToday: () => void; onProgress: () => void; onCoach: () => void; onProfile: () => void; onExit?: () => void; initialPreparation?: boolean; initialWorkout?: Workout; program?: TrainingProgram }) {
+export function ProgramScreen({ onHome, onToday, onProgress, onCoach, onProfile, onExit, onBlockReview, onHistory, initialPreparation = false, initialWorkout, program }: { onHome: () => void; onToday: () => void; onProgress: () => void; onCoach: () => void; onProfile: () => void; onExit?: () => void; onBlockReview?: (id: string) => void; onHistory?: () => void; initialPreparation?: boolean; initialWorkout?: Workout; program?: TrainingProgram }) {
   const p = useProgram(initialWorkout ? 'detail' : initialPreparation ? 'ready' : 'program', initialWorkout ?? (program ? generatedWorkout(program, 0) ?? undefined : undefined));
   const openedFromHome = useRef(initialPreparation);
   useEffect(() => { if (initialWorkout && p.page === 'program') onExit?.(); }, [initialWorkout, p.page, onExit]);
@@ -63,7 +63,7 @@ export function ProgramScreen({ onHome, onToday, onProgress, onCoach, onProfile,
 
   if (p.page === 'program') {
     if (initialWorkout) return null;
-    body = <ProgramOverview program={program} onRenewed={onExit ?? onHome} onSelect={workout => { setShowAll(false); setEditing(false); p.selectWorkout(workout); }} />;
+    body = <ProgramOverview program={program} onBlockReview={onBlockReview} onHistory={onHistory} onSelect={workout => { setShowAll(false); setEditing(false); p.selectWorkout(workout); }} />;
   } else if (p.page === 'detail') {
     body = <><SessionDetail p={p} editing={editing} showAll={showAll} onHistory={history} />
       {p.exercises.length > 6 ? <Button text={showAll ? 'Réduire la liste' : `${p.exercises.length - 6} exercices supplémentaires`} leading={<Symbol name={showAll ? 'minus' : 'plus'} color="primary" />} trailing={<Symbol name="chevron" color="textMuted" />} variant="secondary" onPress={() => setShowAll(!showAll)} /> : null}</>;

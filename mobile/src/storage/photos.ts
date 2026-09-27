@@ -3,6 +3,7 @@ import { handleUnauthorized } from '@/services/http';
 import { apiUrl } from '@/config/api';
 import { getSessionToken } from './session';
 const directory = () => `${FileSystem.cacheDirectory}onboarding-photos/`;
+const avatarDirectory = () => `${FileSystem.cacheDirectory}profile-avatars/`;
 export async function cachePhoto(userId: string, id: string): Promise<string> {
   const token = getSessionToken();
   if (!token) throw new Error('Reconnecte-toi pour consulter tes photos.');
@@ -27,4 +28,18 @@ export async function uploadPhoto(uri: string): Promise<string> {
   if (result.status !== 201) throw new Error('Impossible d’enregistrer la photo. Vérifie son format et réessaie.');
   return (JSON.parse(result.body) as { id: string }).id;
 }
-export async function clearPhotoCache() { await FileSystem.deleteAsync(directory(), { idempotent: true }); }
+export async function cacheAvatarPhoto(userId: string, versionId: string, kind: 'source' | 'generated') {
+  const token = getSessionToken();
+  if (!token) throw new Error('Reconnecte-toi pour consulter ton avatar.');
+  await FileSystem.makeDirectoryAsync(avatarDirectory(), { intermediates: true });
+  const path = `${avatarDirectory()}${userId}-${versionId}-${kind}.jpg`;
+  if ((await FileSystem.getInfoAsync(path)).exists) return path;
+  const result = await FileSystem.downloadAsync(apiUrl(`/profile/avatar/images/${versionId}/${kind}`), path,
+    { headers: { Authorization: `Bearer ${token}` } });
+  if (result.status === 401) handleUnauthorized(token);
+  if (result.status !== 200) { await FileSystem.deleteAsync(path, { idempotent: true }); throw new Error('Impossible de charger ton avatar.'); }
+  return path;
+}
+export async function clearPhotoCache() {
+  await Promise.all([directory(), avatarDirectory()].map(path => FileSystem.deleteAsync(path, { idempotent: true })));
+}

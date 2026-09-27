@@ -1,8 +1,21 @@
 const { DailyCheckIns1790600000000 } = require('../dist/database/migrations/1790600000000-DailyCheckIns');
 const { Nutrition1790700000000 } = require('../dist/database/migrations/1790700000000-Nutrition');
 const { NutritionCoachOpinions1790800000000 } = require('../dist/database/migrations/1790800000000-NutritionCoachOpinions');
+const { ProgramRenewal1791100000000 } = require('../dist/database/migrations/1791100000000-ProgramRenewal');
+const { Progression1791200000000 } = require('../dist/database/migrations/1791200000000-Progression');
+const { Squad1791300000000 } = require('../dist/database/migrations/1791300000000-Squad');
+const { ProfileAvatar1791400000000 } = require('../dist/database/migrations/1791400000000-ProfileAvatar');
+const { ProfileAvatarController } = require('../dist/profile-avatar/profile-avatar.controller');
+const { ProfileAvatarService } = require('../dist/profile-avatar/profile-avatar.service');
+const sharp = require('sharp');
+const { SquadController } = require('../dist/squad/squad.controller');
+const { SquadService } = require('../dist/squad/squad.service');
+const { CoachConversations1790900000000 } = require('../dist/database/migrations/1790900000000-CoachConversations');
+const { CoachTablePrivileges1791000000000 } = require('../dist/database/migrations/1791000000000-CoachTablePrivileges');
 const { NutritionCoachContext } = require('../dist/nutrition/nutrition-coach-context');
 const { DailyService } = require('../dist/daily/daily.service');
+const { ProgressionController } = require('../dist/progression/progression.controller');
+const { ProgressionService } = require('../dist/progression/progression.service');
 const { DailyController } = require('../dist/daily/daily.controller');
 const { NutritionController } = require('../dist/nutrition/nutrition.controller');
 const { NutritionService } = require('../dist/nutrition/nutrition.service');
@@ -67,7 +80,7 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
   const verifier = new AppleVerifier(new ConfigService({ APPLE_CLIENT_ID: 'com.test.app' }));
   verifier.keys = jose.createLocalJWKSet({ keys: [{ ...jwk, kid: 'test', alg: 'RS256' }] });
   const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities,
-    migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+    migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000, Squad1791300000000, ProfileAvatar1791400000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
   await db.initialize();
   await db.runMigrations();
   // HTTP tests exercise routes only; queue execution is tested explicitly in program.test.cjs.
@@ -79,16 +92,19 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
   const reviewService = new ProgramReviewService(db, chatAi, new ProgramGenerator(new ConfigService({ OPENAI_API_KEY: '' }), new WgerService()));
   const catalog = new NutritionCatalog(db, new ConfigService());
   const nutritionService = new NutritionService(db, new NutritionAi(new ConfigService({ OPENAI_API_KEY: '' })), catalog, new NutritionCoachContext(db));
+  const avatarService = new ProfileAvatarService(db, new ConfigService({ OPENAI_API_KEY: '' }));
+  avatarService.pump = async () => {};
   chatService.onModuleInit = () => {}; reviewService.onModuleInit = () => {};
   nutritionService.onModuleInit = () => {};
   class TestModule {}
-  Module({ controllers: [NutritionController,DailyController,WorkoutController,AuthController, OnboardingController, ProgramController, ChatController, ProgramReviewController], providers: [{ provide: NutritionService, useValue: nutritionService }, { provide: NutritionCatalog, useValue: catalog }, {provide:WorkoutAi,useValue:{analyze:async()=>{throw new Error('Not called in HTTP tests');}}},WorkoutService,DailyService,AuthGuard, AuthService, OnboardingService,
+  Module({ controllers: [NutritionController,DailyController,ProgressionController,SquadController,ProfileAvatarController,WorkoutController,AuthController, OnboardingController, ProgramController, ChatController, ProgramReviewController], providers: [{ provide: NutritionService, useValue: nutritionService }, { provide: NutritionCatalog, useValue: catalog }, { provide: ProfileAvatarService, useValue: avatarService }, {provide:WorkoutAi,useValue:{analyze:async()=>{throw new Error('Not called in HTTP tests');}}},WorkoutService,DailyService,ProgressionService,SquadService,AuthGuard, AuthService, OnboardingService,
     { provide: ProgramService, useValue: programService },
     { provide: ChatService, useValue: chatService }, { provide: ProgramReviewService, useValue: reviewService },
     { provide: DataSource, useValue: db }, { provide: AppleVerifier, useValue: verifier }] })(TestModule);
   const app = await NestFactory.create(TestModule, { logger: false });
   app.use('/api/onboarding/photos', raw({ type: 'application/octet-stream', limit: '8mb' }));
   app.use('/api/nutrition/photos', raw({ type: 'application/octet-stream', limit: '8mb' }));
+  app.use('/api/profile/avatar', raw({ type: 'application/octet-stream', limit: '8mb' }));
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   await app.listen(0, '127.0.0.1');
@@ -217,6 +233,50 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
     assert.equal(edited.status, 200, JSON.stringify(edited.data));
     assert.equal(edited.data.completedAt, completed.data.completedAt);
     assert.equal(await db.getRepository(JournalEntry).countBy({ type: 'onboarding.completed' }), 1);
+  });
+  await t.test('progression routes use account data and audit same-date corrections', async () => {
+    assert.equal((await call('/progression')).status, 401);
+    const first = await call('/progression', account);
+    assert.equal(first.status, 200); assert.equal(first.data.weights.length, 1);
+    assert.equal((await call('/progression', other)).data.weights.length, 0);
+    const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const revision = first.data.weights.find(item => item.date === date)?.revision ?? 0;
+    const body = { value: 77.2, revision, timezone: 'Europe/Paris', requestId: randomUUID() };
+    assert.equal((await call(`/progression/weights/${date}`, { ...account, method: 'PUT', body })).status, 200);
+    assert.equal((await call(`/progression/weights/${date}`, { ...account, method: 'PUT', body })).status, 200);
+    assert.equal((await call('/progression', account)).data.weights.at(-1).value, 77.2);
+    assert.equal((await call(`/progression/weights/${date}`, { ...account, method: 'PUT', body: { ...body, requestId: randomUUID() } })).status, 409);
+  });
+  await t.test('squad routes keep invitations private and require recipient acceptance', async () => {
+    assert.equal((await call('/squad')).status, 401);
+    const group = await call('/squad/groups', { ...account, method: 'POST', body: { requestId: randomUUID(), name: 'Les potes' } });
+    assert.equal(group.status, 201, JSON.stringify(group.data));
+    assert.equal((await call(`/squad/groups/${group.data.id}`, other)).status, 404);
+    const token = randomUUID();
+    const invite = await call('/squad/invitations', { ...account, method: 'POST', body: { token, kind: 'group', groupId: group.data.id } });
+    assert.equal(invite.status, 201, JSON.stringify(invite.data));
+    assert.equal((await call(`/squad/invitations/claim/${token}`, { ...account, method: 'POST' })).status, 400);
+    assert.equal((await call(`/squad/invitations/claim/${token}`, { ...other, method: 'POST' })).status, 201);
+    assert.equal((await call('/squad/invitations', other)).data.incoming.length, 1);
+    assert.equal((await call(`/squad/invitations/${invite.data.id}/resolve`, { ...other, method: 'POST', body: { accept: true } })).status, 201);
+    assert.equal((await call(`/squad/groups/${group.data.id}`, other)).status, 200);
+    assert.equal((await call('/squad', account)).data.friends.length, 0);
+  });
+  await t.test('profile photo is compressed, private and visible while its avatar is pending', async () => {
+    assert.equal((await call('/profile/avatar')).status, 401);
+    assert.equal((await call('/profile/avatar', account)).status, 204);
+    assert.equal((await call('/profile/avatar', { ...account, method: 'POST', body: Buffer.from('invalid'), binary: true })).status, 400);
+    const photo = await sharp({ create: { width: 1200, height: 1000, channels: 3, background: '#766a66' } }).png().toBuffer();
+    const uploaded = await call('/profile/avatar', { ...account, method: 'POST', body: photo, binary: true });
+    assert.equal(uploaded.status, 201, JSON.stringify(uploaded.data));
+    const versionId = uploaded.data.versionId;
+    assert.equal((await call('/profile/avatar', account)).data.status, 'pending');
+    assert.equal((await call(`/profile/avatar/images/${versionId}/source`, account)).status, 200);
+    assert.equal((await call(`/profile/avatar/images/${versionId}/source`, other)).status, 404);
+    assert.equal((await call(`/profile/avatar/images/${versionId}/generated`, account)).status, 404);
+    const [stored] = await db.query('SELECT octet_length(source_image) AS size FROM profile_avatar_versions WHERE id=$1', [versionId]);
+    assert.ok(Number(stored.size) < 1024 * 1024);
+    assert.equal(await db.getRepository(JournalEntry).countBy({ type: 'profile.avatar.uploaded' }), 1);
   });
   await t.test('program routes enforce authentication, ownership and missing-key failures', async () => {
     assert.equal((await call('/program')).status, 401);

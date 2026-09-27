@@ -20,7 +20,11 @@ export function TileIcon({ name, tone = 'purple', size = 38 }: { name: SymbolNam
   return <View style={{ width: size, height: size, borderRadius: size * 0.26, backgroundColor: tones[tone][1], alignItems: 'center', justifyContent: 'center' }}>{illustrated ? <Illustration name={name as IllustrationName} size={size * 0.7} /> : <Symbol name={name as SymbolName} size={size * 0.58} color={tones[tone][0]} />}</View>;
 }
 export function Avatar({ member, size = 32, short = false }: { member: Member; size?: number; short?: boolean }) {
-  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: member.background, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontFamily: fontFamily.semiBold, color: member.color, fontSize: size * 0.35 }}>{short ? member.name[0] : member.initials}</Text></View>;
+  const palette = [[colors.squadPurple, colors.accentSurface], [colors.successText, colors.successSurface], [colors.energy, colors.energySurface], [colors.primary, colors.primarySurface]];
+  const index = [...member.id].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
+  const [color, background] = palette[index];
+  const initials = member.name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: background, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontFamily: fontFamily.semiBold, color, fontSize: size * 0.35 }}>{short ? member.name[0]?.toUpperCase() : initials}</Text></View>;
 }
 export function Emblem({ gold = false, trophy = false, size = 72 }: { gold?: boolean; trophy?: boolean; size?: number }) {
   return <View style={{ width: size, height: size * 1.1, alignItems: 'center', justifyContent: 'center' }}>

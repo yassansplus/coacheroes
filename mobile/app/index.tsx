@@ -8,6 +8,7 @@ export default function IndexRoute() {
   return <HomeScreen
     onTab={tab => { if (tab === 'program') router.push('/program'); else if (tab === 'coach') router.push('/coach'); else if (tab === 'progress') router.push('/progression' as Href); else if (tab === 'profile') router.push('/profile' as Href); }}
     onWorkout={() => router.push({ pathname: '/program', params: { start: 'today' } })}
+    onBlockReview={blockId => router.push(`/program/renewal?blockId=${encodeURIComponent(blockId)}` as Href)}
     onNutrition={() => router.push('/nutrition')}
     onAddMeal={() => router.push({ pathname: '/nutrition', params: { action: 'add' } })}
     onCheckIn={() => router.push('/today')}

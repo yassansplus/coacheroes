@@ -189,3 +189,28 @@ la mémoire et les deux actions disponibles.
 La migration `1791000000000-CoachTablePrivileges` donne au rôle applicatif
 (propriétaire de `users`) les droits nécessaires lorsque les migrations sont
 lancées avec un rôle PostgreSQL différent.
+
+## Progression
+
+La migration `1791200000000-Progression` ajoute les saisies datées de poids,
+mensurations, photos et tests de boxe, avec révision, reçus de sauvegarde et
+historique séparé. `GET /api/progression` projette aussi les bilans quotidiens,
+les blocs et les séances déjà enregistrés. Voir [docs/progression.md](../docs/progression.md)
+pour les sources des graphiques et les routes d'écriture.
+
+## Squad
+
+La migration `1791300000000-Squad` crée les amitiés, groupes, invitations par lien,
+challenges et préférences de partage. Les écrans Squad lisent les séances réellement
+enregistrées ; les XP du parcours Jeu restent fictifs. Voir
+[docs/squad.md](../docs/squad.md) pour les règles de visibilité et les routes.
+
+## Avatar du profil
+
+La migration `1791400000000-ProfileAvatar` conserve les versions privées des
+photos de profil. `POST /api/profile/avatar` reçoit une image brute (8 Mo max),
+la réduit et démarre une génération en arrière-plan avec
+`gpt-image-2.5-sunburst`. `GET /api/profile/avatar` expose le statut ; les images
+source et générée sont accessibles uniquement au propriétaire. La photo source
+reste affichée jusqu'à la fin du traitement. Voir
+[docs/profile-avatar.md](../docs/profile-avatar.md) pour le détail du flux.

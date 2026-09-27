@@ -1,13 +1,19 @@
 import { workoutAiContext } from '../workouts/ai-context';
 import { ProgramBlock, WorkoutSession } from '../workouts/workout.entity';
-import { ConflictException, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { DataSource, EntityManager } from 'typeorm';
 import { JournalEntry, Onboarding, User } from '../database/entities';
 import { buildTrainingContext, requiredClarifications } from './context';
 import { ProgramGenerator, type GenerationOutput, type Phase } from './generator';
 import { ChatConversation } from '../chat/chat.entity';
 import { TrainingProgram } from './program.entity';
+import { profileSchema, completionError } from '../onboarding/onboarding.schema';
+import { coachingDetailsSchema } from '../chat/planning';
+import { RenewalSummary } from './renewal-summary';
+import type { z } from 'zod';
+import type { renewalRequestSchema } from './renewal.schema';
 
 @Injectable()
 export class ProgramService implements OnModuleInit, OnModuleDestroy {
@@ -16,7 +22,7 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
   private stopped = false;
   private activeAbort?: AbortController;
   private readonly logger = new Logger(ProgramService.name);
-  constructor(private readonly db: DataSource, private readonly generator: ProgramGenerator) {}
+  constructor(private readonly db: DataSource, private readonly generator: ProgramGenerator, private readonly renewalSummary: RenewalSummary = new RenewalSummary(db)) {}
   onModuleInit() {
     this.timer = setInterval(() => { void this.tick().catch(() => this.logger.error('Program worker unavailable; pending jobs retained.')); }, 2000);
     this.timer.unref();
@@ -28,8 +34,11 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
     const profile = await this.db.getRepository(Onboarding).findOneByOrFail({ userId });
     return this.view(row, row.sourceRevision !== profile.revision || row.context.schemaVersion !== 2);
   }
+  history(userId: string) { return this.renewalSummary.history(userId); }
+  block(userId: string, id: string) { return this.renewalSummary.get(userId, id); }
   private view(row: TrainingProgram, stale = false) {
-    return { proposalId: row.runId, acceptedAt: row.acceptedAt, status: row.status, phase: row.phase, sourceRevision: row.sourceRevision, stale,
+    return { proposalId: row.runId, acceptedAt: row.acceptedAt, previousBlockId: row.context.sourceBlockId ?? null,
+      status: row.status, phase: row.phase, sourceRevision: row.sourceRevision, stale,
       result: row.output?.result ?? null, exercises: row.output?.exercises ?? [], error: row.error,
       updatedAt: row.updatedAt };
   }
@@ -38,14 +47,16 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
       type, occurredAt: new Date(), payload: { schemaVersion: 1, runId: row.runId, sourceRevision: row.sourceRevision, ...payload } }));
   }
   async start(userId: string, retry = false, renew = false) {
+    if (renew) throw new BadRequestException('Fais le bilan du programme avant de préparer le suivant.');
     return this.db.transaction(async manager => {
       const profile = await manager.findOneOrFail(Onboarding, { where: { userId }, lock: { mode: 'pessimistic_write' } });
       if (!profile.completedAt) throw new ConflictException('Termine ton onboarding avant de générer ton programme.');
       let row = await manager.findOne(TrainingProgram, { where: { userId }, lock: { mode: 'pessimistic_write' } });
-      if (renew && row?.acceptedAt) {
-        const block = await manager.findOneBy(ProgramBlock, {id: row.runId, userId});
-        if (!block || block.endsAt.getTime() > Date.now()) throw new ConflictException('Ton bloc est encore en cours.');
-      } else if (renew) throw new ConflictException('Valide ton programme avant de le renouveler.');
+      if (retry && row?.status === 'failed' && row.context.renewal && row.sourceRevision === profile.revision) {
+        row.runId = randomUUID(); row.status = 'queued'; row.phase = 'preparing'; row.attempts = 0; row.error = null; row.output = null;
+        await manager.save(row); await this.journal(manager, row, 'program.renewal_retried', { sourceBlockId: row.context.sourceBlockId });
+        return this.view(row);
+      }
       if (!renew && row && row.sourceRevision === profile.revision && row.context.schemaVersion === 2 && !(retry && row.status === 'failed')) return this.view(row);
       const user = await manager.findOneByOrFail(User, { id: userId });
       const context = buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails);
@@ -61,13 +72,73 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
       return this.view(row);
     });
   }
+  async renew(userId: string, input: z.infer<typeof renewalRequestSchema>) {
+    return this.db.transaction(async manager => {
+      const profileRow = await manager.findOneOrFail(Onboarding, { where: { userId }, lock: { mode: 'pessimistic_write' } });
+      const row = await manager.findOne(TrainingProgram, { where: { userId }, lock: { mode: 'pessimistic_write' } });
+      const previousReceipt = await manager.findOneBy(JournalEntry, { userId, requestId: input.requestId });
+      if (previousReceipt?.type === 'program.renewal_requested' && row?.context.sourceBlockId === input.blockId)
+        return this.view(row);
+      if (previousReceipt) throw new ConflictException('Cet identifiant de requête a déjà été utilisé.');
+      if (!row?.acceptedAt || row.runId !== input.blockId) throw new ConflictException('Le programme actif a changé. Recharge le bilan.');
+      const block = await manager.findOne(ProgramBlock, { where: { id: input.blockId, userId }, lock: { mode: 'pessimistic_write' } });
+      if (!block || block.endsAt.getTime() > Date.now()) throw new ConflictException('Ton bloc est encore en cours.');
+      if (profileRow.revision !== input.profileRevision) throw new ConflictException('Ton profil a changé. Recharge tes réponses.');
+      const answers = input.answers;
+      const beforeProfile = profileSchema.parse(profileRow.profile);
+      const review = await this.renewalSummary.get(userId, block.id, manager);
+      const lastRecordedWeight = review.summary.weight.latestKnown?.kg;
+      const updated = profileSchema.parse({ ...beforeProfile, goal: answers.goals, sports: answers.sports, places: answers.places,
+        days: answers.days, sessions: answers.sessions, duration: answers.duration, timeOfDay: answers.timeOfDay,
+        gymType: answers.gymType, equipment: answers.equipment, noPain: answers.noPain,
+        pains: answers.noPain ? [] : answers.pains, painNotes: answers.noPain ? '' : answers.painNotes,
+        weight: String(answers.weightKg ?? lastRecordedWeight ?? beforeProfile.weight),
+        skippedSteps: beforeProfile.skippedSteps.filter(step => ![7, 8].includes(step)) });
+      const error = completionError(updated);
+      if (error) throw new BadRequestException(error);
+      const beforeCoaching = coachingDetailsSchema.parse(profileRow.coachingDetails);
+      const nextCoaching = coachingDetailsSchema.parse({ ...beforeCoaching, schedules: answers.schedules });
+      const user = await manager.findOneByOrFail(User, { id: userId });
+      if (!isDeepStrictEqual(beforeProfile, updated) || !isDeepStrictEqual(beforeCoaching, nextCoaching)) {
+        profileRow.profile = updated; profileRow.coachingDetails = nextCoaching; profileRow.revision++;
+        await manager.save(profileRow);
+        await manager.save(JournalEntry, manager.create(JournalEntry, { userId, requestId: randomUUID(),
+          type: 'onboarding.renewal_updated', occurredAt: new Date(), payload: { blockId: block.id, before: { profile: beforeProfile, coaching: beforeCoaching },
+            after: { profile: updated, coaching: nextCoaching }, revision: profileRow.revision } }));
+      }
+      if (answers.weightKg !== null) {
+        const [preference] = await manager.query('SELECT timezone FROM daily_preferences WHERE user_id=$1', [userId]);
+        const date = new Intl.DateTimeFormat('en-CA', { timeZone: preference?.timezone ?? 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        await manager.query(`INSERT INTO progression_weights(user_id,date,value_kg,source) VALUES($1,$2,$3,'renewal')
+          ON CONFLICT(user_id,date) DO UPDATE SET value_kg=EXCLUDED.value_kg,source='renewal',revision=progression_weights.revision+1,updated_at=now()`, [userId, date, answers.weightKg]);
+      }
+      const context = buildTrainingContext(updated, profileRow.revision, user.firstName, nextCoaching);
+      const history = await manager.find(WorkoutSession, { where: { userId, programVersionId: block.id }, order: { startedAt: 'ASC' } });
+      const previousProgram = (block.prescription as any).output?.result;
+      Object.assign(context, { renewal: true, sourceBlockId: block.id, previousProgram,
+        blockSummary: { ...review.summary, workouts: undefined }, renewalAnswers: answers,
+        trainingHistory: history.filter(session => session.status === 'completed' || session.status === 'abandoned')
+          .map(session => workoutAiContext(session.snapshot, user.firstName)) });
+      if (!requiredClarifications(context).length) this.generator.ensureConfigured();
+      const previous = { status: row.status, context: row.context, output: row.output, acceptedAt: row.acceptedAt };
+      block.renewalReview = { answers, submittedAt: new Date().toISOString(), analysis: null };
+      await manager.save(block);
+      Object.assign(row, { sourceRevision: profileRow.revision, context, output: null, acceptedAt: null, status: 'queued',
+        phase: 'preparing', runId: randomUUID(), attempts: 0, leaseUntil: null, error: null });
+      await manager.save(row);
+      await manager.save(JournalEntry, manager.create(JournalEntry, { userId, requestId: input.requestId,
+        type: 'program.renewal_requested', occurredAt: new Date(), payload: { schemaVersion: 1, runId: row.runId,
+          sourceBlockId: block.id, before: previous, answers, summary: review.summary, settings: this.generator.settings() } }));
+      return this.view(row);
+    });
+  }
   async accept(userId: string, proposalId: string) {
     return this.db.transaction(async manager => {
       const profile = await manager.findOneOrFail(Onboarding, { where: { userId }, lock: { mode: 'pessimistic_write' } });
       const row = await manager.findOne(TrainingProgram, { where: { userId }, lock: { mode: 'pessimistic_write' } });
       if (!row || row.runId !== proposalId || row.status !== 'ready' || row.output?.result.outcome !== 'ready' || row.sourceRevision !== profile.revision || row.context.schemaVersion !== 2)
         throw new ConflictException('Ton programme a changé. Recharge-le avant de le valider.');
-      const chat = await manager.findOne(ChatConversation, { where: { userId, purpose: 'program_review' }, lock: { mode: 'pessimistic_write' } });
+      const chat = await manager.findOne(ChatConversation, { where: { userId, purpose: 'program_review', programRunId: row.runId }, lock: { mode: 'pessimistic_write' } });
       if (chat && ['queued', 'processing'].includes(chat.status)) throw new ConflictException('Attends la réponse de ton coach avant de valider.');
       if (!row.acceptedAt) {
         row.acceptedAt = new Date(); await manager.save(row);
@@ -103,6 +174,10 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
           .then(result => { if (!result.affected) abort.abort(); }).catch(() => abort.abort());
       }, 20000);
       try {
+        if (row.context.renewal && row.context.sourceBlockId) {
+          const assessed = await this.generator.analyzeRenewal(row.context, abort.signal);
+          row.context = { ...row.context, renewalAnalysis: assessed.analysis, renewalAnalysisTrace: assessed.trace };
+        }
         const output = await this.generator.generate(row.context, phase => this.setPhase(row, phase), abort.signal);
         await this.finish(row, output);
       } catch (error) {
@@ -123,6 +198,12 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
       const row = await manager.findOneOrFail(TrainingProgram, { where: { userId: claim.userId }, lock: { mode: 'pessimistic_write' } });
       if (row.runId !== claim.runId || row.status !== 'generating') return;
       if (profile.revision !== row.sourceRevision) { output = null; code = 'PROFILE_CHANGED'; }
+      if (claim.context.renewalAnalysis && claim.context.sourceBlockId) {
+        row.context = claim.context;
+        const block = await manager.findOne(ProgramBlock, { where: { id: claim.context.sourceBlockId, userId: claim.userId }, lock: { mode: 'pessimistic_write' } });
+        if (block) { block.renewalReview = { ...block.renewalReview, analysis: { analysis: claim.context.renewalAnalysis,
+          trace: claim.context.renewalAnalysisTrace } }; await manager.save(block); }
+      }
       row.output = output;
       row.status = output?.result.outcome ?? 'failed';
       row.leaseUntil = null;

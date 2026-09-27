@@ -1,5 +1,4 @@
-import {blockProgress,extendBlock,type BlockProgress} from '@/services/workouts';
-import { apiRequest } from '@/services/http';
+import {blockProgress,type BlockProgress} from '@/services/workouts';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -23,12 +22,24 @@ import { styles as s } from './styles';
 
 const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-export function ProgramOverview({ onSelect, program, onRenewed }: { onSelect: (workout: Workout) => void; program?: TrainingProgram; onRenewed?:()=>void }) {
+export function ProgramOverview({ onSelect, program, onBlockReview, onHistory }: { onSelect: (workout: Workout) => void; program?: TrainingProgram; onBlockReview?: (id: string) => void; onHistory?: () => void }) {
   const [block,setBlock]=useState<BlockProgress|null>(null);
   const [blockError,setBlockError]=useState<string|null>(null);
-  const [blockBusy,setBlockBusy]=useState(false);
-  useEffect(()=>{if(program?.acceptedAt)void blockProgress(program.proposalId).then(setBlock).catch(e=>setBlockError(e.message));},[program?.proposalId]);
-  async function finishBlock(renew:boolean){if(!program||blockBusy)return;setBlockBusy(true);try{if(renew){await apiRequest('/program/generate',{method:'POST',body:{renew:true}});onRenewed?.();}else{await extendBlock(program.proposalId);setBlock(await blockProgress(program.proposalId));}setResetVisible(false);}catch(e){setBlockError(e instanceof Error?e.message:'Réessaie.');}finally{setBlockBusy(false);}}
+  useEffect(() => {
+    if (!program?.acceptedAt) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = async () => {
+      try {
+        const next = await blockProgress(program.proposalId);
+        if (!active) return;
+        setBlock(next); setBlockError(null);
+        if (!next.due) timer = setTimeout(() => void refresh(), Math.min(86400000, Math.max(1000, Date.parse(next.endsAt) - Date.now() + 1000)));
+      } catch (error) { if (active) setBlockError(error instanceof Error ? error.message : 'Bilan indisponible.'); }
+    };
+    void refresh();
+    return () => { active = false; clearTimeout(timer); };
+  }, [program?.proposalId, program?.acceptedAt]);
   const savedAdjustment = useProgramAdjustment();
   const adjustment = program ? null : activeProgramAdjustment(savedAdjustment);
   const schedule = program ? (program.result?.sessions ?? []).map((_, i) => generatedWorkout(program, i)).filter((w): w is Workout => w !== null) : workouts;
@@ -45,6 +56,8 @@ export function ProgramOverview({ onSelect, program, onRenewed }: { onSelect: (w
   const visibleWorkouts = tab === 'calendar' ? schedule.filter(item => block ? !!occurrence(item) : item.day === date.getDay()) : schedule;
   return <>
     <Text style={s.title}>Mon programme</Text>
+    {block?.due && program ? <Card style={s.stack}><Text style={s.section}>Ton bloc est terminé 🎉</Text><Text style={s.body}>Regarde ton évolution, puis prépare la suite avec ton coach.</Text>
+      <Button text="Voir mon bilan et préparer la suite" leading={<Symbol name="calendar" />} onPress={() => onBlockReview?.(program.proposalId)} /></Card> : null}
     {adjustment ? <Card style={{ padding: 16, gap: 10 }}><Text style={s.section}>Muscu B allégée</Text><Text style={s.body}>14 séries · 50 min · RIR 3{adjustment.scope === 'week' ? ' · cette semaine' : ' · jusqu’à nouvel ordre'}</Text><Button text="Rétablir le programme initial" variant="outline" onPress={() => setResetVisible(true)} /></Card> : null}
     <Card style={{ gap: 12, padding: 14 }}>
       <View style={s.row}><View style={s.grow}><Text style={s.section}>{program?.result?.title ?? 'Phase 1 · Reprise'}</Text><Text style={[s.body, { marginTop: 4 }]}>Semaines 1 à {blockWeeks}</Text></View><Illustration name="calendar" size={54} /></View>
@@ -54,7 +67,7 @@ export function ProgramOverview({ onSelect, program, onRenewed }: { onSelect: (w
     {tab === 'calendar' ? <Calendar selectedDate={date} onSelectDate={setDate} /> : null}
     <Text style={s.section}>{week === currentWeek ? 'Mes séances' : `Mes séances · semaine ${week}`}</Text>
     <View style={{ gap: 10 }}>
-      {visibleWorkouts.map(original => { const item = adjustment?.workoutId === original.id ? { ...original, minutes: adjustment.minutes } : original; return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`Ouvrir ${item.name}, ${days[item.day]}`} onPress={() => onSelect({...original,week:occurrence(original)?.week??week,scheduledDate:occurrence(original)?.date})} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+      {visibleWorkouts.map(original => { const item = adjustment?.workoutId === original.id ? { ...original, minutes: adjustment.minutes } : original; return <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`Ouvrir ${item.name}, ${days[item.day]}`} accessibilityState={{ disabled: Boolean(block?.due) }} disabled={Boolean(block?.due)} onPress={() => onSelect({...original,week:occurrence(original)?.week??week,scheduledDate:occurrence(original)?.date})} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
         <Card style={[s.row, { padding: 7, gap: 12 }]}>
           <View style={{ width: 64, height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: item.kind === 'strength' ? colors.primarySurface : colors.energySurface }}><Illustration name={item.icon} size={60} /></View>
           <View style={[s.grow, { gap: 2 }]}><Text style={[s.section, { fontSize: 16, lineHeight: 22 }]}>{item.name}</Text><Text style={[s.body, { fontSize: 11, lineHeight: 16 }]}>{item.kind === 'strength' ? program ? `${item.prescribedExercises?.length ?? 0} exercices` : `${item.description} · ${adjustment?.workoutId === item.id ? 7 : 8} exercices` : `${item.minutes} min`}</Text>
@@ -67,10 +80,12 @@ export function ProgramOverview({ onSelect, program, onRenewed }: { onSelect: (w
       </Pressable>; })}
     </View>
     {!visibleWorkouts.length ? <EmptyState title="Journée de récupération" description="Pas de séance prévue à cette date." /> : null}
-    <Button text={block?.due ? 'Faire le bilan du programme' : 'Voir les semaines suivantes'} leading={<Symbol name="calendar" />} trailing={<Symbol name="chevron" color="textMuted" />} variant="outline" onPress={() => block?.due ? setResetVisible(true) : setWeeksVisible(true)} style={{ marginTop: 2 }} />
+    {blockError ? <Text style={s.body}>{blockError}</Text> : null}
+    {!block?.due ? <Button text="Voir les semaines suivantes" leading={<Symbol name="calendar" />} trailing={<Symbol name="chevron" color="textMuted" />} variant="outline" onPress={() => setWeeksVisible(true)} style={{ marginTop: 2 }} /> : null}
+    {program && onHistory ? <Button text="Voir mes anciens programmes" variant="secondary" onPress={onHistory} /> : null}
     <BottomSheet visible={weeksVisible} onClose={() => setWeeksVisible(false)} title="Les prochaines semaines">
       <View style={s.stack}>{Array.from({ length: blockWeeks }, (_, i) => i + 1).map(value => <Button key={value} text={`Semaine ${value}${value === currentWeek ? ' · actuelle' : ''}`} variant={week === value ? 'primary' : 'secondary'} onPress={() => { setWeek(value); setWeeksVisible(false); }} />)}</View>
     </BottomSheet>
-    <AppModal visible={resetVisible} onClose={() => setResetVisible(false)} title={program?'Bilan du programme':'Rétablir Muscu B ?'}><Text style={s.body}>{program?`${block?.completed??0} séances terminées · ${Math.round((block?.durationSeconds??0)/60)} min. ${block?.recommendation==='renew'?'On peut préparer la suite.':block?.pain?'Des douleurs ont été signalées : fais le point sur tes restrictions avant de progresser.':'On peut prolonger pour consolider tes séances.'}`:'La prochaine séance retrouvera ses 18 séries, 65 minutes et 2 répétitions en réserve.'}{blockError?` ${blockError}`:''}</Text><View style={{ gap: 10, marginTop: 16 }}><Button text={program?"Continuer deux semaines":"Rétablir"} disabled={blockBusy} onPress={() => {if(program)void finishBlock(false);else{setProgramAdjustment(null);setResetVisible(false);}}} /><Button text={program?"Préparer le prochain programme":"Annuler"} disabled={blockBusy} variant="outline" onPress={() => {if(program)void finishBlock(true);else setResetVisible(false);}} /></View></AppModal>
+    <AppModal visible={resetVisible} onClose={() => setResetVisible(false)} title="Rétablir Muscu B ?"><Text style={s.body}>La prochaine séance retrouvera ses 18 séries, 65 minutes et 2 répétitions en réserve.</Text><View style={{ gap: 10, marginTop: 16 }}><Button text="Rétablir" onPress={() => {setProgramAdjustment(null);setResetVisible(false);}} /><Button text="Annuler" variant="outline" onPress={() => setResetVisible(false)} /></View></AppModal>
   </>;
 }

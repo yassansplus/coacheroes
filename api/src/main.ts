@@ -14,6 +14,7 @@ async function bootstrap() {
 
   app.use('/api/onboarding/photos', raw({ type: 'application/octet-stream', limit: '8mb' }));
   app.use('/api/nutrition/photos', raw({ type: 'application/octet-stream', limit: '8mb' }));
+  app.use('/api/profile/avatar', raw({ type: 'application/octet-stream', limit: '8mb' }));
   app.setGlobalPrefix('api');
   app.enableCors({
     origin:

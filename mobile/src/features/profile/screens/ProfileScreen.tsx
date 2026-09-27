@@ -1,10 +1,14 @@
-import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState, type ReactNode } from 'react';
+import { useFocusEffect } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppNavbar, type AppNavTab } from '@/components/AppNavbar';
 import { Button } from '@/components/Button';
+import { BottomSheet } from '@/components/BottomSheet';
 import { Card } from '@/components/Card';
 import { IconButton } from '@/components/IconButton';
+import { PillSelector } from '@/components/PillSelector';
 import { Illustration, type IllustrationName } from '@/components/Illustration';
 import { Symbol, type SymbolName } from '@/components/Symbol';
 import { useGameProgress } from '@/store/gameProgress';
@@ -16,11 +20,15 @@ import { LoadingState } from '@/components/LoadingState';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 import { feedback } from '@/utils/feedback';
+import { loadSquad } from '@/services/squad';
+import { useProfileAvatar } from '@/hooks/useProfileAvatar';
+import { avatarArtStyles, avatarGenres, avatarPlatforms, defaultAvatarPreferences, type AvatarPreferences } from '@/services/profileAvatar/options';
 
 type Props = { onTab: (tab: AppNavTab) => void; onEdit: (step: number) => void; onLibrary: () => void; onSquad: () => void; onLevel: () => void; onNutrition: () => void };
-function Avatar({ size }: { size: number }) {
+function Avatar({ size, uri }: { size: number; uri: string | null }) {
   const game = useGameProgress();
-  return <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: game.equipment.frame === 'cobalt' ? colors.squadPurple : colors.primary }]}><Illustration name="coach" size={size} /></View>;
+  return <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: game.equipment.frame === 'cobalt' ? colors.squadPurple : colors.primary }]}>
+    {uri ? <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Illustration name="coach" size={size} />}</View>;
 }
 function RoundIcon({ illustration, symbol, color, background, size = 32 }: {
   illustration?: IllustrationName; symbol?: SymbolName; color: string; background: string; size?: number;
@@ -41,24 +49,51 @@ export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNu
   const profile = useProfileSummary();
   const session = useSession();
   const game = useGameProgress();
+  const avatar = useProfileAvatar();
+  const [avatarOptions, setAvatarOptions] = useState(false);
+  const [avatarPreferences, setAvatarPreferences] = useState<AvatarPreferences>(defaultAvatarPreferences);
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  const [squadCounts, setSquadCounts] = useState({ groups: 0, friends: 0 });
+  const openAvatarOptions = () => {
+    if (avatar.avatar) setAvatarPreferences({ platform: avatar.avatar.platform, genre: avatar.avatar.genre, artStyle: avatar.avatar.artStyle });
+    setPickerError(null);
+    setAvatarOptions(true);
+  };
+  const pickAvatar = async () => {
+    setPickerError(null);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.78 });
+      if (!result.canceled && result.assets[0]?.uri) { setAvatarOptions(false); await avatar.upload(result.assets[0].uri, avatarPreferences); }
+    } catch { setPickerError('Impossible d’ouvrir les photos. Réessaie.'); }
+  };
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    if (session.user?.id) void loadSquad().then(data => { if (active) setSquadCounts({ groups: data.groups.length, friends: data.friends.length }); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [session.user?.id]));
   return <SafeAreaView style={[s.screen, game.equipment.theme === 'violet' && { backgroundColor: colors.accentSurface }]}><View style={s.frame}>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
       <View style={s.brandRow}>
         <Illustration name="logo" size={34} />
         <View style={s.grow}><Text style={s.brand}>Fit<Text style={{ color: colors.googleBlue }}>Buddy</Text></Text><Text style={s.tagline}>Plus forts, ensemble</Text></View>
         <View style={s.bell}><Symbol name="bell" size={23} /><View style={s.dot} /></View>
-        <Avatar size={44} />
+        <Avatar size={44} uri={avatar.uri} />
       </View>
-      <View style={s.titleRow}><IconButton variant="ghost" accessibilityLabel="Modifier mes informations personnelles" icon={<Symbol name="edit" size={24} color="textSecondary" />} onPress={() => onEdit(3)} /></View>
       {profile.error ? <ErrorState description={profile.error} onRetry={profile.retry} /> : null}
       {profile.loading ? <LoadingState label="Chargement du profil…" /> : <Card style={[s.card, s.identity]}>
-        <Avatar size={70} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Changer ma photo de profil" onPress={openAvatarOptions} style={s.avatarAction}>
+          <Avatar size={70} uri={avatar.uri} /><View style={s.photoEditBadge}><Symbol name="edit" size={15} color="white" /></View>
+        </Pressable>
         <View style={[s.grow, { gap: 4 }]}>
-          <Text style={s.name}>Mon compte</Text><Text style={[s.membership, { color: colors.squadPurple }]}>{game.equipment.title === 'regular' ? 'Assidu' : 'Confirmé'}</Text><Text style={s.subtitle}>{profile.age} ans · {profile.height} cm</Text>
+          <View style={s.nameRow}><Text style={s.name}>Mon compte</Text><IconButton variant="ghost" size={32} accessibilityLabel="Modifier mon profil" icon={<Symbol name="edit" size={19} color="textSecondary" />} onPress={() => onEdit(3)} /></View>
+          <Text style={[s.membership, { color: colors.squadPurple }]}>{game.equipment.title === 'regular' ? 'Assidu' : 'Confirmé'}</Text><Text style={s.subtitle}>{profile.age} ans · {profile.height} cm</Text>
           <View style={s.goalBadge}><Symbol name="target" color="success" size={16} /><Text style={s.goalBadgeText}>{profile.goals}</Text></View>
           <Text style={s.membership}>{session.user?.createdAt ? `Membre depuis le ${new Date(session.user.createdAt).toLocaleDateString('fr-FR')}` : ''}</Text>
+          {avatar.uploading ? <Text style={s.avatarHint}>Photo en cours d’enregistrement…</Text> : avatar.avatar?.status === 'pending' || avatar.avatar?.status === 'processing' ? <Text style={s.avatarHint}>Ton avatar de jeu vidéo se prépare…</Text> : null}
         </View>
       </Card>}
+      {avatar.error ? <Banner variant="error" message={avatar.error} /> : null}
+      {avatar.avatar?.status === 'failed' ? <Card style={{ gap: 8 }}><Text style={s.avatarHint}>La création a échoué. Ta photo reste visible.</Text><Button text="Réessayer" variant="outline" onPress={() => void avatar.retry()} /></Card> : null}
       <Card style={[s.card, s.objective]}>
         <RoundIcon symbol="target" color={colors.primary} background={colors.primaryTint} size={54} />
         <View style={[s.grow, { gap: 4 }]}><Text style={s.subtitle}>Objectif actuel</Text><Text style={s.objectiveTitle}>Boxeur athlétique</Text><Text style={s.subtitle}>74 kg cible · juin 2027</Text></View>
@@ -74,7 +109,7 @@ export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNu
       </Section>
       <Section title="Communauté">
         <SettingsRow label="Niveau et XP" value={`Niveau ${game.level}`} onPress={onLevel} icon={<RoundIcon illustration="trophy" color={colors.warning} background={colors.warningSurface} />} />
-        <SettingsRow label="Squad" value="4 membres" icon={<RoundIcon symbol="users" color={colors.primary} background={colors.primarySurface} />} onPress={onSquad} last />
+        <SettingsRow label="Squad" value={`${squadCounts.groups} groupes · ${squadCounts.friends} amis`} icon={<RoundIcon symbol="users" color={colors.primary} background={colors.primarySurface} />} onPress={onSquad} last />
       </Section>
       <Section title="Données et application">
         <SettingsRow label="Apple Santé" icon={<RoundIcon symbol="heart" color={colors.energyVeryLow} background={colors.energySurface} />} />
@@ -87,6 +122,19 @@ export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNu
       <Pressable accessibilityRole="link" onPress={onLibrary} hitSlop={8} style={s.library}><Text style={s.libraryText}>Bibliothèque de composants</Text></Pressable>
     </ScrollView>
     <AppNavbar includeCoach value="profile" onChange={onTab} style={{ marginHorizontal: 14, marginBottom: 5 }} />
+    <BottomSheet visible={avatarOptions} onClose={() => setAvatarOptions(false)} title="Mon personnage" style={{ maxHeight: '85%' }}
+      footer={<View style={{ gap: 8 }}><Button text="Choisir ma photo" onPress={() => void pickAvatar()} />
+        {pickerError ? <Text style={{ color: colors.energy, fontFamily: fontFamily.medium, fontSize: 12 }}>{pickerError}</Text> : null}</View>}>
+      <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 18, paddingBottom: 8 }} showsVerticalScrollIndicator={false}>
+        <Text style={s.subtitle}>Choisis l’univers de ton avatar. Ta photo reste visible pendant sa création.</Text>
+        <View style={s.avatarChoiceGroup}><Text style={s.avatarChoiceTitle}>Console</Text>
+          <PillSelector items={[...avatarPlatforms]} value={avatarPreferences.platform} onChange={value => setAvatarPreferences(current => ({ ...current, platform: value as AvatarPreferences['platform'] }))} /></View>
+        <View style={s.avatarChoiceGroup}><Text style={s.avatarChoiceTitle}>Genre et univers</Text>
+          <PillSelector items={[...avatarGenres]} value={avatarPreferences.genre} onChange={value => setAvatarPreferences(current => ({ ...current, genre: value as AvatarPreferences['genre'] }))} /></View>
+        <View style={s.avatarChoiceGroup}><Text style={s.avatarChoiceTitle}>Style graphique</Text>
+          <PillSelector items={[...avatarArtStyles]} value={avatarPreferences.artStyle} onChange={value => setAvatarPreferences(current => ({ ...current, artStyle: value as AvatarPreferences['artStyle'] }))} /></View>
+      </ScrollView>
+    </BottomSheet>
   </View></SafeAreaView>;
 }
 const s = StyleSheet.create({
@@ -98,9 +146,14 @@ const s = StyleSheet.create({
   brand: { fontFamily: fontFamily.extraBold, fontSize: 24, color: colors.text },
   tagline: { fontFamily: fontFamily.medium, fontSize: 9, color: colors.textSecondary },
   avatar: { overflow: 'hidden', backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center' },
+  avatarAction: { position: 'relative' },
+  photoEditBadge: { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.white },
+  avatarHint: { fontFamily: fontFamily.medium, fontSize: 10, color: colors.primary },
+  avatarChoiceGroup: { gap: 9 },
+  avatarChoiceTitle: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.text },
   bell: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.onboardingBackground, alignItems: 'center', justifyContent: 'center' },
   dot: { position: 'absolute', top: 3, right: 3, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.energy, borderWidth: 1, borderColor: colors.white },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   card: { padding: 12, borderWidth: 1, borderColor: colors.primarySurface, borderRadius: 16 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   name: { fontFamily: fontFamily.bold, fontSize: 17, color: colors.text },

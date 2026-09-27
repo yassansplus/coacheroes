@@ -1,8 +1,7 @@
 import { ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
-import { JournalEntry, Onboarding, User } from '../database/entities';
-import { buildTrainingContext } from '../program/context';
+import { JournalEntry, Onboarding } from '../database/entities';
 import { ProgramGenerator, type GenerationOutput } from '../program/generator';
 import { TrainingProgram } from '../program/program.entity';
 import { ChatAi } from './chat-ai';
@@ -40,9 +39,9 @@ export class ProgramReviewService implements OnModuleInit, OnModuleDestroy {
   async open(userId: string) {
     return this.db.transaction(async manager => {
       const program = await this.proposal(manager, userId);
-      let row = await manager.findOne(ChatConversation, { where: { userId, purpose: 'program_review' }, lock: { mode: 'pessimistic_write' } });
+      let row = await manager.findOne(ChatConversation, { where: { userId, purpose: 'program_review', programRunId: program.runId }, lock: { mode: 'pessimistic_write' } });
       if (row?.programRunId === program.runId) return this.view(row, manager);
-      row ??= manager.create(ChatConversation, { userId, purpose: 'program_review' });
+      row = manager.create(ChatConversation, { userId, purpose: 'program_review' });
       Object.assign(row, { status: 'awaiting_answer', programRunId: program.runId, sourceRevision: program.sourceRevision, question: null, pendingMessageId: null, turnId: null, leaseUntil: null, attempts: 0, error: null });
       await manager.save(row);
       await this.message(manager, row, 'Tu veux ajuster un truc dans ton programme ?');
@@ -86,12 +85,10 @@ export class ProgramReviewService implements OnModuleInit, OnModuleDestroy {
       try {
         const program = await this.db.getRepository(TrainingProgram).findOneByOrFail({ userId: claim.userId });
         if (!program.output || program.runId !== claim.programRunId || program.acceptedAt) throw new Error('PROPOSAL_CHANGED');
-        const profile = await this.db.getRepository(Onboarding).findOneByOrFail({ userId: claim.userId });
-        const user = await this.db.getRepository(User).findOneByOrFail({ id: claim.userId });
         const messages = await this.db.getRepository(ChatMessage).find({ where: { conversationId: claim.id }, order: { createdAt: 'ASC', id: 'ASC' } });
         const pending = messages.find(m => m.id === claim.pendingMessageId);
         if (!pending) throw new Error('MESSAGE_MISSING');
-        const context = buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails);
+        const { renewalAnalysisTrace: _trace, ...context } = program.context;
         const response = await this.ai.review(context, program.output, pending.text, messages.filter(m => m.id !== pending.id));
         let revised: GenerationOutput | null = null;
         if (response.answer.action === 'revise') {

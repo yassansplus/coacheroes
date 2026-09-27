@@ -3,20 +3,28 @@ import { Text, View } from 'react-native';
 import { EmptyState } from '@/components/EmptyState';
 import { Symbol } from '@/components/Symbol';
 import { TabSelector } from '@/components/TabSelector';
-import { colors } from '@/theme/colors';
-import { activities, memberById, type MemberId } from '../data';
+import type { SquadActivity, SquadPerson } from '@/services/squad';
+import { sportLabel, timeLabel } from '../data';
 import { Action, Avatar, Heading, Panel, Row, s, TileIcon } from './UI';
 
-export function Activity({ member, filter, onFilter, onChallenge }: { member?: MemberId; filter: string; onFilter: (value: string) => void; onChallenge: () => void }) {
-  const visible = activities.filter(activity => (!member || activity.member === member) && (filter === 'all' || filter === activity.category));
+export function Activity({ activities, people, member, filter, onFilter, onMember, onPrivacy }: {
+  activities: SquadActivity[]; people: SquadPerson[]; member?: string; filter: string;
+  onFilter: (value: string) => void; onMember: (id: string) => void; onPrivacy: () => void;
+}) {
+  const visible = activities.filter(activity => (!member || activity.userId === member) && (filter === 'all' || filter === activity.sport));
+  const byId = new Map(people.map(person => [person.id, person]));
+  const days = [...new Set(visible.map(activity => new Date(activity.at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })))];
   return <>
-    <TabSelector value={filter} onChange={onFilter} items={[{ value: 'all', label: 'Tout' }, { value: 'sessions', label: 'Séances' }, { value: 'records', label: 'Records' }, { value: 'missions', label: 'Missions' }]} />
-    {member ? <Text style={s.muted}>Activité partagée de {memberById(member).name}</Text> : null}
-    {['Aujourd’hui', 'Hier'].map(day => {
-      const entries = visible.filter(activity => activity.day === day);
-      return entries.length ? <Fragment key={day}><Heading>{day}</Heading><Panel><View>{entries.map((entry, index) => <Row key={entry.id} last={index === entries.length - 1} onPress={entry.id === 'challenge' ? onChallenge : undefined}><Avatar member={memberById(entry.member)} size={40} /><TileIcon name={entry.icon} tone={entry.tone} size={44} /><View style={[s.grow, { paddingVertical: 6, gap: 3 }]}><Text style={[s.title, { fontSize: 14 }]}>{memberById(entry.member).name}</Text><Text style={s.muted}>{entry.title}</Text><View style={[s.row, { flexWrap: 'wrap', gap: 4 }]}><Text style={s.muted}>{entry.detail}</Text>{'xp' in entry ? <Text style={[s.small, { backgroundColor: colors.successSurface, color: colors.successText, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 5 }]}>+{entry.xp} XP</Text> : null}</View></View><Text style={s.small}>{entry.time}</Text><Symbol name="chevron" color="textMuted" size={16} /></Row>)}</View></Panel></Fragment> : null;
+    <TabSelector value={filter} onChange={onFilter} items={[{ value: 'all', label: 'Tout' }, { value: 'strength', label: 'Muscu' }, { value: 'boxing', label: 'Boxe' }]} />
+    {member ? <Text style={s.muted}>Activité partagée de {byId.get(member)?.name ?? 'cet ami'}</Text> : null}
+    {days.map(day => {
+      const entries = visible.filter(activity => new Date(activity.at).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) === day);
+      return <Fragment key={day}><Heading>{day}</Heading><Panel><View>{entries.map((entry, index) => {
+        const person = byId.get(entry.userId);
+        return <Row key={entry.id} last={index === entries.length - 1} onPress={person ? () => onMember(person.id) : undefined}>{person ? <Avatar member={person} size={40} /> : null}<TileIcon name={entry.sport === 'boxing' ? 'boxing' : 'dumbbell'} tone="purple" size={44} /><View style={[s.grow, { paddingVertical: 6, gap: 3 }]}><Text style={[s.title, { fontSize: 14 }]}>{person?.name ?? 'Membre'}</Text><Text style={s.muted}>{entry.sport === 'session' ? 'Séance terminée' : `${sportLabel(entry.sport)} terminé${entry.sport === 'strength' ? 'e' : ''}`}</Text>{entry.minutes ? <Text style={s.muted}>{entry.minutes} min</Text> : null}</View><Text style={s.small}>{timeLabel(entry.at)}</Text><Symbol name="chevron" size={16} color="textMuted" /></Row>;
+      })}</View></Panel></Fragment>;
     })}
     {!visible.length ? <Panel><EmptyState title="Aucune activité partagée" description="Aucune activité ne correspond à ce filtre pour le moment." /></Panel> : null}
-    <View style={{ marginTop: 20 }}><Action text="Paramètres de confidentialité" outline /></View>
+    <View style={{ marginTop: 20 }}><Action text="Paramètres de confidentialité" outline onPress={onPrivacy} /></View>
   </>;
 }

@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { createHash,randomUUID } from 'node:crypto';
 import { JournalEntry,User,Onboarding } from '../database/entities';
 import { WorkoutSession,ProgramBlock } from './workout.entity';
+import { TrainingProgram } from '../program/program.entity';
 import { summarizeWorkout,type WorkoutWrite } from './workout.schema';
 @Injectable()
 export class WorkoutService {
@@ -92,6 +93,8 @@ export class WorkoutService {
    due:Date.now()>=block.endsAt.getTime(),recommendation:pain?'review_restrictions':completed.length<templates.length*2?'continue':'renew',pain};
  }
  async extend(userId:string,id:string){return this.db.transaction(async m=>{
+  const current=await m.findOne(TrainingProgram,{where:{userId},lock:{mode:'pessimistic_write'}});
+  if(!current?.acceptedAt||current.runId!==id)throw new ConflictException('Ce bloc n’est plus le programme actif.');
   const block=await m.findOne(ProgramBlock,{where:{id,userId},lock:{mode:'pessimistic_write'}});if(!block)throw new NotFoundException();
   if(block.endsAt.getTime()>Date.now())return block;
   const before={endsAt:block.endsAt,extensions:block.extensions};block.endsAt=new Date(Math.max(Date.now(),block.endsAt.getTime())+14*86400000);block.extensions+=2;await m.save(block);

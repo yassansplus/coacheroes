@@ -29,7 +29,16 @@ export function buildTrainingContext(profile: Record<string, unknown>, revision:
     unknowns: ['repetitionsAtWeight', ...(p.goal.length > 1 ? ['objectivePriority'] : [])],
   };
 }
-export type TrainingContext = ReturnType<typeof buildTrainingContext>;
+export type TrainingContext = ReturnType<typeof buildTrainingContext> & {
+  renewal?: boolean;
+  sourceBlockId?: string;
+  previousProgram?: unknown;
+  blockSummary?: unknown;
+  trainingHistory?: unknown[];
+  renewalAnswers?: unknown;
+  renewalAnalysis?: unknown;
+  renewalAnalysisTrace?: unknown;
+};
 export function requiredClarifications(c: TrainingContext): string[] {
   const questions: string[] = [];
   if (!c.firstName) questions.push('Au fait, comment tu t’appelles ?');
@@ -38,7 +47,7 @@ export function requiredClarifications(c: TrainingContext): string[] {
   if (!c.availability || !c.availability.weekdaysMondayZero.length || c.availability.sessionsPerWeek > c.availability.weekdaysMondayZero.length)
     questions.push('Tu peux t’entraîner quels jours, combien de fois et pendant combien de temps ?');
   if (!c.equipment) questions.push('Tu as quel matériel pour la muscu ?');
-  if (!c.restrictions.noPainDeclared || c.restrictions.painLocations.length || c.restrictions.userNotes.trim())
+  if ((!c.restrictions.noPainDeclared || c.restrictions.painLocations.length || c.restrictions.userNotes.trim()) && (!c.renewal || !c.restrictions.userNotes.trim()))
     questions.push('Tu as signalé une douleur. Quels mouvements te posent problème ?');
   const fixed = c.sportSchedules.filter(s => s.mode === 'fixed');
   if (c.availability && (fixed.some(s => s.weekdays.some(d => !c.availability!.weekdaysMondayZero.includes(d)) || (s.minutes ?? 0) > c.availability!.maxSessionMinutes) || fixed.reduce((n, s) => n + s.weekdays.length, 0) + c.selectedSports.length - fixed.length > c.availability.sessionsPerWeek)) questions.push('Tes créneaux ne couvrent pas encore tes séances fixes et la muscu. On ajuste ?');
