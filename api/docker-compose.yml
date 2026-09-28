@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: coacheroes-api
+    restart: unless-stopped
+    env_file:
+      - .env
+      - .env.local
+      - .env.production
+    ports:
+      - '192.168.1.37:3004:3000'
+    networks:
+      - database
+      - proxy
+
+networks:
+  database:
+    external:
+      name: naow-app_naow-internal
+  proxy:
+    external:
+      name: docker_proxy

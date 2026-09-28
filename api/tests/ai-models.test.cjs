@@ -27,3 +27,20 @@ test('Astra and unsupported models are rejected before startup or API calls', ()
     }
   }
 });
+
+test('GPT-6 Sol is accepted for program generation and review at startup', () => {
+  const config = new ConfigService({
+    OPENAI_PROGRAM_MODEL: 'gpt-6-sol',
+    OPENAI_REVIEW_MODEL: 'gpt-6-sol',
+  });
+  assert.deepEqual(aiSettings(config, 'program'), { model: 'gpt-6-sol', reasoningEffort: 'high' });
+  assert.deepEqual(aiSettings(config, 'review'), { model: 'gpt-6-sol', reasoningEffort: 'medium' });
+  assert.doesNotThrow(() => validateEnvironment({
+    DATABASE_HOST: 'test',
+    DATABASE_NAME: 'test',
+    DATABASE_USER: 'test',
+    DATABASE_PASSWORD: 'test',
+    OPENAI_PROGRAM_MODEL: 'gpt-6-sol',
+    OPENAI_REVIEW_MODEL: 'gpt-6-sol',
+  }));
+});

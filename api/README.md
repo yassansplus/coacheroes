@@ -1,5 +1,7 @@
 # Backend : identité et onboarding
 
+Déploiement Docker sur le serveur partagé : [guide de déploiement](../docs/deployment.md).
+
 NestJS, PostgreSQL et **TypeORM**. Les schémas sont créés par migrations ; garder
 `DATABASE_SYNCHRONIZE=false`. Aucun appel OpenAI dans ce premier lot.
 

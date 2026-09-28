@@ -3,6 +3,7 @@
     "name": "Coac Heroes",
     "slug": "coac-heroes",
     "version": "1.0.0",
+    "icon": "./assets/app-icon/icon.png",
     "scheme": "coac-heroes",
     "orientation": "portrait",
     "userInterfaceStyle": "light",

@@ -10,7 +10,7 @@ export const aiContexts = {
   coachChat: { variable: 'OPENAI_COACH_CHAT_MODEL', model: 'gpt-6-luna', reasoningEffort: 'low' },
 } as const;
 export type AiContext = keyof typeof aiContexts;
-const allowedModels = new Set(['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-6-luna']);
+const allowedModels = new Set(['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-6-luna', 'gpt-6-sol']);
 
 export function resolveAiModel(context: AiContext, value: unknown): string {
   const { variable, model } = aiContexts[context];
