@@ -50,10 +50,11 @@ test('daily reminders send once at 9h, not for completed or logged-out users; pr
  const db=await database(t),service=new DailyService(db),worker=new DailyReminder(db,new ConfigService()),date=localClock('UTC').date;
  const users=await Promise.all(['done','pending','logout'].map(appleSubject=>db.getRepository(User).save({appleSubject})));
  for(let i=0;i<users.length;i++){const tokenHash=String(i).repeat(64);await db.getRepository(Session).save({tokenHash,userId:users[i].id,expiresAt:new Date(Date.now()+86400000),revokedAt:i===2?new Date():null});await service.device(users[i].id,tokenHash,'UTC',`ExpoPushToken[test-${i}]`);}
+ await db.getRepository(User).update(users[1].id,{language:'nl'});
  await service.save(users[0].id,input(date));await service.opened(users[1].id,'UTC',new Date(date+'T07:00:00Z'));
  const oldFetch=global.fetch,calls=[];global.fetch=async(url,options)=>{calls.push({url,body:JSON.parse(options.body)});return new Response(JSON.stringify(url.endsWith('getReceipts')?{data:{ticket:{status:'error',details:{error:'DeviceNotRegistered'}}}}:{data:{status:'ok',id:'ticket'}}),{status:200});};t.after(()=>global.fetch=oldFetch);
  await worker.tick(new Date(date+'T08:59:00Z'));assert.equal(calls.length,0);
- await worker.tick(new Date(date+'T09:00:00Z'));await worker.tick(new Date(date+'T09:01:00Z'));assert.equal(calls.length,1);assert.equal(calls[0].body.to,'ExpoPushToken[test-1]');
+ await worker.tick(new Date(date+'T09:00:00Z'));await worker.tick(new Date(date+'T09:01:00Z'));assert.equal(calls.length,1);assert.equal(calls[0].body.to,'ExpoPushToken[test-1]');assert.equal(calls[0].body.title,'Je ochtendcheck-in');assert.match(calls[0].body.body,/Hoe voel je je/);
  await db.query("UPDATE daily_reminders SET created_at=now()-interval '16 minutes'");await worker.receipts();assert.equal(calls.length,2);
  assert.equal((await db.query('SELECT 1 FROM daily_push_devices WHERE user_id=$1',[users[1].id])).length,0);
 });

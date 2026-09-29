@@ -1,5 +1,9 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -26,22 +30,23 @@ export function describePain(profile: OnboardingProfile) {
 }
 
 export function ReviewStep({ profile, onEdit }: { profile: OnboardingProfile; onEdit: (step: number) => void }) {
+  useLanguage();
   const [group, setGroup] = useState<'training' | 'nutrition' | null>(null);
   const sport = profile.sports.map(value => sports[value].title).join(' + ');
   const avoided = profile.avoidedFoods.filter(value => value !== 'none').length;
   const rows: { title: string; value: string; icon: IllustrationName; action: () => void }[] = [
     { title: 'Objectif', value: profile.goal.map(value => goals.find(goal => goal.value === value)?.title).filter(Boolean).join(' · ') || 'À renseigner', icon: 'target', action: () => onEdit(2) },
-    { title: 'Profil', value: `${profile.age} ans · ${profile.height} cm · ${profile.weight} kg`, icon: 'person', action: () => onEdit(3) },
-    { title: 'Entraînement', value: profile.skippedSteps.includes(7) ? `${sport} · disponibilités à définir` : `${sport} · ${profile.sessions} séances · ${profile.duration} min`, icon: 'dumbbell', action: () => setGroup('training') },
-    { title: 'Récupération', value: profile.skippedSteps.includes(10) ? 'À renseigner' : `${formatMinutes(profile.sleep)} · activité ${activities.find(item => item.value === profile.activity)?.title.toLowerCase()}`, icon: 'moon', action: () => onEdit(10) },
-    { title: 'Nutrition', value: `${profile.meals} repas · ${profile.allergies.trim() ? 'allergie / préférence précisée' : avoided ? `${avoided} exclusion${avoided > 1 ? 's' : ''}` : 'aucune allergie signalée'}`, icon: 'apple', action: () => setGroup('nutrition') },
+    { title: 'Profil', value: t("{p0} ans · {p1} cm · {p2} kg", { p0: profile.age, p1: profile.height, p2: profile.weight }), icon: 'person', action: () => onEdit(3) },
+    { title: 'Entraînement', value: profile.skippedSteps.includes(7) ? t("{p0} · disponibilités à définir", { p0: sport }) : t("{p0} · {p1} séances · {p2} min", { p0: sport, p1: profile.sessions, p2: profile.duration }), icon: 'dumbbell', action: () => setGroup('training') },
+    { title: 'Récupération', value: profile.skippedSteps.includes(10) ? 'À renseigner' : t("{p0} · activité {p1}", { p0: formatMinutes(profile.sleep), p1: activities.find(item => item.value === profile.activity)?.title.toLowerCase() }), icon: 'moon', action: () => onEdit(10) },
+    { title: 'Nutrition', value: t("{p0} repas · {p1}", { p0: profile.meals, p1: profile.allergies.trim() ? 'allergie / préférence précisée' : avoided ? t("{p0} exclusion{p1}", { p0: avoided, p1: avoided > 1 ? 's' : '' }) : 'aucune allergie signalée' }), icon: 'apple', action: () => setGroup('nutrition') },
   ];
   return <>
     <StepHeading title="Vérifie ton profil" subtitle="Tout est prêt ? Tu peux encore modifier si besoin avant de créer ton programme." />
     <View style={{ gap: 10 }}>{rows.map(row => <Card key={row.title} style={styles.summary}>
       <Illustration name={row.icon} size={49} />
       <View style={s.grow}><Text style={styles.label}>{row.title}</Text><Text style={styles.value}>{row.value}</Text></View>
-      <IconButton accessibilityLabel={`Modifier ${row.title.toLowerCase()}`} backgroundColor="primarySurface" size={36}
+      <IconButton accessibilityLabel={localizeLabel(t("Modifier {p0}", { p0: row.title.toLowerCase() }))} backgroundColor="primarySurface" size={36}
         icon={<Symbol name="edit" size={18} color="textSecondary" />} onPress={row.action} />
     </Card>)}</View>
     <Card style={[styles.summary, { backgroundColor: profile.noPain ? colors.primarySurface : colors.warningSurface }]}>

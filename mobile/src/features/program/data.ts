@@ -1,3 +1,4 @@
+import { t } from '@/i18n/core';
 import type { Exercise, Feeling, Workout } from './types';
 
 export const workouts: Workout[] = [
@@ -42,9 +43,9 @@ export function alternatives(exercise: Exercise): Exercise[] {
   };
   const labels = names[exercise.muscle];
   return [
-    { suffix: 'machine', name: labels?.[0] ?? `${exercise.muscle} · machine guidée`, equipment: 'Machine' as const, icon: 'machine' as const },
-    { suffix: 'dumbbells', name: labels?.[1] ?? `${exercise.muscle} · haltères`, equipment: 'Haltères' as const, icon: 'dumbbell' as const },
-    { suffix: 'cable', name: labels?.[2] ?? `${exercise.muscle} · poulie`, equipment: 'Machine' as const, icon: 'pulley' as const },
+    { suffix: 'machine', name: labels?.[0] ?? t("{p0} · machine guidée", { p0: exercise.muscle }), equipment: 'Machine' as const, icon: 'machine' as const },
+    { suffix: 'dumbbells', name: labels?.[1] ?? t("{p0} · haltères", { p0: exercise.muscle }), equipment: 'Haltères' as const, icon: 'dumbbell' as const },
+    { suffix: 'cable', name: labels?.[2] ?? t("{p0} · poulie", { p0: exercise.muscle }), equipment: 'Machine' as const, icon: 'pulley' as const },
   ].map(item => ({ ...exercise, ...item, id: `${exercise.id}-${item.suffix}`, weight: 0,
     sets: exercise.sets.map(() => null), previous: { weight: 0, reps: [] } }));
 }

@@ -1,5 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -13,6 +16,7 @@ type BottomSheetProps = PropsWithChildren<{
 }>;
 
 export function BottomSheet({ children, footer, onClose, style, title, visible }: BottomSheetProps) {
+  useLanguage();
   return (
     <Modal
       animationType="slide"
@@ -25,7 +29,7 @@ export function BottomSheet({ children, footer, onClose, style, title, visible }
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.overlay}
       >
-        <Pressable accessibilityLabel="Fermer" onPress={onClose} style={StyleSheet.absoluteFill} />
+        <Pressable accessibilityLabel={localizeLabel("Fermer")} onPress={onClose} style={StyleSheet.absoluteFill} />
         <View accessibilityViewIsModal style={[styles.sheet, style]}>
           <View style={styles.handle} />
           {title ? <Text style={styles.title}>{title}</Text> : null}

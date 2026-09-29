@@ -1,5 +1,9 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { AppModal } from '@/components/AppModal';
@@ -30,6 +34,7 @@ import { clockLabel } from '../utils';
 const titles: Record<Page, string> = { program: '', detail: '', ready: '', warmup: 'Échauffement', training: '', rest: 'Temps de repos', replace: 'Remplacer l’exercice', pain: 'Signaler une douleur', history: 'Historique', debrief: 'Fin de séance', summary: 'Résumé de la séance', coach: '' };
 
 export function ProgramScreen({ onHome, onToday, onProgress, onCoach, onProfile, onExit, onBlockReview, onHistory, initialPreparation = false, initialWorkout, program }: { onHome: () => void; onToday: () => void; onProgress: () => void; onCoach: () => void; onProfile: () => void; onExit?: () => void; onBlockReview?: (id: string) => void; onHistory?: () => void; initialPreparation?: boolean; initialWorkout?: Workout; program?: TrainingProgram }) {
+  useLanguage();
   const p = useProgram(initialWorkout ? 'detail' : initialPreparation ? 'ready' : 'program', initialWorkout ?? (program ? generatedWorkout(program, 0) ?? undefined : undefined));
   const openedFromHome = useRef(initialPreparation);
   useEffect(() => { if (initialWorkout && p.page === 'program') onExit?.(); }, [initialWorkout, p.page, onExit]);
@@ -66,7 +71,7 @@ export function ProgramScreen({ onHome, onToday, onProgress, onCoach, onProfile,
     body = <ProgramOverview program={program} onBlockReview={onBlockReview} onHistory={onHistory} onSelect={workout => { setShowAll(false); setEditing(false); p.selectWorkout(workout); }} />;
   } else if (p.page === 'detail') {
     body = <><SessionDetail p={p} editing={editing} showAll={showAll} onHistory={history} />
-      {p.exercises.length > 6 ? <Button text={showAll ? 'Réduire la liste' : `${p.exercises.length - 6} exercices supplémentaires`} leading={<Symbol name={showAll ? 'minus' : 'plus'} color="primary" />} trailing={<Symbol name="chevron" color="textMuted" />} variant="secondary" onPress={() => setShowAll(!showAll)} /> : null}</>;
+      {p.exercises.length > 6 ? <Button text={showAll ? 'Réduire la liste' : t("{p0} exercices supplémentaires", { p0: p.exercises.length - 6 })} leading={<Symbol name={showAll ? 'minus' : 'plus'} color="primary" />} trailing={<Symbol name="chevron" color="textMuted" />} variant="secondary" onPress={() => setShowAll(!showAll)} /> : null}</>;
     footer = <View style={{ gap: 8 }}><Button text="Commencer la séance" hapticFeedback onPress={() => p.setPage('ready')} />{p.exercises.length && !p.workout.generated ? <Button text={editing ? 'Terminer les modifications' : 'Modifier la séance'} variant="secondary" backgroundColor="transparent" textColor={colors.primary} onPress={() => { setEditing(!editing); setShowAll(true); }} /> : null}</View>;
   } else if (p.page === 'ready') {
     body = <SessionReady p={p} totalSets={totalSets} />;
@@ -77,15 +82,15 @@ export function ProgramScreen({ onHome, onToday, onProgress, onCoach, onProfile,
       <Text style={[s.title, s.center]}>{warmup ? 'Échauffement' : 'Repos'}</Text>
       <ProgressRing animated animationDuration={950} progress={p.secondsLeft / p.timerDuration * 100} size={Math.min(width - 70, 290)} strokeWidth={13}><Text style={[s.value, { fontSize: 46 }]}>{clockLabel(p.secondsLeft)}</Text><Text style={s.section}>sur {clockLabel(p.timerDuration)}</Text></ProgressRing>
       {warmup ? <Card style={s.stack}><Text style={s.section}>{p.secondsLeft > 180 ? '1. Mise en mouvement' : p.secondsLeft > 60 ? '2. Mobilité douce' : '3. Préparation spécifique'}</Text><Text style={s.body}>{p.workout.warmupGuidance ?? (p.secondsLeft > 180 ? 'Marche ou mouvement léger à ton rythme.' : p.secondsLeft > 60 ? 'Mobilise doucement les articulations sollicitées.' : 'Répète les premiers mouvements sans charge.')}</Text></Card> : <>
-        <View style={s.row}>{[-15, 15, 30].map(delta => <Button key={delta} text={`${delta > 0 ? '+' : '−'}${Math.abs(delta)} s`} variant="secondary" textColor={colors.primary} style={s.grow} onPress={() => p.adjustTimer(delta)} />)}</View>
-        {current ? <Card style={s.stack}><Text style={s.caption}>PROCHAINE SÉRIE</Text><Text style={s.section}>{current.name} · Série {pendingIndex + 1}</Text><View style={s.row}><Illustration name={current.icon} size={55} /><View><Text style={s.value}>{current.weight ? `${current.weight} kg` : 'À calibrer'}</Text><Text style={s.body}>Objectif {current.targetReps} reps</Text></View></View></Card> : null}
+        <View style={s.row}>{[-15, 15, 30].map(delta => <Button key={delta} text={t("{p0}{p1} s", { p0: delta > 0 ? '+' : '−', p1: Math.abs(delta) })} variant="secondary" textColor={colors.primary} style={s.grow} onPress={() => p.adjustTimer(delta)} />)}</View>
+        {current ? <Card style={s.stack}><Text style={s.caption}>PROCHAINE SÉRIE</Text><Text style={s.section}>{current.name} · Série {pendingIndex + 1}</Text><View style={s.row}><Illustration name={current.icon} size={55} /><View><Text style={s.value}>{current.weight ? t("{p0} kg", { p0: current.weight }) : 'À calibrer'}</Text><Text style={s.body}>Objectif {current.targetReps} reps</Text></View></View></Card> : null}
       </>}
       <Card style={[s.row, s.compact]}><Glyph name="clock" index={3} /><View style={s.grow}><Toggle label="Vibration en fin de repos" value={p.restHaptics} onValueChange={p.setRestHaptics} /></View></Card>
     </>;
     footer = <Button variant="outline" text={warmup ? 'Passer à la séance' : 'Reprendre maintenant'} hapticFeedback onPress={p.skipTimer} />;
   } else if (p.page === 'training') {
     body = <SessionTraining p={p} />;
-    footer = <Button text={current ? `Saisir la série ${pendingIndex + 1}` : 'Terminer ma séance'} trailing={<Symbol name="arrow" color="white" />} hapticFeedback onPress={current ? () => p.openSet(pendingIndex) : p.finishFree} />;
+    footer = <Button text={current ? t("Saisir la série {p0}", { p0: pendingIndex + 1 }) : 'Terminer ma séance'} trailing={<Symbol name="arrow" color="white" />} hapticFeedback onPress={current ? () => p.openSet(pendingIndex) : p.finishFree} />;
   } else if (p.page === 'replace' && current) {
     body = <ReplaceExercise key={current.id} exercise={current} onConfirm={p.replaceExercise} onCancel={back} />;
   } else if (p.page === 'pain') {
@@ -107,8 +112,8 @@ export function ProgramScreen({ onHome, onToday, onProgress, onCoach, onProfile,
   return <View style={local.screen}><ScreenBackdrop /><SafeAreaView style={local.safe}>
     <KeyboardAvoidingView style={local.safe} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={local.frame}>
-        {p.page === 'program' && onExit ? <AppHeader title="Mon programme" leading={<IconButton accessibilityLabel="Retour" icon={<Symbol name="back" />} onPress={onExit} />} /> : null}
-        {p.page !== 'program' ? <AppHeader style={{ minHeight: 54 }} title={['detail', 'ready', 'training'].includes(p.page) ? p.workout.name : titles[p.page]} leading={<IconButton accessibilityLabel="Retour" icon={<Symbol name={['ready', 'training', 'rest', 'debrief', 'summary', 'coach', 'pain', 'replace'].includes(p.page) ? 'close' : 'back'} />} onPress={back} />} trailing={p.page === 'training' && current ? <IconButton accessibilityLabel="Options de l’exercice" icon={<Symbol name="more" />} onPress={() => setMenu(!menu)} /> : p.page === 'detail' && p.exercises.length && !p.workout.generated ? <IconButton accessibilityLabel="Modifier la séance" icon={<Symbol name="more" />} onPress={() => { setEditing(!editing); setShowAll(true); }} /> : p.page === 'rest' ? <Button text="Passer" variant="secondary" onPress={p.skipTimer} /> : undefined} /> : null}
+        {p.page === 'program' && onExit ? <AppHeader title="Mon programme" leading={<IconButton accessibilityLabel={localizeLabel("Retour")} icon={<Symbol name="back" />} onPress={onExit} />} /> : null}
+        {p.page !== 'program' ? <AppHeader style={{ minHeight: 54 }} title={['detail', 'ready', 'training'].includes(p.page) ? p.workout.name : titles[p.page]} leading={<IconButton accessibilityLabel={localizeLabel("Retour")} icon={<Symbol name={['ready', 'training', 'rest', 'debrief', 'summary', 'coach', 'pain', 'replace'].includes(p.page) ? 'close' : 'back'} />} onPress={back} />} trailing={p.page === 'training' && current ? <IconButton accessibilityLabel={localizeLabel("Options de l’exercice")} icon={<Symbol name="more" />} onPress={() => setMenu(!menu)} /> : p.page === 'detail' && p.exercises.length && !p.workout.generated ? <IconButton accessibilityLabel={localizeLabel("Modifier la séance")} icon={<Symbol name="more" />} onPress={() => { setEditing(!editing); setShowAll(true); }} /> : p.page === 'rest' ? <Button text="Passer" variant="secondary" onPress={p.skipTimer} /> : undefined} /> : null}
         <ScrollView ref={scroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[local.content, p.page === 'program' && { gap: 10 }]}><Motion trigger={`${p.page}-${p.exerciseIndex}`} style={{ gap: p.page === 'program' ? 10 : 14 }}>{body}</Motion></ScrollView>
         {footer ? <View style={local.footer}>{footer}</View> : null}
         {p.page === 'program' ? <AppNavbar includeCoach value="program" style={{ marginBottom: 5 }} onChange={value => {

@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DataSource, EntityManager } from 'typeorm';
-import { JournalEntry, Onboarding } from '../database/entities';
+import { JournalEntry, Onboarding, User } from '../database/entities';
 import { ProgramGenerator, type GenerationOutput } from '../program/generator';
 import { TrainingProgram } from '../program/program.entity';
 import { ChatAi } from './chat-ai';
@@ -89,6 +89,7 @@ export class ProgramReviewService implements OnModuleInit, OnModuleDestroy {
         const pending = messages.find(m => m.id === claim.pendingMessageId);
         if (!pending) throw new Error('MESSAGE_MISSING');
         const { renewalAnalysisTrace: _trace, ...context } = program.context;
+        context.locale = (await this.db.getRepository(User).findOneByOrFail({ id: claim.userId })).language;
         const response = await this.ai.review(context, program.output, pending.text, messages.filter(m => m.id !== pending.id));
         let revised: GenerationOutput | null = null;
         if (response.answer.action === 'revise') {

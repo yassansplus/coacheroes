@@ -1,6 +1,9 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as Crypto from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { BodyPainSelector, type BodyPainSelection } from '@/components/BodyPainSelector';
@@ -40,6 +43,7 @@ const equipmentOptions = [
 const toggle = <T,>(values: T[], value: T) => values.includes(value) ? values.filter(item => item !== value) : [...values, value];
 
 export function ProgramRenewalScreen({ blockId, onBack, onDone }: { blockId: string; onBack: () => void; onDone: () => void }) {
+  useLanguage();
   const { user } = useSession();
   const program = useTrainingProgramState();
   const [review, setReview] = useState<BlockReview | null>(null);
@@ -93,7 +97,7 @@ export function ProgramRenewalScreen({ blockId, onBack, onDone }: { blockId: str
   const extend = async () => { if (busy) return; setBusy(true); setError(null); try { await extendBlock(blockId); onDone(); }
     catch (e) { setError(e instanceof Error ? e.message : 'Impossible de prolonger le programme.'); } finally { setBusy(false); } };
   return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}><View style={{ flex: 1, width: '100%', maxWidth: 680, alignSelf: 'center', paddingHorizontal: 18 }}>
-    <AppHeader title="Bilan du programme" leading={<IconButton accessibilityLabel="Retour" icon={<Symbol name="back" />} onPress={() => stage === 'questions' ? setStage('summary') : onBack()} />} />
+    <AppHeader title="Bilan du programme" leading={<IconButton accessibilityLabel={localizeLabel("Retour")} icon={<Symbol name="back" />} onPress={() => stage === 'questions' ? setStage('summary') : onBack()} />} />
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingVertical: 16, paddingBottom: 46 }}>
       {!review && !error ? <LoadingState label="On rassemble tes séances" /> : null}
       {error && !review ? <ErrorState title="Bilan indisponible" description={error} onRetry={() => void load()} /> : null}
@@ -141,7 +145,7 @@ export function ProgramRenewalScreen({ blockId, onBack, onDone }: { blockId: str
             {equipmentOptions.map(([value, label]) => <ChoiceCard key={value} title={label} selected={answers.equipment.includes(value)} layout="chip"
               indicatorPosition="trailing" style={{ minWidth: '43%', flexGrow: 1 }} onPress={() => update({ equipment: toggle(answers.equipment, value) })} />)}
           </View>
-          <TextField label="Autre matériel" value={equipmentText} onChangeText={value => { setEquipmentText(value); requestId.current = null; setError(null); }} placeholder="Ex. : kettlebell" helperText="Sépare les éléments par une virgule." />
+          <TextField label="Autre matériel" value={equipmentText} onChangeText={value => { setEquipmentText(value); requestId.current = null; setError(null); }} placeholder={localizeLabel("Ex. : kettlebell")} helperText="Sépare les éléments par une virgule." />
         </Card>
         <Card style={s.stack}><Text style={s.section}>Douleurs actuelles</Text>
           <ChoiceCard title="Aucune douleur actuellement" selected={answers.noPain} layout="row" onPress={() => update({ noPain: true, pains: [], painNotes: '' })} />
@@ -152,8 +156,8 @@ export function ProgramRenewalScreen({ blockId, onBack, onDone }: { blockId: str
         <Card style={s.stack}><Text style={s.section}>Ton ressenti</Text>
           <TabSelector value={answers.effort} onChange={effort => update({ effort: effort as RenewalAnswers['effort'] })}
             items={[{ value: 'easy', label: 'Trop facile' }, { value: 'balanced', label: 'Bien dosé' }, { value: 'hard', label: 'Trop dur' }]} />
-          <TextField label="Tu veux garder ou changer quelque chose ?" value={answers.feedback} onChangeText={feedback => update({ feedback })} multiline maxLength={500} placeholder="Facultatif" />
-          <TextField label="Ton poids actuel, si tu le connais" value={weightText} onChangeText={value => { setWeightText(value); requestId.current = null; setError(null); }} keyboardType="decimal-pad" placeholder="kg" />
+          <TextField label="Tu veux garder ou changer quelque chose ?" value={answers.feedback} onChangeText={feedback => update({ feedback })} multiline maxLength={500} placeholder={localizeLabel("Facultatif")} />
+          <TextField label="Ton poids actuel, si tu le connais" value={weightText} onChangeText={value => { setWeightText(value); requestId.current = null; setError(null); }} keyboardType="decimal-pad" placeholder={localizeLabel("kg")} />
         </Card>
         {error ? <Text style={{ color: colors.energy }}>{error}</Text> : null}
         <Button text={busy ? 'Préparation…' : 'Générer mon prochain programme'} disabled={busy} onPress={() => void submit()} />

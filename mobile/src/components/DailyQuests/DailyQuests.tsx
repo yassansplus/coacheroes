@@ -1,14 +1,9 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { feedback } from '@/utils/feedback';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
 import {
@@ -65,7 +60,7 @@ function getRewardParts(reward?: string) {
 }
 
 function formatWholeNumber(value: number) {
-  return Math.round(value).toLocaleString('fr-FR');
+  return Math.round(value).toLocaleString(getLocale());
 }
 
 function DailyQuestItem({
@@ -87,6 +82,7 @@ function DailyQuestItem({
   status,
   hideProgress = false,
 }: DailyQuestItemProps) {
+  useLanguage();
   const [displayedCurrentValue, setDisplayedCurrentValue] = useState(0);
   const [displayedRewardValue, setDisplayedRewardValue] = useState(0);
   const countAnimation = useRef(new Animated.Value(0)).current;
@@ -192,7 +188,7 @@ function DailyQuestItem({
         </View>
       </View>
     </Card>;
-    return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={() => { feedback(); onPress(); }}>{content}</Pressable> : content;
+    return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={localizeLabel(title)} onPress={() => { feedback(); onPress(); }}>{content}</Pressable> : content;
   }
   return (
     <Card style={styles.quest}>
@@ -265,6 +261,7 @@ export function DailyQuests({
   style,
   title = 'Quêtes du jour',
 }: DailyQuestsProps) {
+  useLanguage();
   return (
     <View style={[styles.container, style]}>
       {title ? <Text style={styles.sectionTitle}>{title}</Text> : null}

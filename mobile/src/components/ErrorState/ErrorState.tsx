@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { colors } from '@/theme/colors';
@@ -22,6 +24,7 @@ export function ErrorState({
   style,
   title = 'Une erreur est survenue',
 }: ErrorStateProps) {
+  useLanguage();
   return (
     <View accessibilityRole="alert" style={[styles.container, style]}>
       {icon ? <View style={styles.icon}>{icon}</View> : null}

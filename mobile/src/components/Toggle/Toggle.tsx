@@ -1,4 +1,7 @@
-import { StyleSheet, Switch, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
+import { StyleSheet, Switch, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -12,9 +15,10 @@ type ToggleProps = {
 };
 
 export function Toggle({ disabled = false, label, onValueChange, style, value }: ToggleProps) {
+  useLanguage();
   const nativeToggle = (
     <Switch
-      accessibilityLabel={label}
+      accessibilityLabel={localizeLabel(label)}
       disabled={disabled}
       ios_backgroundColor="#dfe6f4"
       onValueChange={onValueChange}

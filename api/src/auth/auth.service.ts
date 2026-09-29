@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { DataSource, IsNull, MoreThan } from 'typeorm';
 import { AuthChallenge, JournalEntry, Onboarding, Session, User } from '../database/entities';
 import { AppleVerifier } from './apple-verifier';
+import { normalizeLanguage, type Language } from '../ai/language';
 
 export const hash = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 
@@ -14,13 +15,13 @@ export class AuthService {
     await this.db.getRepository(AuthChallenge).insert({ nonceHash: hash(nonce), expiresAt: new Date(Date.now() + 300_000) });
     return { nonce };
   }
-  async signIn(identityToken: string, nonce: string, firstName?: string) {
+  async signIn(identityToken: string, nonce: string, firstName?: string, language?: Language) {
     const identity = await this.apple.verify(identityToken, nonce);
     return this.db.transaction(async manager => {
       const consumed = await manager.createQueryBuilder().update(AuthChallenge).set({ usedAt: new Date() })
         .where('nonce_hash = :hash AND used_at IS NULL AND expires_at > now()', { hash: hash(nonce) }).execute();
       if (consumed.affected !== 1) throw new UnauthorizedException('Cette connexion a expiré. Réessaie avec Apple.');
-      await manager.createQueryBuilder().insert().into(User).values({ appleSubject: identity.subject, email: identity.email }).orIgnore().execute();
+      await manager.createQueryBuilder().insert().into(User).values({ appleSubject: identity.subject, email: identity.email, language: normalizeLanguage(language) }).orIgnore().execute();
       const user = await manager.findOneByOrFail(User, { appleSubject: identity.subject });
       const name = firstName?.trim();
       if (name && !user.firstName) {
@@ -45,7 +46,11 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.db.getRepository(User).findOneByOrFail({ id: userId });
     const onboarding = await this.db.getRepository(Onboarding).findOneByOrFail({ userId });
-    return { id: user.id, firstName: user.firstName, email: user.email, createdAt: user.createdAt.toISOString(), onboardingCompleted: Boolean(onboarding.completedAt) };
+    return { id: user.id, firstName: user.firstName, email: user.email, language: user.language ?? 'fr', createdAt: user.createdAt.toISOString(), onboardingCompleted: Boolean(onboarding.completedAt) };
+  }
+  async setLanguage(userId: string, language: Language) {
+    await this.db.getRepository(User).update({ id: userId }, { language });
+    return { language };
   }
   async signOut(session: Session) {
     await this.db.getRepository(Session).update({ tokenHash: session.tokenHash }, { revokedAt: new Date() });

@@ -1,3 +1,5 @@
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { ProgramScreen } from './ProgramScreen';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,10 +16,11 @@ export function GeneratedProgramScreen({ onHome, onProgress, onCoach, onProfile,
   onHome: () => void; onProgress: () => void; onCoach: () => void; onProfile: () => void; onEditProfile: () => void; onExit?: () => void;
   onBlockReview: (id: string) => void; onHistory: () => void;
 }) {
+  useLanguage();
   const flow = useTrainingProgram();
   if (flow.program?.acceptedAt && flow.program.status === 'ready' && !flow.program.stale) return <ProgramScreen key={flow.program.proposalId} program={flow.program} onExit={onExit} onHome={onHome} onToday={onHome} onProgress={onProgress} onCoach={onCoach} onProfile={onProfile} onBlockReview={onBlockReview} onHistory={onHistory} />;
   return <View style={s.screen}><ScreenBackdrop /><SafeAreaView style={s.safe}><KeyboardAvoidingView style={s.frame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    <AppHeader title="Mon programme" leading={<IconButton accessibilityLabel="Retour" icon={<Symbol name="back" />} onPress={onExit ?? onHome} />} />
+    <AppHeader title="Mon programme" leading={<IconButton accessibilityLabel={localizeLabel("Retour")} icon={<Symbol name="back" />} onPress={onExit ?? onHome} />} />
     <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
       {flow.program?.previousBlockId ? <View style={{ marginBottom: 16 }}><Button text="Voir mon ancien programme et mes séances" variant="secondary" onPress={onHistory} /></View> : null}
       <ProgramProposal {...flow} onRetry={() => void flow.start()} onRefresh={flow.refresh} onAccept={() => void flow.accept()} onEditProfile={onEditProfile} />

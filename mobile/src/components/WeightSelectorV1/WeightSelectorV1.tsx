@@ -1,4 +1,7 @@
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { colors } from '@/theme/colors';
@@ -35,6 +38,7 @@ export function WeightSelectorV1({
   unit = 'kg',
   value,
 }: WeightSelectorV1Props) {
+  useLanguage();
   const changeWeight = (direction: -1 | 1) => {
     const nextValue = clamp(Math.round((value + direction * step) * 10) / 10, minimum, maximum);
     onChange(nextValue);
@@ -45,7 +49,7 @@ export function WeightSelectorV1({
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.controls}>
         <Pressable
-          accessibilityLabel="Réduire le poids"
+          accessibilityLabel={localizeLabel("Réduire le poids")}
           accessibilityRole="button"
           disabled={disabled || value <= minimum}
           onPress={() => changeWeight(-1)}
@@ -60,7 +64,7 @@ export function WeightSelectorV1({
         </View>
 
         <Pressable
-          accessibilityLabel="Augmenter le poids"
+          accessibilityLabel={localizeLabel("Augmenter le poids")}
           accessibilityRole="button"
           disabled={disabled || value >= maximum}
           onPress={() => changeWeight(1)}

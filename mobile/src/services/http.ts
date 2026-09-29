@@ -4,7 +4,10 @@ export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
 }
 let onUnauthorized: (() => void) | undefined;
+let onMutation: (() => void) | undefined;
 export function setUnauthorizedHandler(handler: (() => void) | undefined) { onUnauthorized = handler; }
+export function setMutationHandler(handler: (() => void) | undefined) { onMutation = handler; }
+export function notifyMutation() { onMutation?.(); }
 export function handleUnauthorized(token: string | null) { if (getSessionToken() === token) onUnauthorized?.(); }
 export async function apiRequest<T>(path: string, options: { method?: string; body?: unknown; anonymous?: boolean; timeoutMs?: number } = {}): Promise<T> {
   const token = getSessionToken();
@@ -21,7 +24,9 @@ export async function apiRequest<T>(path: string, options: { method?: string; bo
       if (response.status === 401 && !options.anonymous) handleUnauthorized(token);
       throw new ApiError(response.status, typeof data.message === 'string' ? data.message : 'Impossible d’enregistrer. Réessaie.');
     }
-    return response.status === 204 ? undefined as T : await response.json() as T;
+    const result = response.status === 204 ? undefined as T : await response.json() as T;
+    if ((options.method ?? 'GET').toUpperCase() !== 'GET' && !options.anonymous) notifyMutation();
+    return result;
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new Error('Le serveur est injoignable. Vérifie ta connexion puis réessaie.');

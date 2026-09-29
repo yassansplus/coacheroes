@@ -13,7 +13,8 @@ export class RenewalSummary {
   async history(userId: string) {
     const blocks = await this.db.getRepository(ProgramBlock).find({ where: { userId }, order: { startedAt: 'DESC' } });
     return blocks.map(block => ({ id: block.id, title: (block.prescription as any).output?.result?.title ?? 'Programme',
-      startedAt: block.startedAt, endsAt: block.endsAt, weeks: ((block.prescription as any).output?.result?.blockWeeks ?? 4) + block.extensions }));
+      startedAt: block.startedAt, endsAt: block.endsAt, weeks: ((block.prescription as any).output?.result?.blockWeeks ?? 4) + block.extensions,
+      status: block.endsAt.getTime() <= Date.now() ? 'completed' : 'active', replaced: Boolean(block.renewalReview?.replacement) }));
   }
 
   async get(userId: string, id: string, manager: EntityManager = this.db.manager) {
@@ -56,7 +57,7 @@ export class RenewalSummary {
       return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 10) / 10 : null; };
     const summary = {
       id, title: prescribed?.title ?? 'Programme', startedAt: block.startedAt, endsAt: block.endsAt, weeks,
-      due: block.endsAt.getTime() <= Date.now(), planned: (prescribed?.sessions?.length ?? 0) * weeks,
+      due: block.endsAt.getTime() <= Date.now(), replaced: Boolean(block.renewalReview?.replacement), planned: (prescribed?.sessions?.length ?? 0) * weeks,
       completed: completed.length, abandoned: sessions.filter(s => s.status === 'abandoned').length,
       durationMinutes: Math.round(completed.reduce((sum, session) => sum + Number(session.summary.durationSeconds ?? 0), 0) / 60),
       volumeKg: Math.round(completed.reduce((sum, session) => sum + Number(session.summary.volume ?? 0), 0)),

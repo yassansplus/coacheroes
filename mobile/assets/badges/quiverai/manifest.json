@@ -1,0 +1,53 @@
+{
+  "generator": "QuiverAI",
+  "model": "arrow-2",
+  "canvas": {
+    "width": 512,
+    "height": 512,
+    "background": "transparent"
+  },
+  "notes": [
+    "Chaque badge a été généré avec son propre prompt dans prompts.md.",
+    "Les aperçus PNG QuiverAI étaient opaques : les PNG livrés sont des exports locaux transparents des SVG via librsvg/Cairo.",
+    "Le rectangle de fond du SVG retour-du-boxeur a été supprimé pour respecter le fond transparent demandé.",
+    "Sept formes décoratives externes au badge 100-entrainements ont été retirées du SVG pour conserver uniquement son écusson."
+  ],
+  "badges": [
+    {
+      "title": "Premier mois",
+      "creationId": "01a0e9bc-7593-7c36-b1d1-6384be3408e7",
+      "svg": "premier-mois.svg",
+      "png": "premier-mois.png"
+    },
+    {
+      "title": "100 entraînements",
+      "creationId": "01a0e9bd-dead-7fc8-ab38-4e0c671e3f0a",
+      "svg": "100-entrainements.svg",
+      "png": "100-entrainements.png"
+    },
+    {
+      "title": "10 tractions",
+      "creationId": "01a0e9bf-9b5c-79b0-b7ab-55f68389a45f",
+      "svg": "10-tractions.svg",
+      "png": "10-tractions.png"
+    },
+    {
+      "title": "Retour du boxeur",
+      "creationId": "01a0e9c0-a191-7095-8108-b9649cf7cd3b",
+      "svg": "retour-du-boxeur.svg",
+      "png": "retour-du-boxeur.png"
+    },
+    {
+      "title": "Sommeil régulier",
+      "creationId": "01a0e9c1-9555-7770-b5bf-92975c9e36c5",
+      "svg": "sommeil-regulier.svg",
+      "png": "sommeil-regulier.png"
+    },
+    {
+      "title": "Protéines",
+      "creationId": "01a0e9c2-dbb8-7792-a9ab-d0fb8edb2f37",
+      "svg": "proteines.svg",
+      "png": "proteines.png"
+    }
+  ]
+}

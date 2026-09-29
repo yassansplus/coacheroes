@@ -22,6 +22,17 @@ test('friends and multiple groups stay distinct; claimed links require acceptanc
     { appleSubject: 'squad-c', firstName: 'Chloé' }, { appleSubject: 'squad-d', firstName: 'David' },
   ]);
   const service = new SquadService(db);
+  const sourcePhoto = Buffer.from('source-photo'), generatedPhoto = Buffer.from('profile-avatar');
+  const [bAvatar] = await db.query(`INSERT INTO profile_avatar_versions(user_id,source_image,generated_image,model,status)
+    VALUES($1,$2,$3,'test','ready') RETURNING id`, [b.id, sourcePhoto, generatedPhoto]);
+  await db.query('INSERT INTO profile_avatars(user_id,current_version_id) VALUES($1,$2)', [b.id, bAvatar.id]);
+  const [cAvatar] = await db.query(`INSERT INTO profile_avatar_versions(user_id,source_image,model,status)
+    VALUES($1,$2,'test','pending') RETURNING id`, [c.id, sourcePhoto]);
+  await db.query('INSERT INTO profile_avatars(user_id,current_version_id) VALUES($1,$2)', [c.id, cAvatar.id]);
+  assert.equal((await service.overview(a.id)).self.avatar, null);
+  assert.deepEqual(Buffer.from(await service.avatarImage(b.id, bAvatar.id, 'generated')), generatedPhoto);
+  await assert.rejects(service.avatarImage(a.id, bAvatar.id, 'generated'), { status: 404 });
+  await assert.rejects(service.avatarImage(b.id, bAvatar.id, 'source'), { status: 404 });
   const groupA = await service.createGroup(a.id, { requestId: randomUUID(), name: 'Les potes' });
   const groupB = await service.createGroup(b.id, { requestId: randomUUID(), name: 'Boxe du jeudi' });
   const groupAgain = await service.createGroup(a.id, { requestId: randomUUID(), name: 'Collègues' });
@@ -36,6 +47,7 @@ test('friends and multiple groups stay distinct; claimed links require acceptanc
   await assert.rejects(service.claim(c.id, groupToken), { status: 409 });
   await service.resolve(b.id, claimed.id, true);
   await service.resolve(b.id, claimed.id, true);
+  assert.deepEqual(Buffer.from(await service.avatarImage(a.id, bAvatar.id, 'generated')), generatedPhoto);
   assert.equal((await service.group(b.id, groupA.id)).members.length, 2);
   assert.equal((await service.overview(b.id)).groups.length, 2);
   assert.equal((await service.overview(a.id)).friends.length, 0);
@@ -45,6 +57,7 @@ test('friends and multiple groups stay distinct; claimed links require acceptanc
   const friendship = await service.claim(b.id, friendToken);
   await service.resolve(b.id, friendship.id, true);
   assert.equal((await service.overview(a.id)).friends[0].id, b.id);
+  assert.deepEqual((await service.overview(a.id)).friends[0].avatar, { versionId: bAvatar.id, kind: 'generated' });
   const groupWithFriend = await service.group(a.id, groupA.id);
   assert.equal(groupWithFriend.members.find(person => person.id === b.id).details, true);
 
@@ -53,6 +66,10 @@ test('friends and multiple groups stay distinct; claimed links require acceptanc
   const cInvite = await service.claim(c.id, cToken); await service.resolve(c.id, cInvite.id, true);
   const memberOnly = await service.group(a.id, groupA.id);
   assert.equal(memberOnly.members.find(person => person.id === c.id).details, false);
+  assert.deepEqual(memberOnly.members.find(person => person.id === c.id).avatar, { versionId: cAvatar.id, kind: 'source' });
+  assert.deepEqual(Buffer.from(await service.avatarImage(a.id, cAvatar.id, 'source')), sourcePhoto);
+  await assert.rejects(service.avatarImage(d.id, cAvatar.id, 'source'), { status: 404 });
+  await assert.rejects(service.avatarImage(a.id, cAvatar.id, 'generated'), { status: 404 });
 
   const challenge = await service.createChallenge(a.id, groupA.id, { requestId: randomUUID(), title: 'Objectif commun', targetSessions: 3, durationDays: 7 });
   const dToken = randomUUID();
@@ -84,6 +101,14 @@ test('friends and multiple groups stay distinct; claimed links require acceptanc
   assert.equal((await service.group(a.id, groupA.id)).members.find(person => person.id === b.id).details, false);
   assert.equal((await db.query('SELECT count(*)::int AS n FROM squad_friendships'))[0].n, 1);
   assert.equal(await db.getRepository(JournalEntry).countBy({ userId: a.id, type: 'squad.friend.removed' }), 1);
+  assert.deepEqual(Buffer.from(await service.avatarImage(a.id, bAvatar.id, 'generated')), generatedPhoto); // They still share an active group.
+  await service.leave(b.id, groupA.id, { requestId: randomUUID() });
+  await assert.rejects(service.avatarImage(a.id, bAvatar.id, 'generated'), { status: 404 });
+  const [newAvatar] = await db.query(`INSERT INTO profile_avatar_versions(user_id,source_image,model,status)
+    VALUES($1,$2,'test','failed') RETURNING id`, [c.id, sourcePhoto]);
+  await db.query('UPDATE profile_avatars SET current_version_id=$2 WHERE user_id=$1', [c.id, newAvatar.id]);
+  await assert.rejects(service.avatarImage(a.id, cAvatar.id, 'source'), { status: 404 });
+  assert.deepEqual(Buffer.from(await service.avatarImage(a.id, newAvatar.id, 'source')), sourcePhoto);
   assert.equal((await service.overview(a.id)).groups.some(group => group.id === groupAgain.id), true);
   assert.equal((await service.overview(b.id)).groups.some(group => group.id === groupB.id), true);
 });

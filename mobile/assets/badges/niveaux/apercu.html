@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coac Heroes — Badges de niveaux</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#f4f4f4;color:#171728;font-family:system-ui,sans-serif}
+main{max-width:1400px;margin:auto}header{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:28px}
+h1{font-size:28px;margin:0 0 8px}p{margin:0;color:#626275}button{padding:12px 18px;border:1px solid #bebed0;border-radius:14px;background:#fff;color:inherit;font:inherit;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px}
+.card{display:block;border-radius:20px;padding:16px;background:#fefefe;color:inherit;text-decoration:none;border:1px solid #e2e2eb}
+.card:hover{border-color:#3199ff}.card:focus-visible,button:focus-visible{outline:3px solid #3199ff;outline-offset:4px}
+img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain;background-color:#f1f1f6;background-image:conic-gradient(#e6e6ee 25%,transparent 0 50%,#e6e6ee 0 75%,transparent 0);background-size:20px 20px;border-radius:12px}
+h2{font-size:17px;margin:16px 0 0}h2 span{color:#808097;margin-right:8px}
+body.dark{background:#15151e;color:#f5f5fa}.dark p{color:#bdbdd0}.dark .card,.dark button{background:#23232f;border-color:#444458}
+.dark img{background-color:#23232f;background-image:conic-gradient(#2d2d3d 25%,transparent 0 50%,#2d2d3d 0 75%,transparent 0)}
+@media(max-width:500px){body{padding:20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{padding:10px}h2{font-size:14px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>Badges de niveaux</h1><p>10 rangs · PNG transparents · Cliquer sur un badge pour l’agrandir.</p></div><button id="theme" type="button" aria-pressed="false">Fond sombre</button></header>
+<section class="grid" aria-label="Les dix badges de niveaux">
+    <a class="card" href="01-bois.png" target="_blank" rel="noopener"><img src="01-bois.png" alt="Badge niveau 1 — Bois" width="1254" height="1254"><h2><span>01</span> Bois</h2></a>
+    <a class="card" href="02-pierre.png" target="_blank" rel="noopener"><img src="02-pierre.png" alt="Badge niveau 2 — Pierre" width="1254" height="1254"><h2><span>02</span> Pierre</h2></a>
+    <a class="card" href="03-bronze.png" target="_blank" rel="noopener"><img src="03-bronze.png" alt="Badge niveau 3 — Bronze" width="1254" height="1254"><h2><span>03</span> Bronze</h2></a>
+    <a class="card" href="04-acier.png" target="_blank" rel="noopener"><img src="04-acier.png" alt="Badge niveau 4 — Acier" width="1254" height="1254"><h2><span>04</span> Acier</h2></a>
+    <a class="card" href="05-argent.png" target="_blank" rel="noopener"><img src="05-argent.png" alt="Badge niveau 5 — Argent" width="1254" height="1254"><h2><span>05</span> Argent</h2></a>
+    <a class="card" href="06-or.png" target="_blank" rel="noopener"><img src="06-or.png" alt="Badge niveau 6 — Or" width="1254" height="1254"><h2><span>06</span> Or</h2></a>
+    <a class="card" href="07-emeraude.png" target="_blank" rel="noopener"><img src="07-emeraude.png" alt="Badge niveau 7 — Émeraude" width="1254" height="1254"><h2><span>07</span> Émeraude</h2></a>
+    <a class="card" href="08-saphir.png" target="_blank" rel="noopener"><img src="08-saphir.png" alt="Badge niveau 8 — Saphir" width="1254" height="1254"><h2><span>08</span> Saphir</h2></a>
+    <a class="card" href="09-amethyste.png" target="_blank" rel="noopener"><img src="09-amethyste.png" alt="Badge niveau 9 — Améthyste" width="1254" height="1254"><h2><span>09</span> Améthyste</h2></a>
+    <a class="card" href="10-obsidienne.png" target="_blank" rel="noopener"><img src="10-obsidienne.png" alt="Badge niveau 10 — Obsidienne" width="1254" height="1254"><h2><span>10</span> Obsidienne</h2></a>
+</section>
+</main>
+<script>
+document.getElementById('theme').addEventListener('click',function(){const dark=document.body.classList.toggle('dark');this.textContent=dark?'Fond clair':'Fond sombre';this.setAttribute('aria-pressed',String(dark));});
+</script>
+</body>
+</html>

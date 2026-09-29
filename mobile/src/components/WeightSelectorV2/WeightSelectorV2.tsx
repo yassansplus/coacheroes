@@ -1,17 +1,10 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Animated, Easing, PanResponder, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { colors } from '@/theme/colors';
@@ -65,6 +58,7 @@ export function WeightSelectorV2({
   unit = 'kg',
   value,
 }: WeightSelectorV2Props) {
+  useLanguage();
   const normalizedValue = normalizeWeight(value, minimum, maximum, step);
   const [displayValue, setDisplayValue] = useState(normalizedValue);
   const [rulerWidth, setRulerWidth] = useState(0);
@@ -253,7 +247,7 @@ export function WeightSelectorV2({
     <Card style={[styles.card, disabled && styles.disabled, style]}>
       <View style={styles.header}>
         <Pressable
-          accessibilityLabel="Réduire le poids"
+          accessibilityLabel={localizeLabel("Réduire le poids")}
           accessibilityRole="button"
           disabled={disabled || selectedValue <= minimum}
           onPress={() => changeWeight(-1)}
@@ -268,7 +262,7 @@ export function WeightSelectorV2({
         </View>
 
         <Pressable
-          accessibilityLabel="Augmenter le poids"
+          accessibilityLabel={localizeLabel("Augmenter le poids")}
           accessibilityRole="button"
           disabled={disabled || selectedValue >= maximum}
           onPress={() => changeWeight(1)}
@@ -279,7 +273,7 @@ export function WeightSelectorV2({
       </View>
 
       <View
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={localizeLabel(accessibilityLabel)}
         accessibilityRole="adjustable"
         accessibilityValue={{ max: maximum, min: minimum, now: selectedValue }}
         onAccessibilityAction={({ nativeEvent }) => {

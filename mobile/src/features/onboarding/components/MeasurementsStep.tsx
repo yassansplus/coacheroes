@@ -1,4 +1,7 @@
-import { Text, View } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
+import { View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Illustration } from '@/components/Illustration';
@@ -10,6 +13,7 @@ import { normalizeNumber } from '../utils';
 import { SectionHeading, StepHeading, stepStyles as s } from './StepContent';
 
 export function MeasurementsStep({ profile, update }: StepProps) {
+  useLanguage();
   return <>
     <StepHeading title="Ton point de départ" subtitle="Ces informations nous aident à suivre tes progrès au fil du temps." centered />
     <Card style={s.section}>
@@ -24,7 +28,7 @@ export function MeasurementsStep({ profile, update }: StepProps) {
         ['waist', 'Tour de taille', '86'], ['chest', 'Poitrine', '101'], ['arms', 'Bras', '34'], ['thighs', 'Cuisses', '57'],
       ] as const).map(([key, label, placeholder]) => <TextField key={key} containerStyle={[s.half, { marginTop: 9 }]} label={label}
         value={profile.measurements[key]} onChangeText={value => update({ measurements: { ...profile.measurements, [key]: value } })}
-        formatValue={normalizeNumber} keyboardType="decimal-pad" maxLength={5} placeholder={placeholder}
+        formatValue={normalizeNumber} keyboardType="decimal-pad" maxLength={5} placeholder={localizeLabel(placeholder)}
         rightAccessory={<Text style={s.body}>cm</Text>} />)}</View>
     </Card>
   </>;

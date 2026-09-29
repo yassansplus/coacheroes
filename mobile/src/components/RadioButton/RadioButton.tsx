@@ -1,11 +1,6 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, resolveColor, type AppColor } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -28,6 +23,7 @@ export function RadioButton({
   selected,
   style,
 }: RadioButtonProps) {
+  useLanguage();
   const selectionColor = resolveColor(activeColor);
 
   return (

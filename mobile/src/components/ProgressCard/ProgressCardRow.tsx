@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState, type PropsWithChildren } from 'react';
 import {
   StyleSheet,
@@ -17,6 +18,7 @@ type ProgressCardRowProps = PropsWithChildren<{
 }>;
 
 export function ProgressCardRow({ children, scrollable = false, style }: ProgressCardRowProps) {
+  useLanguage();
   const [rowWidth, setRowWidth] = useState(0);
   const gap = Math.min(12, Math.max(6, Math.round(rowWidth * 0.016)));
   const padding = Math.min(12, Math.max(8, Math.round(rowWidth * 0.016)));

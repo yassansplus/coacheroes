@@ -1,5 +1,9 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PreparationChat } from '@/components/PreparationChat';
 import { Banner } from '@/components/Banner';
@@ -16,15 +20,16 @@ import { fontFamily } from '@/theme/typography';
 
 const phases = [ ['preparing', 'Préparation de ton profil'], ['searching', 'Recherche des exercices'], ['composing', 'Construction des séances'], ['validating', 'Vérification du programme'] ] as const;
 const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-export function TrainingProgramView({ program, loading, error, onRetry, onEditProfile, onOpenSession }: {
-  program: TrainingProgram | null; loading: boolean; error: string | null; onRetry: () => void; onEditProfile?: () => void; onOpenSession?: (index: number) => void;
+export function TrainingProgramView({ program, loading, error, onRetry, onForceGenerate, forcing, onEditProfile, onOpenSession }: {
+  program: TrainingProgram | null; loading: boolean; error: string | null; onRetry: () => void; onForceGenerate?: () => void; forcing?: boolean; onEditProfile?: () => void; onOpenSession?: (index: number) => void;
 }) {
+  useLanguage();
   const [opened, setOpened] = useState<number | null>(null);
   const [details, setDetails] = useState(false);
   if (loading) return <LoadingState label="Chargement de ton programme…" />;
+  if (program?.status === 'needs_clarification' || program?.result?.outcome === 'needs_clarification') return <PreparationChat onReady={onRetry} onEditProfile={onEditProfile} onForceGenerate={onForceGenerate} forcing={forcing} requestError={error} />;
   if (error) return <ErrorState description={error} onRetry={onRetry} />;
   if (!program) return <EmptyState title="Ton programme personnalisé" description="Construisons tes séances à partir de ton profil et de tes disponibilités." actionLabel="Créer mon programme" onAction={onRetry} />;
-  if (program.status === 'needs_clarification' || program.result?.outcome === 'needs_clarification') return <PreparationChat onReady={onRetry} onEditProfile={onEditProfile} />;
   if (program.stale) return <View style={s.stack}><Banner message="Ton profil a changé depuis cette génération." /><Button text="Créer un programme avec mes nouvelles réponses" onPress={onRetry} /></View>;
   if (program.status === 'failed') return <ErrorState description={program.error ?? 'La génération a été interrompue.'} onRetry={onRetry} />;
   if (program.status === 'queued' || program.status === 'generating') return <View style={s.stack}>
@@ -49,15 +54,15 @@ export function TrainingProgramView({ program, loading, error, onRetry, onEditPr
     </Card>
     <View style={s.sectionHeading}><Text style={s.title}>Ta semaine</Text><Text style={s.caption}>Un rythme fait pour toi</Text></View>
     <View style={s.week}>
-      {days.map((day, weekday) => { const active = result.sessions.some(session => session.weekday === weekday); return <View key={day} accessibilityLabel={`${day} : ${active ? 'entraînement' : 'récupération'}`} style={s.weekDay}>
+      {days.map((day, weekday) => { const active = result.sessions.some(session => session.weekday === weekday); return <View key={day} accessibilityLabel={localizeLabel(`${day} : ${active ? 'entraînement' : 'récupération'}`)} style={s.weekDay}>
         <View style={[s.dayCircle, active && s.dayActive]}><Text style={[s.dayLetter, active && s.dayLetterActive]}>{day.slice(0, 1)}</Text></View>
         <View style={[s.dayDot, active && s.dayDotActive]} />
       </View>; })}
     </View>
     {result.sessions.map((session, index) => <Card key={`${session.weekday}-${index}`} style={[s.session, opened === index && s.sessionOpen]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${days[session.weekday]}, ${session.name}, ${session.estimatedMinutes} minutes`} accessibilityState={{ expanded: opened === index }} onPress={() => setOpened(opened === index ? null : index)} style={({ pressed }) => [s.sessionHeader, pressed && { opacity: 0.7 }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={localizeLabel(t("{p0}, {p1}, {p2} minutes", { p0: days[session.weekday], p1: session.name, p2: session.estimatedMinutes }))} accessibilityState={{ expanded: opened === index }} onPress={() => setOpened(opened === index ? null : index)} style={({ pressed }) => [s.sessionHeader, pressed && { opacity: 0.7 }]}>
         <View style={[s.sportIcon, session.sport && session.sport !== 'strength' && { backgroundColor: colors.energySurface }]}><Illustration name={session.sport === 'boxing' ? 'punchingBag' : session.sport === 'running' ? 'shoe' : 'dumbbell'} size={44} /></View>
-        <View style={s.grow}><Text style={s.dayLabel}>{days[session.weekday]}</Text><Text style={s.label}>{session.name}</Text><View style={s.sessionMeta}><Symbol name="clock" size={12} color="textMuted" /><Text style={s.caption}>{session.estimatedMinutes} min{session.exercises.length ? ` · ${session.exercises.length} exercices` : ''}</Text></View></View>
+        <View style={s.grow}><Text style={s.dayLabel}>{days[session.weekday]}</Text><Text style={s.label}>{session.name}</Text><View style={s.sessionMeta}><Symbol name="clock" size={12} color="textMuted" /><Text style={s.caption}>{session.estimatedMinutes} min{session.exercises.length ? t(" · {p0} exercices", { p0: session.exercises.length }) : ''}</Text></View></View>
         <View style={[s.chevron, opened === index && { transform: [{ rotate: '90deg' }] }]}><Symbol name="chevron" size={15} color="primary" /></View>
       </Pressable>
       {opened === index ? <View style={s.sessionDetails}>
@@ -67,13 +72,13 @@ export function TrainingProgramView({ program, loading, error, onRetry, onEditPr
           <Text style={s.label}>{position + 1}. {source?.name ?? 'Exercice indisponible'}</Text>
           <Text style={s.body}>{item.sets} × {item.minReps}–{item.maxReps} répétitions · Repos {item.restSeconds} s</Text>
           <Text style={s.body}>Garde {item.rir} répétitions en réserve.</Text><Text style={s.body}>{item.guidance}</Text>{details ? <Text style={s.body}>{item.progression}</Text> : null}
-          {source && details ? <><Text style={s.caption}>Source : wger · {source.translation.author || source.author} · Licence {source.translation.licenseId === source.license.id ? source.license.name : `wger n° ${source.translation.licenseId}`}</Text><Button text="Consulter la source et sa licence" variant="secondary" onPress={() => { void Linking.openURL(source.sourceUrl).catch(() => undefined); }} /></> : null}
+          {source && details ? <><Text style={s.caption}>Source : wger · {source.translation.author || source.author} · Licence {source.translation.licenseId === source.license.id ? source.license.name : t("wger n° {p0}", { p0: source.translation.licenseId })}</Text><Button text="Consulter la source et sa licence" variant="secondary" onPress={() => { void Linking.openURL(source.sourceUrl).catch(() => undefined); }} /></> : null}
         </View>; })}
       </View> : null}
       {onOpenSession ? <Button text="Préparer cette séance" onPress={() => onOpenSession(index)} /> : null}
     </Card>)}
     <Card style={s.advice}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Mes conseils pour progresser" accessibilityState={{ expanded: details }} onPress={() => setDetails(!details)} style={s.row}>
+      <Pressable accessibilityRole="button" accessibilityLabel={localizeLabel("Mes conseils pour progresser")} accessibilityState={{ expanded: details }} onPress={() => setDetails(!details)} style={s.row}>
         <View style={s.adviceIcon}><Symbol name="sparkles" size={18} color="accent" /></View><Text style={[s.label, s.grow]}>Les conseils de ton coach</Text><Symbol name={details ? 'minus' : 'plus'} size={18} color="textMuted" />
       </Pressable>
       {details ? <View style={s.stack}><Text style={s.body}>{result.progression}</Text>{result.assumptions.map((text, i) => <Text key={i} style={s.body}>{text}</Text>)}</View> : null}

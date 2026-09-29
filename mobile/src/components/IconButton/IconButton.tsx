@@ -1,3 +1,5 @@
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
 import {
   Pressable,
@@ -33,11 +35,12 @@ export function IconButton({
   style,
   variant = 'surface',
 }: IconButtonProps) {
+  useLanguage();
   const background = backgroundColor ? resolveColor(backgroundColor) : undefined;
 
   return (
     <Pressable
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={localizeLabel(accessibilityLabel)}
       accessibilityRole="button"
       disabled={disabled}
       onPress={() => { feedback(); onPress(); }}

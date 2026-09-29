@@ -1,7 +1,10 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Image, Linking, Platform, StyleSheet, Text, View } from 'react-native';
+import { AppState, Image, Linking, Platform, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { IconButton } from '@/components/IconButton';
 import { Symbol } from '@/components/Symbol';
@@ -16,6 +19,7 @@ type CameraCaptureProps = {
 
 /** Inline camera; the parent owns the photo URI. No upload or persistence. */
 export function CameraCapture({ value, onChange, label = 'Place le repas dans le cadre' }: CameraCaptureProps) {
+  useLanguage();
   const [permission, requestPermission, refreshPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
   const mounted = useRef(true);
@@ -76,8 +80,8 @@ export function CameraCapture({ value, onChange, label = 'Place le repas dans le
   }
   const live = !value && permission?.granted && foreground && !cameraFailed;
   return <View style={styles.container}>
-    <View style={styles.frame} accessibilityLabel="Cadre de prise de photo">
-      {value ? <Image source={{ uri: value }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} accessibilityLabel="Photo sélectionnée" /> : live ?
+    <View style={styles.frame} accessibilityLabel={localizeLabel("Cadre de prise de photo")}>
+      {value ? <Image source={{ uri: value }} style={StyleSheet.absoluteFill} resizeMode="cover" fadeDuration={0} accessibilityLabel={localizeLabel("Photo sélectionnée")} /> : live ?
         <CameraView key={`${facing}-${attempt}`} ref={camera} style={StyleSheet.absoluteFill} facing={facing} mode="picture" flash={flash && facing === 'back' ? 'on' : 'off'} onCameraReady={() => setReady(true)} onMountError={() => { setReady(false); setCameraFailed(true); setError('Caméra indisponible. Tu peux réessayer ou importer une photo.'); }} /> :
         <View style={styles.permission}><Symbol name="camera" size={38} color="primary" />
           <Text style={styles.help}>{cameraFailed ? 'Caméra indisponible' : !foreground ? 'Caméra en pause' : permission?.granted ? 'Préparation de la caméra…' : 'Autorise la caméra pour photographier ton repas ici.'}</Text>
@@ -93,7 +97,7 @@ export function CameraCapture({ value, onChange, label = 'Place le repas dans le
       <Button text="Galerie" leading={<Symbol name="image" />} variant="secondary" disabled={busy} containerStyle={styles.control} style={styles.controlButton} textStyle={styles.controlLabel} onPress={() => void importPhoto()} />
       <Button text={value ? 'Reprendre' : 'Retourner'} leading={<Symbol name="flip" />} variant="secondary" disabled={busy || (!value && !live)} containerStyle={styles.control} style={styles.controlButton} textStyle={styles.controlLabel} onPress={() => { setReady(false); if (value) onChange(undefined); else setFacing(current => current === 'back' ? 'front' : 'back'); }} />
     </View>
-    {!value ? <View style={styles.shutter}><IconButton size={70} variant="outline" accessibilityLabel="Prendre la photo" disabled={!live || !ready || busy} icon={<Symbol name="camera" size={28} color="primary" />} onPress={() => void capture()} /></View> : null}
+    {!value ? <View style={styles.shutter}><IconButton size={70} variant="outline" accessibilityLabel={localizeLabel("Prendre la photo")} disabled={!live || !ready || busy} icon={<Symbol name="camera" size={28} color="primary" />} onPress={() => void capture()} /></View> : null}
   </View>;
 }
 

@@ -1,3 +1,5 @@
+const { DutchLanguage1791900000000 } = require('../dist/database/migrations/1791900000000-DutchLanguage');
+const { UserLanguage1791800000000 } = require('../dist/database/migrations/1791800000000-UserLanguage');
 const { WorkoutHistory1790500000000 } = require('../dist/database/migrations/1790500000000-WorkoutHistory');
 const { DailyCheckIns1790600000000 } = require('../dist/database/migrations/1790600000000-DailyCheckIns');
 const { Nutrition1790700000000 } = require('../dist/database/migrations/1790700000000-Nutrition');
@@ -37,7 +39,8 @@ test('review responses distinguish a question from an adjustment and reuse the v
   const context = buildTrainingContext(profile(), 1, 'Max');
   global.fetch = async (url, options) => {
     const body = JSON.parse(options.body); requests.push(body);
-    const result = body.text.format.name === 'program_review' ? { action: 'answer', reply: 'Les jours de repos te laissent récupérer.', instruction: null } : plan();
+    const result = body.text.format.name === 'program_review' ? { action: 'answer', reply: 'Les jours de repos te laissent récupérer.', instruction: null }
+      : body.text.format.name === 'exercise_intents' ? { needs: [{ movement: 'Pousser', purpose: 'Garder un exercice utile.', queries: ['Dumbbell press'] }] } : plan();
     return new Response(JSON.stringify({ id: 'test-response', status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(result) }] }] }));
   };
   try {
@@ -46,17 +49,20 @@ test('review responses distinguish a question from an adjustment and reuse the v
     assert.equal(requests[0].model, 'gpt-5.6-terra'); assert.equal(requests[0].reasoning.effort, 'medium');
     assert.equal(answer.trace.model, requests[0].model); assert.equal(answer.trace.reasoningEffort, 'medium'); assert.equal(requests[0].store, false);
     assert.equal(requests[0].text.format.strict, true); assert.ok(JSON.parse(requests[0].input[0].content).program.result.sessions.length);
-    const revised = await new ProgramGenerator(config, {}).generate(context, async () => {}, AbortSignal.timeout(2000), { request: 'Garde les exercices, change le nom.', previous: output() });
+    const wger = { searchByName: async () => [1, 2].map(id => normalizeExercise(raw(id))) };
+    const revised = await new ProgramGenerator(config, wger).generate(context, async () => {}, AbortSignal.timeout(2000), { request: 'Garde les exercices, change le nom.', previous: output() });
     assert.equal(revised.result.outcome, 'ready');
-    assert.equal(requests[1].model, 'gpt-5.6-sol'); assert.equal(requests[1].reasoning.effort, 'high');
-    assert.equal(revised.trace.model, requests[1].model); assert.equal(revised.trace.reasoningEffort, 'high');
+    assert.equal(requests[1].model, 'gpt-5.6-sol'); assert.equal(requests[1].reasoning.effort, 'medium');
+    assert.equal(revised.trace.model, requests[1].model); assert.equal(revised.trace.reasoningEffort, 'medium');
     assert.ok(JSON.parse(requests[1].input[0].content).previousProgram);
+    assert.equal(requests[2].text.format.name, 'training_program');
+    assert.ok(requests.every(request => request.service_tier === undefined));
   } finally { global.fetch = original; }
 });
 
 test('proposal review is durable, questions do not modify plans and acceptance is explicit, fenced and idempotent', async t => {
   const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities,
-    migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+    migrations: [DutchLanguage1791900000000, UserLanguage1791800000000, IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
   await db.initialize(); await db.runMigrations(); t.after(() => db.destroy());
   const profiles = db.getRepository(Onboarding), programs = db.getRepository(TrainingProgram), chats = db.getRepository(ChatConversation);
   const user = await db.getRepository(User).save({ appleSubject: 'review-owner', firstName: 'Max' });

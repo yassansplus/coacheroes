@@ -1,3 +1,6 @@
+import { t } from '@/i18n/core';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useId, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text } from 'react-native-svg';
@@ -12,6 +15,7 @@ import { useChartEntrance } from '../useChartEntrance';
 
 /** A read-only trend using the same SVG runtime as the app's progress rings. */
 export function LineChart({ data, accessibilityLabel, color = colors.success }: LineChartProps) {
+  useLanguage();
   const [selected, setSelected] = useState<number | null>(null);
   const [width, setWidth] = useState(0);
   const gradientId = `trend-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
@@ -26,7 +30,7 @@ export function LineChart({ data, accessibilityLabel, color = colors.success }: 
   const low = Math.floor((minimum - padding) * 10) / 10;
   const high = Math.ceil((maximum + padding) * 10) / 10;
   const ticks = [high, (low + high) / 2, low];
-  const label = (value: number) => value.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  const label = (value: number) => value.toLocaleString(getLocale(), { maximumFractionDigits: 1 });
   const left = Math.max(34, ...ticks.map(value => label(value).length * 7 + 10));
   const right = Math.max(left + 1, width - 14);
   const top = 14;
@@ -42,7 +46,7 @@ export function LineChart({ data, accessibilityLabel, color = colors.success }: 
   const area = `${line} L ${points[points.length - 1].x} ${bottom} L ${points[0].x} ${bottom} Z`;
   const labelEvery = Math.max(1, Math.ceil(values.length / Math.max(2, Math.floor((right - left) / 28))));
 
-  return <View ref={scrub.ref} {...scrub.panHandlers} accessible accessibilityLabel={accessibilityLabel} style={styles.container}
+  return <View ref={scrub.ref} {...scrub.panHandlers} accessible accessibilityLabel={localizeLabel(accessibilityLabel)} style={styles.container}
     onLayout={event => setWidth(event.nativeEvent.layout.width)}>
     {width > left + 20 ? <Svg width={width} height={180}>
       <Defs><ClipPath id={`${gradientId}-reveal`}><Rect x={0} y={0} width={(right + 4) * entrance.line} height={180} /></ClipPath><LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">

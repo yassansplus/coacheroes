@@ -1,9 +1,14 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef, type PropsWithChildren } from 'react';
-import { AccessibilityInfo, Animated, Easing, Text, type TextProps, type StyleProp, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, type TextProps, type StyleProp, type ViewStyle } from 'react-native';
 import { useMetricMotion } from '@/hooks/useMetricMotion';
 import { colors } from '@/theme/colors';
 
 export function Motion({ children, trigger = '', delay = 0, style, pop = false }: PropsWithChildren<{ trigger?: string | number | boolean; delay?: number; style?: StyleProp<ViewStyle>; pop?: boolean }>) {
+  useLanguage();
   const progress = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     let alive = true, stopped = false;
@@ -21,18 +26,20 @@ export function Motion({ children, trigger = '', delay = 0, style, pop = false }
 }
 
 export function AnimatedMetricText({ value, delay = 0, ...props }: Omit<TextProps, 'children'> & { value: number | string; delay?: number }) {
+  useLanguage();
   const text = String(value);
   const match = text.match(/[+-]?\d+(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d+)?/);
   const durationMatch = text.match(/^(\d+)\s*h\s*(\d+)$/);
   const target = durationMatch ? Number(durationMatch[1]) * 60 + Number(durationMatch[2]) : match ? Number(match[0].replace(/[ \u00a0\u202f]/g, '').replace(',', '.')) : 0;
   const [count] = useMetricMotion([target], { delay, duration: 800 });
   const decimals = match?.[0].split(/[.,]/)[1]?.length ?? 0;
-  const formatted = (count ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-  const shown = durationMatch ? `${Math.floor(Math.round(count ?? 0) / 60)} h ${String(Math.round(count ?? 0) % 60).padStart(2, '0')}` : match ? text.replace(match[0], `${match[0].startsWith('+') ? '+' : ''}${formatted}`) : text;
-  return <Text {...props} accessibilityLabel={props.accessibilityLabel ?? text}>{shown}</Text>;
+  const formatted = (count ?? 0).toLocaleString(getLocale(), { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  const shown = durationMatch ? t("{p0} h {p1}", { p0: Math.floor(Math.round(count ?? 0) / 60), p1: String(Math.round(count ?? 0) % 60).padStart(2, '0') }) : match ? text.replace(match[0], `${match[0].startsWith('+') ? '+' : ''}${formatted}`) : text;
+  return <Text {...props} accessibilityLabel={localizeLabel(props.accessibilityLabel ?? text)}>{shown}</Text>;
 }
 
 export function RewardBurst() {
+  useLanguage();
   const progress = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     let alive = true, stopped = false;

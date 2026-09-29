@@ -1,5 +1,9 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -20,6 +24,7 @@ import { inRange, normalizeNumber, parseNumber, toggleComplementarySport, toggle
 import { SectionHeading, StepHeading, stepStyles as s } from './StepContent';
 
 export function PerformanceStep({ profile, update }: StepProps) {
+  useLanguage();
   const [editing, setEditing] = useState<Performance | 'new' | null>(null);
   const [name, setName] = useState('');
   const [value, setValue] = useState('');
@@ -44,7 +49,7 @@ export function PerformanceStep({ profile, update }: StepProps) {
     {item.value === null ? <Button variant="outline" text="Je ne sais pas" textColor={colors.textSecondary}
       onPress={() => open(item)} style={styles.unknown} textStyle={styles.unknownText} trailing={<Symbol name="chevron" color="textMuted" size={14} />} /> :
       <View style={styles.performanceValue}><NumberStepper label={item.label} value={item.value} onChange={value => setPerformance(item.id, value)} maximum={500} step={item.unit === 'kg' ? 2.5 : 1} />
-        <IconButton accessibilityLabel={`Modifier ${item.label}`} variant="ghost" size={28} icon={<Text style={s.caption}>{item.unit}</Text>} onPress={() => open(item)} />
+        <IconButton accessibilityLabel={localizeLabel(t("Modifier {p0}", { p0: item.label }))} variant="ghost" size={28} icon={<Text style={s.caption}>{item.unit}</Text>} onPress={() => open(item)} />
       </View>}
   </View>;
   return <>
@@ -61,9 +66,9 @@ export function PerformanceStep({ profile, update }: StepProps) {
     </Card>
     <BottomSheet visible={editing !== null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Ajouter un exercice' : name}>
       <View style={s.stack}>
-        {editing === 'new' ? <TextField label="Exercice" value={name} onChangeText={setName} placeholder="Ex. : Développé militaire" maxLength={50} /> : null}
+        {editing === 'new' ? <TextField label="Exercice" value={name} onChangeText={setName} placeholder={localizeLabel("Ex. : Développé militaire")} maxLength={50} /> : null}
         <TextField label={unit === 'kg' ? 'Charge habituelle' : 'Répétitions'} value={value} onChangeText={setValue} keyboardType="decimal-pad"
-          formatValue={normalizeNumber} placeholder="0" rightAccessory={<Text style={s.body}>{unit}</Text>} error={error || undefined} />
+          formatValue={normalizeNumber} placeholder={localizeLabel("0")} rightAccessory={<Text style={s.body}>{unit}</Text>} error={error || undefined} />
         {editing === 'new' ? <TabSelector value={unit} onChange={setUnit} items={[{ value: 'kg', label: 'Kilogrammes' }, { value: 'rep.', label: 'Répétitions' }]} /> : null}
         <Button text="Enregistrer" onPress={save} />
         {editing && editing !== 'new' ? <Button text="Je ne sais pas" variant="secondary" onPress={() => { setPerformance(editing.id, null); setEditing(null); }} /> : null}
@@ -73,6 +78,7 @@ export function PerformanceStep({ profile, update }: StepProps) {
 }
 
 export function SportsStep({ profile, update }: StepProps) {
+  useLanguage();
   return <>
     <StepHeading title="Quels sports veux-tu pratiquer ?" subtitle="La musculation est la base. Ajoute d’autres sports si tu le souhaites." centered />
     <ChoiceCard title="Musculation uniquement" description="Aucun sport complémentaire."
@@ -93,6 +99,7 @@ export function SportsStep({ profile, update }: StepProps) {
 }
 
 export function AvailabilityStep({ profile, update }: StepProps) {
+  useLanguage();
   return <>
     <Illustration name="availability" style={[s.hero, styles.calendarHero]} />
     <StepHeading title={'Quand peux-tu\nt’entraîner ?'} subtitle="On adapte ton programme à ton emploi du temps." centered />
@@ -114,12 +121,13 @@ export function AvailabilityStep({ profile, update }: StepProps) {
     <Card style={[s.section, styles.availabilityCard]}>
       <SectionHeading title="Durée des séances" subtitle="Quelle durée te convient le mieux ?" />
       <TabSelector value={profile.duration} onChange={duration => update({ duration })} style={styles.tabs}
-        items={['45', '60', '90'].map(value => ({ value, label: `${value} min` }))} />
+        items={['45', '60', '90'].map(value => ({ value, label: t("{p0} min", { p0: value }) }))} />
     </Card>
   </>;
 }
 
 export function EquipmentStep({ profile, update }: StepProps) {
+  useLanguage();
   const [query, setQuery] = useState('');
   const custom = profile.equipment.filter(value => !equipmentOptions.some(option => option.value === value));
   function addEquipment() {
@@ -146,9 +154,9 @@ export function EquipmentStep({ profile, update }: StepProps) {
       selected={profile.equipment.includes(item.value)} onPress={() => update({ equipment: toggleItem(profile.equipment, item.value) })}
       icon={<Illustration name={item.icon} size={51} />} style={s.third} contentStyle={styles.equipmentCard} titleStyle={styles.centeredTitle} />)}</View>
     <SectionHeading title="Ajouter du matériel" subtitle="Un équipement spécifique ? Ajoute-le ici." />
-    <TextField accessibilityLabel="Rechercher ou ajouter du matériel" value={query} onChangeText={setQuery} placeholder="Rechercher ou ajouter du matériel" maxLength={40}
+    <TextField accessibilityLabel={localizeLabel("Rechercher ou ajouter du matériel")} value={query} onChangeText={setQuery} placeholder={localizeLabel("Rechercher ou ajouter du matériel")} maxLength={40}
       leftAccessory={<Symbol name="search" color="textSecondary" size={20} />} inputStyle={styles.searchInput} onSubmitEditing={addEquipment}
-      rightAccessory={<IconButton accessibilityLabel="Ajouter ce matériel" variant="ghost" size={34} disabled={!query.trim()}
+      rightAccessory={<IconButton accessibilityLabel={localizeLabel("Ajouter ce matériel")} variant="ghost" size={34} disabled={!query.trim()}
         icon={<Symbol name="plus" color="primary" />} onPress={addEquipment} />} />
     {custom.length ? <View style={s.grid}>{custom.map(item => <ChoiceCard key={item} title={item} layout="chip" indicatorPosition="trailing" selected
       onPress={() => update({ equipment: profile.equipment.filter(value => value !== item) })} />)}</View> : null}

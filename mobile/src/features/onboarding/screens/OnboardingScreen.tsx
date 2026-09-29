@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useCallback, useEffect, useState } from 'react';
-import { BackHandler, Text, View } from 'react-native';
+import { BackHandler, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -22,6 +24,7 @@ import { WelcomeStep } from '../components/WelcomeStep';
 import { useOnboarding } from '../hooks/useOnboarding';
 
 export function OnboardingScreen({ onOpenLibrary, onFinish, editStep, onCloseEdit }: { onOpenLibrary: () => void; onFinish: () => void; editStep?: number; onCloseEdit?: () => void }) {
+  useLanguage();
   const session = useSession();
   const flow = useOnboarding(editStep, onCloseEdit);
   const generation = useTrainingProgram(flow.step === 16 && !editStep, true);
@@ -70,7 +73,7 @@ export function OnboardingScreen({ onOpenLibrary, onFinish, editStep, onCloseEdi
       case 12: return <FoodPreferencesStep {...props} foodInputs={flow.foodInputs} onFoodChange={flow.changeFoodInput} />;
       case 13: return <MeasurementsStep {...props} />;
       case 14: return <ReviewStep profile={flow.profile} onEdit={flow.edit} />;
-      case 16: return <ProgramProposal {...generation} onRetry={() => void generation.start()} onRefresh={generation.refresh} onAccept={() => { void generation.accept().then(ok => { if (ok) void finish(); }); }} onEditProfile={() => void flow.reload(14)} />;
+      case 16: return <ProgramProposal {...generation} onRetry={() => void generation.start()} onForceGenerate={() => void generation.forceStart()} onRefresh={generation.refresh} onAccept={() => { void generation.accept().then(ok => { if (ok) void finish(); }); }} onEditProfile={() => void flow.reload(14)} />;
     }
   }
   if (session.loading || flow.loading) return <LoadingState label="Chargement de tes réponses…" />;

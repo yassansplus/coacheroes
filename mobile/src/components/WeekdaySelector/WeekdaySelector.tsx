@@ -1,6 +1,9 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel, t } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, gradients } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -11,16 +14,17 @@ const fullDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', '
 type WeekdaySelectorProps = { value: number[]; onChange: (value: number[]) => void; disabled?: boolean };
 
 export function WeekdaySelector({ value, onChange, disabled = false }: WeekdaySelectorProps) {
+  useLanguage();
   return <View style={styles.row}>{weekdays.map((day, index) => {
     const selected = value.includes(index);
-    return <Pressable key={day} accessibilityRole="checkbox" accessibilityLabel={fullDays[index]}
+    return <Pressable key={day} accessibilityRole="checkbox" accessibilityLabel={localizeLabel(fullDays[index])}
       aria-checked={selected} aria-disabled={disabled}
       accessibilityState={{ checked: selected, disabled }} disabled={disabled} style={styles.day}
       onPress={() => { void Haptics.selectionAsync().catch(() => undefined);
         onChange(selected ? value.filter(item => item !== index) : [...value, index].sort()); }}>
       <View style={styles.circle}>
         {selected ? <LinearGradient colors={gradients.primary} style={StyleSheet.absoluteFill} /> : null}
-        <Text style={[styles.letter, selected && styles.selected]}>{day[0]}</Text>
+        <Text style={[styles.letter, selected && styles.selected]}>{t(day)[0]}</Text>
       </View><Text style={styles.label}>{day}</Text>
     </Pressable>;
   })}</View>;

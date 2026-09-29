@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Illustration, type IllustrationName } from '@/components/Illustration';
 import { colors } from '@/theme/colors';
@@ -8,6 +10,7 @@ import { fontFamily } from '@/theme/typography';
 export function StepHeading({ title, subtitle, centered = false, icon, iconSize = 108 }: {
   title: string; subtitle?: string; centered?: boolean; icon?: IllustrationName; iconSize?: number;
 }) {
+  useLanguage();
   return <View style={[styles.heading, icon && styles.headingRow]}>
     <View style={styles.headingCopy}>
       <Text accessibilityRole="header" style={[styles.title, centered && styles.center]}>{title}</Text>
@@ -20,6 +23,7 @@ export function StepHeading({ title, subtitle, centered = false, icon, iconSize 
 export function SectionHeading({ title, subtitle, icon, trailing }: {
   title: string; subtitle?: string; icon?: IllustrationName; trailing?: ReactNode;
 }) {
+  useLanguage();
   return <View style={styles.sectionRow}>
     {icon ? <Illustration name={icon} size={46} /> : null}
     <View style={styles.headingCopy}>

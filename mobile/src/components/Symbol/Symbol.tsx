@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors, resolveColor, type AppColor } from '@/theme/colors';
@@ -10,6 +11,7 @@ type SymbolProps = { name: SymbolName; size?: number; color?: AppColor };
 
 /** Small interface glyphs; illustrated content uses the project's raster assets. */
 export function Symbol({ name, size = 22, color = 'text' }: SymbolProps) {
+  useLanguage();
   const stroke = resolveColor(color);
   if (name === 'google') return <Svg width={size} height={size} viewBox="0 0 48 48">
     <Path fill={colors.googleYellow} d="M43.6 20H24v8h11.3A12 12 0 1 1 32.9 14l5.7-5.7A20 20 0 1 0 44 24c0-1.4-.1-2.7-.4-4Z" />

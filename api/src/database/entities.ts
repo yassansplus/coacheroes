@@ -6,7 +6,9 @@ import { CoachConversation, CoachMessage, CoachProposal } from '../coach/coach.e
 import { Check, Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToOne, PrimaryColumn, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
 
 @Entity('users')
+@Check('users_language_check', "\"language\" IN ('fr', 'en', 'nl')")
 export class User {
+  @Column({ type: 'text', default: 'fr' }) language!: 'fr' | 'en' | 'nl';
   @PrimaryGeneratedColumn('uuid') id!: string;
   @Column({ name: 'apple_subject', unique: true }) appleSubject!: string;
   @Column({ name: 'first_name', type: 'text', nullable: true }) firstName!: string | null;

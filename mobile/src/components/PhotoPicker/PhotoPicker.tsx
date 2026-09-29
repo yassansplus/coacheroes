@@ -1,6 +1,10 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
@@ -12,6 +16,7 @@ type PhotoPickerProps = { privacyText?: string; label: string; value?: string; o
 
 /** The parent owns the URI; this component never uploads or persists a photo. */
 export function PhotoPicker({ label, value, onChange, disabled = false, variant = 'tile', inlineActions = false, privacyText = 'Cette photo reste sur ton appareil pendant cette session.' }: PhotoPickerProps) {
+  useLanguage();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -39,7 +44,7 @@ export function PhotoPicker({ label, value, onChange, disabled = false, variant 
     <Text style={styles.help}>{privacyText}</Text>
   </View>;
   const tile = <>
-    <Pressable accessibilityRole="button" accessibilityLabel={`${value ? 'Modifier' : 'Ajouter'} la photo : ${label}`}
+    <Pressable accessibilityRole="button" accessibilityLabel={localizeLabel(t("{p0} la photo : {p1}", { p0: value ? 'Modifier' : 'Ajouter', p1: label }))}
       disabled={disabled || busy} style={[styles.tile, variant === 'frame' && styles.frame, inlineActions && { flex: 0, width: '100%', aspectRatio: 2 }]} onPress={() => { setError(''); setOpen(true); }}>
       {value ? <Image source={{ uri: value }} fadeDuration={0} style={[styles.photo, variant === 'frame' && { bottom: 0 }]} resizeMode="cover" /> :
         <View style={styles.camera}><Symbol name="camera" size={30} color="textSecondary" /><View style={styles.plus}><Symbol name="plus" size={12} color="white" /></View></View>}
@@ -47,7 +52,7 @@ export function PhotoPicker({ label, value, onChange, disabled = false, variant 
       <Text style={[styles.label, variant === 'frame' && styles.frameLabel]}>{label}</Text>
     </Pressable>
   </>;
-  return inlineActions ? <View style={{ width: '100%', gap: 12 }}>{tile}{open ? actions : null}</View> : <>{tile}<BottomSheet visible={open} onClose={() => { if (!busy) setOpen(false); }} title={`Photo · ${label}`}>{actions}</BottomSheet></>;
+  return inlineActions ? <View style={{ width: '100%', gap: 12 }}>{tile}{open ? actions : null}</View> : <>{tile}<BottomSheet visible={open} onClose={() => { if (!busy) setOpen(false); }} title={t("Photo · {p0}", { p0: label })}>{actions}</BottomSheet></>;
 }
 
 const styles = StyleSheet.create({

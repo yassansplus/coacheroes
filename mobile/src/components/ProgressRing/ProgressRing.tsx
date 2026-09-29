@@ -1,3 +1,5 @@
+import { t } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -7,6 +9,7 @@ import { colors } from '@/theme/colors';
 type ProgressRingProps = { progress: number; size?: number; strokeWidth?: number; double?: boolean; children?: ReactNode; color?: string; trackColor?: string; animated?: boolean; animationDuration?: number };
 
 export function ProgressRing({ progress, size = 260, strokeWidth = 12, double = false, children, color, trackColor = colors.primaryTint, animated = false, animationDuration = 400 }: ProgressRingProps) {
+  useLanguage();
   const id = useId().replace(/:/g, '');
   const value = Math.min(100, Math.max(0, Number.isFinite(progress) ? progress : 0));
   const motion = useRef(new Animated.Value(value)).current;

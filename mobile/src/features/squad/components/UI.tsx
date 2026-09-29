@@ -1,5 +1,7 @@
-import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { useState, type ReactNode } from 'react';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Polygon, Stop } from 'react-native-svg';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -9,6 +11,7 @@ import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 import { feedback } from '@/utils/feedback';
 import type { Member } from '../data';
+import { useMemberAvatar } from '../hooks/useMemberAvatar';
 
 const tones = {
   purple: [colors.squadPurple, colors.accentSurface], green: [colors.successText, colors.successSurface],
@@ -16,17 +19,25 @@ const tones = {
 } as const;
 export type Tone = keyof typeof tones;
 export function TileIcon({ name, tone = 'purple', size = 38 }: { name: SymbolName | IllustrationName; tone?: Tone; size?: number }) {
+  useLanguage();
   const illustrated = ['boxing', 'trophy', 'punchingBag', 'flame', 'apple'].includes(name);
   return <View style={{ width: size, height: size, borderRadius: size * 0.26, backgroundColor: tones[tone][1], alignItems: 'center', justifyContent: 'center' }}>{illustrated ? <Illustration name={name as IllustrationName} size={size * 0.7} /> : <Symbol name={name as SymbolName} size={size * 0.58} color={tones[tone][0]} />}</View>;
 }
 export function Avatar({ member, size = 32, short = false }: { member: Member; size?: number; short?: boolean }) {
+  useLanguage();
+  const uri = useMemberAvatar(member.avatar);
+  const [failedUri, setFailedUri] = useState<string | null>(null);
   const palette = [[colors.squadPurple, colors.accentSurface], [colors.successText, colors.successSurface], [colors.energy, colors.energySurface], [colors.primary, colors.primarySurface]];
   const index = [...member.id].reduce((sum, character) => sum + character.charCodeAt(0), 0) % palette.length;
   const [color, background] = palette[index];
   const initials = member.name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
-  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: background, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontFamily: fontFamily.semiBold, color, fontSize: size * 0.35 }}>{short ? member.name[0]?.toUpperCase() : initials}</Text></View>;
+  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: background, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    <Text translate={false} style={{ fontFamily: fontFamily.semiBold, color, fontSize: size * 0.35 }}>{short ? member.name[0]?.toUpperCase() : initials}</Text>
+    {uri && uri !== failedUri ? <Image key={uri} source={{ uri }} resizeMode="cover" style={StyleSheet.absoluteFill} onError={() => setFailedUri(uri)} /> : null}
+  </View>;
 }
 export function Emblem({ gold = false, trophy = false, size = 72 }: { gold?: boolean; trophy?: boolean; size?: number }) {
+  useLanguage();
   return <View style={{ width: size, height: size * 1.1, alignItems: 'center', justifyContent: 'center' }}>
     <Svg width="100%" height="100%" viewBox="0 0 100 110" style={StyleSheet.absoluteFill}>
       <Defs><LinearGradient id="badge" x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor={gold ? colors.googleYellow : colors.primary} /><Stop offset="1" stopColor={gold ? colors.warning : colors.squadPurple} /></LinearGradient></Defs>
@@ -36,18 +47,23 @@ export function Emblem({ gold = false, trophy = false, size = 72 }: { gold?: boo
     {trophy ? <Illustration name="trophy" size={size * 0.67} /> : <Symbol name="users" color="white" size={size * 0.58} />}
   </View>;
 }
-export function Panel({ children }: { children: ReactNode }) { return <Card style={s.panel}>{children}</Card>; }
+export function Panel({ children }: { children: ReactNode }) {
+  useLanguage(); return <Card style={s.panel}>{children}</Card>; }
 export function Heading({ children, action, onPress }: { children: ReactNode; action?: string; onPress?: () => void }) {
+  useLanguage();
   return <View style={[s.row, { marginTop: 5, justifyContent: 'space-between' }]}><Text style={s.heading}>{children}</Text>{action && onPress ? <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8}><Text style={s.link}>{action}</Text></Pressable> : null}</View>;
 }
 export function Action({ text, onPress, outline = false }: { text: string; onPress?: () => void; outline?: boolean }) {
+  useLanguage();
   return <Button text={text} onPress={onPress ?? (() => {})} disabled={!onPress} hapticFeedback="light" radius={16} variant={outline ? 'outline' : 'primary'} style={{ minHeight: 42, opacity: 1, borderColor: outline ? colors.squadOutline : undefined }} textStyle={{ fontSize: 13 }} />;
 }
 export function Row({ children, onPress, last = false }: { children: ReactNode; onPress?: () => void; last?: boolean }) {
+  useLanguage();
   const style = [s.row, { minHeight: 44, paddingVertical: 8 }, !last && s.divider];
   return onPress ? <Pressable accessibilityRole="button" onPress={() => { feedback(); onPress(); }} style={({ pressed }) => [...style, { opacity: pressed ? 0.65 : 1 }]}>{children}</Pressable> : <View style={style}>{children}</View>;
 }
-export function Info({ children }: { children: ReactNode }) { return <View style={[s.row, s.info]}><TileIcon name="info" tone="blue" size={30} /><Text style={[s.muted, s.grow]}>{children}</Text></View>; }
+export function Info({ children }: { children: ReactNode }) {
+  useLanguage(); return <View style={[s.row, s.info]}><TileIcon name="info" tone="blue" size={30} /><Text style={[s.muted, s.grow]}>{children}</Text></View>; }
 export const s = StyleSheet.create({
   panel: { padding: 15, borderRadius: 18, gap: 12 }, row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   grow: { flex: 1, minWidth: 0 }, heading: { fontFamily: fontFamily.bold, fontSize: 19, color: colors.text, flexShrink: 1 },

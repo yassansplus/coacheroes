@@ -31,6 +31,10 @@ export const colors = {
   squadGreen: '#55c9a2',
   squadGold: '#ffbd32',
   squadOutline: '#aaaee0',
+  splashBackground: '#080d38',
+  splashBlue: '#074bdf',
+  splashViolet: '#5213cf',
+  splashGold: '#ffd538',
 } as const;
 
 export const energyLevelColors = [colors.energyVeryLow, colors.energyLow, colors.primary, colors.energyHigh, colors.success] as const;
@@ -42,6 +46,7 @@ export const gradients = {
   onboarding: ['#f8fcff', '#f1f8ff', '#f8fbff'],
   selection: ['#edf5ff', '#eeebff'],
   decoration: ['#dfeeff', '#efebff'],
+  splash: ['#080d38', '#10226d', '#211052'],
 } as const;
 
 export const cardHighlightBackgrounds = {

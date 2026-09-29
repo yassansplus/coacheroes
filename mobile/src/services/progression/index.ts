@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { apiRequest } from '@/services/http';
 import { cachePhoto, uploadPhoto } from '@/storage/photos';
 import { dailyTimezone } from '@/services/daily';
+import { getSessionToken } from '@/storage/session';
 import { syncWorkouts } from '@/services/workouts';
 import type { Angle, ProgressData } from './types';
 
@@ -9,6 +10,15 @@ type RemotePhoto = { id: string; date: string; revision: number; images: Partial
 type RemoteProgress = Omit<ProgressData, 'photos'> & { photos: RemotePhoto[] };
 const datePath = (date: string) => encodeURIComponent(date);
 const write = (revision: number) => ({ requestId: Crypto.randomUUID(), revision, timezone: dailyTimezone() });
+
+/** Performance-only consumers do not need to download private progress photos. */
+export async function loadPerformanceHistory(userId: string): Promise<Pick<ProgressData, 'exercises' | 'tests'>> {
+  const token = getSessionToken();
+  await syncWorkouts(userId);
+  if (getSessionToken() !== token) throw new Error('La session a changé.');
+  const { exercises, tests } = await apiRequest<RemoteProgress>('/progression');
+  return { exercises, tests };
+}
 
 export async function loadProgression(userId: string): Promise<ProgressData> {
   await syncWorkouts(userId);

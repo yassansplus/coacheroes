@@ -1,4 +1,7 @@
-import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
+import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -10,8 +13,9 @@ type LoadingStateProps = {
 };
 
 export function LoadingState({ label = 'Chargement…', size = 'small', style }: LoadingStateProps) {
+  useLanguage();
   return (
-    <View accessibilityLabel={label} accessibilityRole="progressbar" style={[styles.container, style]}>
+    <View accessibilityLabel={localizeLabel(label)} accessibilityRole="progressbar" style={[styles.container, style]}>
       <ActivityIndicator color={colors.primary} size={size} />
       <Text style={styles.label}>{label}</Text>
     </View>

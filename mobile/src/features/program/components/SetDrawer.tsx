@@ -1,5 +1,9 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Motion } from '@/components/Motion';
 import { Button } from '@/components/Button';
@@ -20,6 +24,7 @@ import { styles as s } from './styles';
 export function SetDrawer({ draft, exercise, onClose, onSave }: {
   draft: SetDraft; exercise: Exercise; onClose: () => void; onSave: (draft: SetDraft, nextWeight?: number) => void;
 }) {
+  useLanguage();
   const [value, setValue] = useState(draft.value);
   const [step, setStep] = useState(1);
   const [adjust, setAdjust] = useState('apply');
@@ -40,10 +45,10 @@ export function SetDrawer({ draft, exercise, onClose, onSave }: {
       {step === 1 ? <>
         <Text style={s.title}>Saisir la série</Text>
         <View style={[s.row, { alignItems: 'stretch' }]}><Card style={[s.grow, { padding: 12, gap: 12 }]}><Text style={[s.body, s.center]}>Charge</Text>
-          <NumberStepper layout="stacked" unit="kg" label="la charge" value={value.weight} onChange={weight => setValue({ ...value, weight })} step={2.5} maximum={500} formatValue={weight => weight.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} /></Card>
+          <NumberStepper layout="stacked" unit="kg" label="la charge" value={value.weight} onChange={weight => setValue({ ...value, weight })} step={2.5} maximum={500} formatValue={weight => weight.toLocaleString(getLocale(), { minimumFractionDigits: 1 })} /></Card>
           <Card style={[s.grow, { padding: 12, gap: 12 }]}><Text style={[s.body, s.center]}>Répétitions</Text><NumberStepper layout="stacked" label="les répétitions" value={value.reps} onChange={reps => setValue({ ...value, reps })} maximum={100} /></Card></View>
         <Text style={s.label}>Charges rapides</Text><PillSelector variant="filled" value={String(value.weight)} onChange={weight => setValue({ ...value, weight: Number(weight) })}
-          items={[...new Set([-5, -2.5, 0, 2.5].map(offset => Math.max(0, Math.min(500, exercise.weight + offset))))].map(weight => ({ value: String(weight), label: `${weight.toLocaleString('fr-FR')} kg` }))} />
+          items={[...new Set([-5, -2.5, 0, 2.5].map(offset => Math.max(0, Math.min(500, exercise.weight + offset))))].map(weight => ({ value: String(weight), label: t("{p0} kg", { p0: weight.toLocaleString(getLocale()) }) }))} />
         <Card style={{ padding: 16 }}><Toggle label="Série d’échauffement" disabled={!!exercise.sets[draft.setIndex]} value={value.warmup} onValueChange={warmup => setValue({ ...value, warmup })} /></Card>
       </> : null}
       {step === 2 ? <>
@@ -55,8 +60,8 @@ export function SetDrawer({ draft, exercise, onClose, onSave }: {
         <Text style={s.title}>Charge proposée</Text><Card style={s.row}><Symbol name="chart" size={34} color="accent" /><View><Text style={s.section}>Série {draft.setIndex + 1} : {value.reps} reps</Text><Text style={s.body}>Ressenti {value.feeling === 'failure' ? 'échec' : 'difficile'}</Text></View></Card>
         <Card style={s.stack}><Text style={s.section}>Prochaine série</Text><View style={s.row}><Text style={[s.value, { textDecorationLine: 'line-through', color: colors.textMuted }]}>{value.weight}</Text><Symbol name="arrow" color="textMuted" /><Text style={[s.value, { color: colors.primary }]}>{suggestion} kg</Text></View>
           <Text style={s.body}>Objectif : {exercise.minReps}–{exercise.maxReps} reps · Repos {Math.floor(exercise.restSeconds / 60)} min</Text></Card>
-        <ChoiceCard layout="row" role="radio" title={`Appliquer ${suggestion} kg`} selected={adjust === 'apply'} onPress={() => setAdjust('apply')} />
-        <ChoiceCard layout="row" role="radio" title={`Garder ${exercise.weight} kg`} selected={adjust === 'keep'} onPress={() => setAdjust('keep')} />
+        <ChoiceCard layout="row" role="radio" title={t("Appliquer {p0} kg", { p0: suggestion })} selected={adjust === 'apply'} onPress={() => setAdjust('apply')} />
+        <ChoiceCard layout="row" role="radio" title={t("Garder {p0} kg", { p0: exercise.weight })} selected={adjust === 'keep'} onPress={() => setAdjust('keep')} />
         <Text style={s.caption}>Suggestion de démonstration, à confirmer par toi.</Text>
       </> : null}
     </Motion></ScrollView>

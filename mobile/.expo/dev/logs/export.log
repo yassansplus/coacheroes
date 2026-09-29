@@ -78,3 +78,11 @@
 {"_e":"metro:instantiate","_t":1790020298129,"atlas":false,"workers":3,"host":null,"port":null}
 {"_e":"metro:bundling:started","_t":1790020304632,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
 {"_e":"metro:bundling:done","_t":1790020361055,"id":"1","total":1548,"ms":56423.495935}
+{"_e":"root:init","_t":1790721864076,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1790721881883,"nodeEnv":"production","babelEnv":"production","mode":"production"}
+{"_e":"env:load","_t":1790721881971,"mode":"production","files":["../../../.env.local"],"env":{"EXPO_PUBLIC_API_URL":"http://192.168.1.37:3004/api","FOODDATA_CENTRAL_API_KEY":"r9rheDjnUcBXR4EdnVuI0eiCXhqJdRyeaPu3Q7hQ"}}
+{"_e":"devserver:start","_t":1790721889257,"mode":"production","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":true}
+{"_e":"metro:config","_t":1790721904256,"serverRoot":"../../..","projectRoot":"../../..","exporting":true,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1790721910765,"atlas":false,"workers":3,"host":null,"port":null}
+{"_e":"metro:bundling:started","_t":1790721917200,"id":"1","platform":"web","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1790721973211,"id":"1","total":1294,"ms":56013.167765}

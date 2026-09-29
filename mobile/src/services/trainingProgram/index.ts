@@ -10,7 +10,7 @@ export type TrainingProgram = { proposalId: string; acceptedAt: string | null; s
   phase: 'preparing' | 'searching' | 'composing' | 'validating'; sourceRevision: number; stale: boolean;
   result: TrainingResult | null; exercises: CatalogExercise[]; error: string | null; updatedAt: string };
 export const loadTrainingProgram = async () => (await apiRequest<{ program: TrainingProgram | null }>('/program')).program;
-export const startTrainingProgram = (retry = false) => apiRequest<TrainingProgram>('/program/generate', { method: 'POST', body: { retry } });
+export const startTrainingProgram = (retry = false, force = false) => apiRequest<TrainingProgram>('/program/generate', { method: 'POST', body: { retry, force } });
 
 export const acceptTrainingProgram = (proposalId: string) => apiRequest<TrainingProgram>('/program/accept', { method: 'POST', body: { proposalId } });
 
@@ -24,7 +24,7 @@ export type RenewalAnswers = {
   effort: 'easy' | 'balanced' | 'hard'; feedback: string;
 };
 export type ProgramBlockSummary = {
-  id: string; title: string; startedAt: string; endsAt: string; weeks: number; due: boolean;
+  id: string; title: string; startedAt: string; endsAt: string; weeks: number; due: boolean; replaced?: boolean;
   planned: number; completed: number; abandoned: number; durationMinutes: number; volumeKg: number;
   painSessions: number; bySport: Record<string, number>;
   weekly: { week: number; planned: number; completed: number; painSessions: number }[];
@@ -38,7 +38,7 @@ export type ProgramBlockSummary = {
 };
 export type BlockReview = { summary: ProgramBlockSummary; profileRevision: number; answers: RenewalAnswers;
   review: { answers: RenewalAnswers; submittedAt: string; analysis: unknown } | null };
-export const loadProgramBlocks = () => apiRequest<{ id: string; title: string; startedAt: string; endsAt: string; weeks: number }[]>('/program/blocks');
+export const loadProgramBlocks = () => apiRequest<{ id: string; title: string; startedAt: string; endsAt: string; weeks: number; status?: 'completed' | 'active'; replaced?: boolean }[]>('/program/blocks');
 export const loadProgramBlock = (id: string) => apiRequest<BlockReview>(`/program/blocks/${encodeURIComponent(id)}`);
-export const renewTrainingProgram = (blockId: string, profileRevision: number, requestId: string, answers: RenewalAnswers) =>
-  apiRequest<TrainingProgram>('/program/renew', { method: 'POST', body: { blockId, profileRevision, requestId, answers } });
+export const renewTrainingProgram = (blockId: string, profileRevision: number, requestId: string, answers: RenewalAnswers, regenerate = false) =>
+  apiRequest<TrainingProgram>('/program/renew', { method: 'POST', body: { blockId, profileRevision, requestId, answers, regenerate } });

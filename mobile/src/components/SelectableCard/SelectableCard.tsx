@@ -1,12 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { resolveColor, type AppColor } from '@/theme/colors';
@@ -41,6 +36,7 @@ export function SelectableCard({
   style,
   title,
 }: SelectableCardProps) {
+  useLanguage();
   const selectedBackground = resolveColor(selectedBackgroundColor);
   return (
     <Pressable

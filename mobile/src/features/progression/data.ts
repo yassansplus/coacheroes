@@ -1,7 +1,8 @@
+import { getLocale } from '@/i18n/core';
 import type { WeightEntry } from './types';
 
-export const number = (value: number, digits = 1) => value.toLocaleString('fr-FR', { maximumFractionDigits: digits });
-export const dateLabel = (date: string, short = false) => new Date(`${date}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: short ? 'short' : 'long' });
+export const number = (value: number, digits = 1) => value.toLocaleString(getLocale(), { maximumFractionDigits: digits });
+export const dateLabel = (date: string, short = false) => new Date(`${date}T12:00:00`).toLocaleDateString(getLocale(), { day: 'numeric', month: short ? 'short' : 'long' });
 export const dayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 export const daysBetween = (first: string, last: string) => Math.round((Date.parse(`${last}T12:00:00Z`) - Date.parse(`${first}T12:00:00Z`)) / 86400000);
 export const measureLabels = { waist: 'Tour de taille', chest: 'Poitrine', arm: 'Bras', thigh: 'Cuisses' };

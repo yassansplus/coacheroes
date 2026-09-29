@@ -11,6 +11,8 @@ type InvitationRow = { id: string; kind: 'friend' | 'group'; inviter_id: string;
   status: string; expires_at: Date; token_hash: string; created_at: Date };
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const pair = (a: string, b: string) => a < b ? [a, b] : [b, a];
+const avatar = (row: any) => row.avatar_version_id ? { versionId: row.avatar_version_id as string,
+  kind: row.avatar_status === 'ready' ? 'generated' as const : 'source' as const } : null;
 const summary = (stats: SharedStats | undefined, detailed: boolean, shareRecords: boolean) => {
   const base = stats ?? { sessionsWeek: 0, sessions28: 0, attendance: null, streak: 0, weekly: [], sports: [], records: [] };
   return { sessionsWeek: base.sessionsWeek, sessions28: detailed ? base.sessions28 : null, weekly: base.weekly,
@@ -44,9 +46,11 @@ export class SquadService {
   async overview(userId: string) {
     const manager = this.db.manager;
     const [people, friends, groups, inbox, preferences] = await Promise.all([
-      manager.query('SELECT id,first_name FROM users WHERE id=$1', [userId]),
-      manager.query(`SELECT u.id,u.first_name FROM squad_friendships f JOIN users u
+      manager.query(`SELECT u.id,u.first_name,v.id AS avatar_version_id,v.status AS avatar_status FROM users u
+        LEFT JOIN profile_avatars a ON a.user_id=u.id LEFT JOIN profile_avatar_versions v ON v.id=a.current_version_id WHERE u.id=$1`, [userId]),
+      manager.query(`SELECT u.id,u.first_name,v.id AS avatar_version_id,v.status AS avatar_status FROM squad_friendships f JOIN users u
         ON u.id=CASE WHEN f.user_a=$1 THEN f.user_b ELSE f.user_a END
+        LEFT JOIN profile_avatars a ON a.user_id=u.id LEFT JOIN profile_avatar_versions v ON v.id=a.current_version_id
         WHERE f.active=true AND (f.user_a=$1 OR f.user_b=$1) ORDER BY u.first_name NULLS LAST,u.id`, [userId]),
       manager.query(`SELECT g.id,g.name,g.owner_id,g.revision,g.created_at,
         (SELECT count(*)::int FROM squad_memberships mm WHERE mm.group_id=g.id AND mm.left_at IS NULL) AS member_count
@@ -59,7 +63,7 @@ export class SquadService {
     const [{ stats, events }, prefs] = await Promise.all([squadStats(manager, ids), this.preferenceRows(manager, ids)]);
     const person = (row: any, self = false) => {
       const preference = prefs.get(row.id);
-      return { id: row.id, name: row.first_name?.trim() || (self ? 'Toi' : 'Membre'),
+      return { id: row.id, name: row.first_name?.trim() || (self ? 'Toi' : 'Membre'), avatar: avatar(row),
         details: true, shareActivity: self || preference?.share_activity !== false,
         stats: summary(stats.get(row.id), true, self || preference?.share_records === true) };
     };
@@ -75,7 +79,9 @@ export class SquadService {
     const manager = this.db.manager;
     const group = await this.activeMember(manager, userId, groupId);
     const [people, friends, challenges] = await Promise.all([
-      manager.query(`SELECT u.id,u.first_name,m.role,m.joined_at FROM squad_memberships m JOIN users u ON u.id=m.user_id
+      manager.query(`SELECT u.id,u.first_name,m.role,m.joined_at,v.id AS avatar_version_id,v.status AS avatar_status
+        FROM squad_memberships m JOIN users u ON u.id=m.user_id
+        LEFT JOIN profile_avatars a ON a.user_id=u.id LEFT JOIN profile_avatar_versions v ON v.id=a.current_version_id
         WHERE m.group_id=$1 AND m.left_at IS NULL ORDER BY m.joined_at ASC`, [groupId]),
       manager.query(`SELECT CASE WHEN user_a=$1 THEN user_b ELSE user_a END AS id FROM squad_friendships
         WHERE active=true AND (user_a=$1 OR user_b=$1)`, [userId]),
@@ -88,7 +94,7 @@ export class SquadService {
     const members = (people as any[]).map(row => {
       const detailed = row.id === userId || friendIds.has(row.id);
       const pref = prefs.get(row.id);
-      return { id: row.id, name: row.first_name?.trim() || (row.id === userId ? 'Toi' : 'Membre'), role: row.role,
+      return { id: row.id, name: row.first_name?.trim() || (row.id === userId ? 'Toi' : 'Membre'), role: row.role, avatar: avatar(row),
         details: detailed, isFriend: friendIds.has(row.id), shareActivity: row.id === userId || pref?.share_activity !== false,
         stats: summary(stats.get(row.id), detailed, row.id === userId || pref?.share_records === true) };
     });
@@ -103,6 +109,20 @@ export class SquadService {
       activity: events.filter(event => event.userId === userId || prefs.get(event.userId)?.share_activity !== false).slice(0, 20).map(event => ({ ...event,
         sport: event.userId === userId || friendIds.has(event.userId) ? event.sport : 'session',
         minutes: event.userId === userId || friendIds.has(event.userId) ? event.minutes : 0 })) };
+  }
+  async avatarImage(userId: string, versionId: string, kind: 'source' | 'generated') {
+    const [row] = await this.db.query(`SELECT CASE WHEN v.status='ready' THEN v.generated_image ELSE v.source_image END AS image
+      FROM profile_avatars a JOIN profile_avatar_versions v ON v.id=a.current_version_id AND v.user_id=a.user_id
+      WHERE v.id=$2 AND (($3='generated' AND v.status='ready') OR ($3='source' AND v.status<>'ready'))
+        AND (a.user_id=$1 OR EXISTS (
+          SELECT 1 FROM squad_friendships f WHERE f.active=true
+            AND ((f.user_a=$1 AND f.user_b=a.user_id) OR (f.user_b=$1 AND f.user_a=a.user_id))
+        ) OR EXISTS (
+          SELECT 1 FROM squad_memberships viewer JOIN squad_memberships member ON member.group_id=viewer.group_id
+          WHERE viewer.user_id=$1 AND viewer.left_at IS NULL AND member.user_id=a.user_id AND member.left_at IS NULL
+        ))`, [userId, versionId, kind]);
+    if (!row?.image) throw new NotFoundException('Photo introuvable.');
+    return row.image as Buffer;
   }
   async invitations(userId: string) {
     const [incoming, outgoing] = await Promise.all([

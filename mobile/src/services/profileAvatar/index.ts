@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { apiUrl } from '@/config/api';
-import { apiRequest, handleUnauthorized } from '@/services/http';
+import { apiRequest, handleUnauthorized, notifyMutation } from '@/services/http';
 import { getSessionToken } from '@/storage/session';
 import type { AvatarPreferences } from './options';
 
@@ -21,5 +21,6 @@ export async function uploadProfileAvatar(uri: string, preferences: AvatarPrefer
   });
   if (result.status === 401) handleUnauthorized(token);
   if (result.status !== 201) throw new Error('Impossible d’enregistrer ta photo. Réessaie.');
+  notifyMutation();
   return JSON.parse(result.body) as Pick<ProfileAvatar, 'versionId' | 'status' | 'sourceUrl' | 'generatedUrl'>;
 }

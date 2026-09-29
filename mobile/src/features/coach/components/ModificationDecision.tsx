@@ -1,4 +1,7 @@
-import { Text, View } from 'react-native';
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { RadioButton } from '@/components/RadioButton';
@@ -10,10 +13,11 @@ import { CoachIcon } from './CoachUI';
 import { s } from './styles';
 
 export function ModificationDecision({ scope, onScope, onApply, onKeep, onAdjust }: { scope: 'week' | 'ongoing'; onScope: (value: 'week' | 'ongoing') => void; onApply: () => void; onKeep: () => void; onAdjust: () => void }) {
+  useLanguage();
   const week = weekRange(Date.now());
   return <>
     <Text style={[s.title, s.center, { marginBottom: 8 }]}>Décision</Text>
-    <Card style={s.card}><View style={s.row}><CoachIcon icon="dumbbell" tone="purple" size={66} /><View style={[s.grow, { gap: 4 }]}><Text style={s.heading}>Muscu B allégée</Text><Text style={[s.label, { color: colors.accent }]}>{changes.length} modifications</Text><Text style={s.body}>{scope === 'week' ? `Du ${dayLabel(week.start)} au ${dayLabel(week.end)}` : 'Jusqu’à nouvel ordre'}</Text></View></View></Card>
+    <Card style={s.card}><View style={s.row}><CoachIcon icon="dumbbell" tone="purple" size={66} /><View style={[s.grow, { gap: 4 }]}><Text style={s.heading}>Muscu B allégée</Text><Text style={[s.label, { color: colors.accent }]}>{changes.length} modifications</Text><Text style={s.body}>{scope === 'week' ? t("Du {p0} au {p1}", { p0: dayLabel(week.start), p1: dayLabel(week.end) }) : 'Jusqu’à nouvel ordre'}</Text></View></View></Card>
     <Card style={[s.card, { gap: 12 }]}><Text style={s.heading}>Application</Text>
       <RadioButton label="Cette semaine uniquement" selected={scope === 'week'} onSelect={() => onScope('week')} style={{ padding: 16, minHeight: 66, borderRadius: 18, backgroundColor: scope === 'week' ? colors.primarySurface : colors.surface, borderColor: colors.border, borderWidth: scope === 'week' ? 0 : 1 }} />
       <RadioButton label="Jusqu’à nouvel ordre" selected={scope === 'ongoing'} onSelect={() => onScope('ongoing')} style={{ padding: 16, minHeight: 66, borderRadius: 18, backgroundColor: scope === 'ongoing' ? colors.primarySurface : colors.surface, borderColor: colors.border, borderWidth: scope === 'ongoing' ? 0 : 1 }} />

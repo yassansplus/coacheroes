@@ -1,0 +1,13 @@
+Use case: stylized-concept.
+Asset type: ONE flat illustrated videogame rank badge, level 1 / starter wooden tier, exported as a PNG with genuine transparent alpha.
+Input image: The supplied screenshot is a STYLE AND COMPOSITION REFERENCE. Match its restrained mobile-game shield illustration language and wooden material expressed in a few flat colors. The black screenshot background must NOT be reproduced.
+
+Create a wooden shield-shaped level badge closely inspired by the reference: a pointed top, broad squared shoulders, straight upper sides and gently tapering lower sides meeting in a rounded bottom point. Front-facing, centered, strongly symmetrical. Thick dark-brown outline, double beveled wooden border, warm ochre-orange inner wooden panel. A large bold numeral "1" occupies the upper central area, in pale honey-colored carved wood, with thick dark-brown outline and a simple offset brown extrusion suggesting shallow relief. At the lower center, one compact upward-pointing chevron in muted turquoise with a dark teal outline.
+
+Visual treatment: FLAT GAME BADGE ILLUSTRATION. Solid color shapes, precise clean edges, a very limited palette, simple angular highlight facets and two or three broad curved wood-grain strokes. Shallow depth is suggested only by adjacent flat color bands and a small number of graphic shadows. Starter-tier wooden equipment: sturdy, modest, readable, charming. Match the reference's proportions and degree of simplification. Keep the numeral and chevron clearly separated and large enough to read at 64–96 pixels.
+
+Materials: warm amber timber, darker cut edges and chocolate-brown recessed grooves, pale golden wood on the number; turquoise painted chevron. Material is communicated by color and graphic shapes, NOT by realistic texture.
+
+Composition: One badge only, square canvas, whole silhouette fully visible, approximately 10% empty margin on all sides. No surrounding objects. Text must be exactly the single numeral "1", no other text.
+Background: COMPLETELY TRANSPARENT RGBA PNG. The entire region outside the shield must be transparent. No black or white background, no checkerboard pattern, no backdrop gradient, no floor, no outer glow or cast shadow outside the badge.
+Avoid: realistic 3D render, photorealistic wood grain, microtexture, glitter, metal, gemstones, gold jewelry, silver, laurels, dumbbells, ornate fantasy filigree, neon glow, glossy reflections, dramatic lighting.

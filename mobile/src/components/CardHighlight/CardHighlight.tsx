@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { resolveColor, type AppColor } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -23,6 +25,7 @@ export function CardHighlight({
   backgroundColor = 'coral',
   style,
 }: CardHighlightProps) {
+  useLanguage();
   const resolvedBackgroundColor = resolveColor(backgroundColor);
   const hasTextContent = Boolean(title || value);
 

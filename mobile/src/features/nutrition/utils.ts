@@ -3,6 +3,9 @@ import type { Food, Ingredient, Meal, Nutrients } from './types';
 export function localDate(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
+export function localTime(date = new Date()): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
 export function dateFromKey(key: string) { return new Date(`${key}T12:00:00`); }
 export function shiftedDate(key: string, days: number) { const date = dateFromKey(key); date.setDate(date.getDate() + days); return localDate(date); }
 export function totals(items: Ingredient[], lookup: Record<string, Food>): Nutrients {

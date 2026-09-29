@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, resolveColor, type AppColor } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -27,6 +29,7 @@ export function Badge({
   textColor,
   variant = 'primary',
 }: BadgeProps) {
+  useLanguage();
   const palette = variants[variant];
 
   return (

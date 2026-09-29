@@ -24,4 +24,4 @@ export const renewalAnswersSchema = z.strictObject({
     ctx.addIssue({ code: 'custom', message: 'Vérifie les jours et durées des cours fixes.' });
 });
 export type RenewalAnswers = z.infer<typeof renewalAnswersSchema>;
-export const renewalRequestSchema = z.strictObject({ blockId: z.uuid(), profileRevision: z.number().int().min(0), requestId: z.uuid(), answers: renewalAnswersSchema });
+export const renewalRequestSchema = z.strictObject({ blockId: z.uuid(), profileRevision: z.number().int().min(0), requestId: z.uuid(), answers: renewalAnswersSchema, regenerate: z.boolean().optional() });

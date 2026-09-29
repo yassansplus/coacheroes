@@ -39,7 +39,7 @@ export class CoachService {
       this.db.getRepository(NutritionPlan).find({ where: { userId }, order: { createdAt: 'DESC' }, take: 1 }),
     ]);
     const { photos: _photos, ...profile } = onboarding?.profile ?? {};
-    return { firstName: user.firstName, onboarding: profile, coachingDetails: onboarding?.coachingDetails ?? {},
+    return { locale: user.language, firstName: user.firstName, onboarding: profile, coachingDetails: onboarding?.coachingDetails ?? {},
       program: { accepted: Boolean(program?.acceptedAt), runId: program?.acceptedAt ? program.runId : null },
       nutritionTargets: plan[0]?.status === 'ready' && plan[0]?.programRunId === program?.runId ? plan[0].targets : null,
       now: new Date().toISOString() };

@@ -1,6 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { AnimatedMetricText } from '@/components/Motion';
@@ -30,6 +32,7 @@ export function LevelProgressCard({
   trackColor,
   value,
 }: LevelProgressCardProps) {
+  useLanguage();
   return (
     <View style={styles.container}>
       {sectionTitle ? <Text style={styles.sectionTitle}>{sectionTitle}</Text> : null}

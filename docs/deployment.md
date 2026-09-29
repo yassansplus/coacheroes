@@ -1,5 +1,40 @@
 # Déploiement de l'API Coac Heroes
 
+## Redéploiement automatique
+
+Depuis la racine du projet dans PowerShell :
+
+```powershell
+.\deploy-api.ps1
+```
+
+Ou dans Bash/WSL : `bash scripts/deploy-api.sh`. SSH demande le mot de passe de
+`login@192.168.1.37` ; aucun mot de passe n'est stocké dans le script. Les options
+`-Check` (PowerShell) / `--check` (Bash) vérifient le build local, l'accès au
+serveur et la possibilité de sauvegarder la base **sans déployer**. Les options
+`-Tests` / `--tests` ajoutent toute la suite de tests API avant le transfert.
+
+La commande normale déploie l'état local enregistré sur disque, y compris les
+modifications non commitées. Elle compile le backend, transfère une archive contenant seulement
+ses sources et fichiers de build, puis sauvegarde ses sources actuelles et un dump
+complet de la seule base `coac_heroes`. Le dump comprend les photos, stockées en
+`bytea` dans PostgreSQL. Les sauvegardes restent dans
+`/home/login/coacheroes/backups/<version>/`, avec des permissions privées et
+sans purge automatique. Le script remplace seulement le répertoire source de
+l'API, reconstruit `api`, puis utilise `docker-compose up -d --no-deps api`.
+Il n'arrête ni ne recrée `naow-db`, Nginx ou les autres conteneurs et ne supprime
+aucun volume. Les `.env` et `docker-compose.yml` du serveur restent en place.
+Ces sauvegardes sont sur le même serveur : elles protègent le déploiement, mais
+ne remplacent pas une sauvegarde hors serveur en cas de panne du disque.
+
+Si le build ou le contrôle de santé échoue, le script restaure les anciens
+fichiers API et, si nécessaire, reconstruit et relance son ancien conteneur.
+Il ne restaure **jamais** automatiquement PostgreSQL : une migration déjà
+appliquée ou une écriture concurrente demande une décision manuelle avant tout
+retour arrière de la base. Le dump vérifié reste disponible à cet effet. Le
+contrôle HTTPS public signale un avertissement si le proxy ne répond pas, mais
+la réussite requiert que le conteneur soit `healthy` et que l'API LAN réponde.
+
 L'API est déployée dans `/home/login/coacheroes/api` sur `192.168.1.37` avec
 `docker-compose` (version 1). Le service `coacheroes-api` utilise deux réseaux
 Docker externes existants : `naow-app_naow-internal` pour joindre `naow-db` et

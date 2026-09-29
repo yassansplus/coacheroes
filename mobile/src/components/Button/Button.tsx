@@ -1,17 +1,10 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useRef, type ReactNode } from 'react';
-import {
-  Animated,
-  Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type TextStyle,
-  type ViewStyle,
-} from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { fontFamily } from '@/theme/typography';
 import { colors, gradients } from '@/theme/colors';
@@ -68,6 +61,7 @@ export function Button({
   trailing,
   accessibilityLabel,
 }: ButtonProps) {
+  useLanguage();
   const scale = useRef(new Animated.Value(1)).current;
   const gradientInversion = useRef(new Animated.Value(0)).current;
   const buttonRadius = BUTTON_RADII[radius];
@@ -124,7 +118,7 @@ export function Button({
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? text}
+        accessibilityLabel={localizeLabel(accessibilityLabel ?? text)}
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={handlePress}

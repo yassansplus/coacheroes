@@ -1,6 +1,10 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -30,6 +34,7 @@ type OnboardingLayoutProps = {
 
 export function OnboardingLayout({ step, editing = false, children, onBack, onNext, onSkip, onOptions,
   nextLabel = 'Continuer', busy = false, locked = false, error, footer, completed = false, contentStyle }: OnboardingLayoutProps) {
+  useLanguage();
   const scroll = useRef<ScrollView>(null);
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [step, completed]);
   return <View style={styles.root}>
@@ -42,11 +47,11 @@ export function OnboardingLayout({ step, editing = false, children, onBack, onNe
       <KeyboardAvoidingView style={styles.safeArea} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {step > 1 && !completed ? <View style={styles.header}>
           <View style={styles.headerRow}>
-            {step !== 15 ? <IconButton accessibilityLabel={editing ? 'Retour au profil sans enregistrer' : 'Étape précédente'} variant="ghost" icon={<Symbol name="back" />} disabled={busy || locked} onPress={onBack} /> : <View style={styles.headerSpacer} />}
-            <Text accessibilityLiveRegion="polite" style={styles.step}>{editing ? 'Modifier mon profil' : `${step} sur 16`}</Text>
+            {step !== 15 ? <IconButton accessibilityLabel={localizeLabel(editing ? 'Retour au profil sans enregistrer' : 'Étape précédente')} variant="ghost" icon={<Symbol name="back" />} disabled={busy || locked} onPress={onBack} /> : <View style={styles.headerSpacer} />}
+            <Text accessibilityLiveRegion="polite" style={styles.step}>{editing ? 'Modifier mon profil' : t("{p0} sur 16", { p0: step })}</Text>
             <View style={styles.headerAction}>
               {onSkip ? <Button variant="secondary" backgroundColor="transparent" textColor={colors.primary} text={step === 10 ? 'Ignorer' : 'Passer'} disabled={busy || locked} onPress={onSkip} style={styles.skip} textStyle={styles.skipText} /> :
-                onOptions ? <IconButton accessibilityLabel="Options de l’étape" variant="surface" icon={<Symbol name="more" />} disabled={busy || locked} onPress={onOptions} /> : null}
+                onOptions ? <IconButton accessibilityLabel={localizeLabel("Options de l’étape")} variant="surface" icon={<Symbol name="more" />} disabled={busy || locked} onPress={onOptions} /> : null}
             </View>
           </View>
           {step !== 15 && !editing ? <ProgressBar progress={step / 16 * 100} height={6} trackColor={colors.border} style={styles.progress} /> : null}

@@ -1,12 +1,14 @@
 import { Image, type ImageSourcePropType } from 'react-native';
 
 import { illustrations, isSvgIllustration } from './illustrations';
+import { appBrand } from './brand';
 
 /**
  * Assets affichés par le design system. Ils sont préchargés au lancement pour
  * éviter un affichage progressif des illustrations sur le premier écran.
  */
 export const imageAssets: readonly ImageSourcePropType[] = [
+  appBrand.icon,
   ...Object.values(illustrations).filter((asset): asset is ImageSourcePropType => !isSvgIllustration(asset)),
   require('../../assets/progression/example-before.jpg'),
   require('../../assets/progression/example-current.jpg'),

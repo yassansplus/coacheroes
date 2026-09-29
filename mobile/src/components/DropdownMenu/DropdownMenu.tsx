@@ -1,3 +1,5 @@
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect } from 'react';
 import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { Motion } from '@/components/Motion';
@@ -8,10 +10,11 @@ import { colors } from '@/theme/colors';
 export type DropdownMenuItem = { label: string; onPress: () => void; destructive?: boolean };
 /** Anchored below a screen header, using the same surface as the programme menu. */
 export function DropdownMenu({ visible, onClose, items }: { visible: boolean; onClose: () => void; items: DropdownMenuItem[] }) {
+  useLanguage();
   useEffect(() => { if (!visible) return; const subscription = BackHandler.addEventListener('hardwareBackPress', () => { onClose(); return true; }); return () => subscription.remove(); }, [visible, onClose]);
   if (!visible) return null;
   return <View style={StyleSheet.absoluteFill} accessibilityViewIsModal onAccessibilityEscape={onClose}>
-    <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Fermer les options" onPress={onClose} />
+    <Pressable style={StyleSheet.absoluteFill} accessibilityLabel={localizeLabel("Fermer les options")} onPress={onClose} />
     <Motion style={styles.menu}><Card style={{ padding: 0, gap: 10 }}>{items.map(item => <Button key={item.label} variant="secondary" text={item.label} textColor={item.destructive ? colors.energy : colors.text} onPress={() => { onClose(); item.onPress(); }} />)}</Card></Motion>
   </View>;
 }

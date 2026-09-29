@@ -4,7 +4,7 @@ Comparatif documentaire, pas un benchmark mesuré sur des générations réelles
 
 ## Configuration constatée
 
-Répartition intégrée après validation utilisateur : génération et ajustements avec `gpt-5.6-sol` / `high`, discussion sur le programme avec `gpt-5.6-terra` / `medium`, extraction onboarding avec `gpt-5.6-luna` / `low`. Astra est exclu. Le profil normalisé inclut déjà le niveau, les objectifs, les sports, les jours, le matériel et les restrictions. Le manque de consignes explicites de simplicité était un problème de prompt ; il ne permet pas, à lui seul, de conclure à une incapacité du modèle.
+Répartition intégrée après validation utilisateur : génération et ajustements avec `gpt-5.6-sol` / `medium`, discussion sur le programme avec `gpt-5.6-terra` / `medium`, extraction onboarding avec `gpt-5.6-luna` / `low`. Astra est exclu. Le profil normalisé inclut déjà le niveau, les objectifs, les sports, les jours, le matériel et les restrictions. Le manque de consignes explicites de simplicité était un problème de prompt ; il ne permet pas, à lui seul, de conclure à une incapacité du modèle.
 
 ## Comparaison et recommandation
 
@@ -12,7 +12,7 @@ Répartition intégrée après validation utilisateur : génération et ajusteme
 | --- | --- | --- | --- |
 | GPT-5.6 Luna | 0,20 / 1,20 | low pour extraction ; high comme ancienne référence | Tâches ciblées économiques |
 | GPT-5.6 Terra | 2 / 12 | medium | Chat et clarification du profil |
-| GPT-5.6 Sol | 4 / 20 | high | Recommandation de compromis pour générer et ajuster le programme |
+| GPT-5.6 Sol | 4 / 20 | medium | Recommandation de compromis pour générer et ajuster le programme |
 | GPT-6 Astra | 10 / 50 | high | Comparaison documentaire uniquement ; exclu par décision utilisateur |
 
 Les usages et niveaux de reasoning proposés sont des hypothèses d'ingénierie à vérifier sur nos profils, pas des scores publiés de coaching. OpenAI positionne [Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna) pour les volumes économiques, [Terra](https://developers.openai.com/api/docs/models/gpt-5.6-terra) pour le compromis intelligence/coût, [Sol](https://developers.openai.com/api/docs/models/gpt-5.6-sol) pour les tâches complexes, et [Astra](https://developers.openai.com/api/docs/models/gpt-6-astra) comme son modèle le plus capable.
@@ -21,11 +21,11 @@ Tarifs Standard hors cache et contexte long, vérifiés dans la [tarification of
 
 Exemple purement arithmétique : avec 20 000 tokens d'entrée et 5 000 de sortie cumulés sur tous les appels d'une génération, coût estimé respectivement de 0,010 $, 0,100 $, 0,180 $ et 0,450 $. Ce ne sont ni des consommations observées ni des plafonds. Les tokens de reasoning consomment aussi le budget de sortie ; les allers-retours des outils réexpédient du contexte. Voir [le contrôle des coûts des modèles de reasoning](https://developers.openai.com/api/docs/guides/reasoning#controlling-costs).
 
-Conseil produit : Sol/high pour construire un programme complet, Terra/medium pour discuter. Ne pas activer max partout : il faut mesurer le gain par rapport au coût et au temps d'attente. Cette séparation est implémentée dans `api/src/config/ai-models.ts`. Les trois variables par contexte remplacent `OPENAI_MODEL`, désormais ignorée. Les efforts sont fixés par contexte. Seuls Luna, Terra et Sol sont autorisés ; une valeur invalide bloque le démarrage. Les traces de génération et de chat conservent modèle et effort réellement employés.
+Conseil produit : Sol/medium pour construire un programme complet, Terra/medium pour discuter. Ne pas activer max partout : il faut mesurer le gain par rapport au coût et au temps d'attente. Cette séparation est implémentée dans `api/src/config/ai-models.ts`. Les trois variables par contexte remplacent `OPENAI_MODEL`, désormais ignorée. Les efforts sont fixés par contexte. Seuls Luna, Terra et Sol sont autorisés ; une valeur invalide bloque le démarrage. Les traces de génération et de chat conservent modèle et effort réellement employés.
 
 ## Protocole de benchmark à exécuter ensuite
 
-Comparer Luna/high, Terra/medium et Sol/high sur les mêmes snapshots de catalogue, avec le même prompt, les mêmes outils, schémas et limites. Utiliser huit profils synthétiques, trois répétitions chacun : 72 générations. Ajouter un jeu distinct de révisions via chat si l'on souhaite mesurer ce parcours. Ne pas utiliser de vrais profils personnels.
+Comparer Luna/high, Terra/medium et Sol/medium sur les mêmes snapshots de catalogue, avec le même prompt, les mêmes outils, schémas et limites. Utiliser huit profils synthétiques, trois répétitions chacun : 72 générations. Ajouter un jeu distinct de révisions via chat si l'on souhaite mesurer ce parcours. Ne pas utiliser de vrais profils personnels.
 
 Profils : débutant en salle, débutant à domicile, niveau inconnu, intermédiaire, sportif avancé dont la musculation est nouvelle, boxe + musculation sur quatre jours, cours fixes + créneaux libres, restriction nécessitant une clarification ou une adaptation explicite.
 

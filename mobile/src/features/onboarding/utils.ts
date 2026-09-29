@@ -1,3 +1,4 @@
+import { t } from '@/i18n/core';
 import type { ComplementarySport, FoodInputs, FoodSection, OnboardingProfile, Sport } from './types';
 
 export function toggleItem<T>(items: T[], item: T): T[] {
@@ -10,7 +11,7 @@ export function toggleComplementarySport(sports: Sport[], sport: ComplementarySp
 export function formatMinutes(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  return rest ? `${hours} h ${String(rest).padStart(2, '0')}` : `${hours} h`;
+  return rest ? t("{p0} h {p1}", { p0: hours, p1: String(rest).padStart(2, '0') }) : t("{p0} h", { p0: hours });
 }
 export function normalizeNumber(value: string): string {
   return value.replace(/[^\d.,]/g, '').replace('.', ',');

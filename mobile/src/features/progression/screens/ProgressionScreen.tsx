@@ -1,6 +1,10 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { BackHandler, ScrollView, Text, View } from 'react-native';
+import { BackHandler, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppModal } from '@/components/AppModal';
 import { AppNavbar } from '@/components/AppNavbar';
@@ -35,6 +39,7 @@ const sorted = <T extends { date: string }>(items: T[]) => items.slice().sort((a
 const numeric = (value: string) => Number(value.trim().replace(',', '.'));
 
 export function ProgressionScreen({ onHome, onToday, onProgram, onCoach, onProfile, onExit }: { onHome: () => void; onToday: () => void; onProgram: () => void; onCoach: () => void; onProfile: () => void; onExit?: () => void }) {
+  useLanguage();
   const { user } = useSession();
   const [data, setData] = useState<ProgressData>(emptyData);
   const [loading, setLoading] = useState(true);
@@ -69,8 +74,8 @@ export function ProgressionScreen({ onHome, onToday, onProgram, onCoach, onProfi
   function back() { if (sheet) setSheet(null); else if (page === 'home') (onExit ?? onHome)(); else setPage(page === 'compare' ? 'photos' : 'home'); }
   useEffect(() => { const subscription = BackHandler.addEventListener('hardwareBackPress', () => { back(); return true; }); return () => subscription.remove(); }, [page, sheet, onHome]);
   function showHistory(title: string, lines: string[]) { setHistory({ title, lines }); setSheet('history'); }
-  function showSessions(title: string, items: Session[]) { showHistory(title, items.map(item => `${dateLabel(item.date)} · ${item.sport === 'rest' ? 'Repos planifié' : item.sport === 'boxing' ? 'Boxe' : item.sport === 'strength' ? 'Musculation' : item.sport} · ${item.status === 'completed' ? `${item.minutes ?? '—'} min${item.rounds !== null ? ` · ${item.rounds} rounds` : ''}` : { missed: 'Manquée', abandoned: 'Interrompue', in_progress: 'En cours', planned: 'Prévue', rest: 'Récupération' }[item.status]}`)); }
-  function measureHistory() { showHistory('Historique des mensurations', data.measures.slice().reverse().map(item => `${dateLabel(item.date)}\n${Object.entries(measureLabels).map(([key, label]) => `${label} : ${item[key as MeasureKey] === null ? '—' : `${number(item[key as MeasureKey]!)} cm`}`).join(' · ')}`)); }
+  function showSessions(title: string, items: Session[]) { showHistory(title, items.map(item => `${dateLabel(item.date)} · ${item.sport === 'rest' ? 'Repos planifié' : item.sport === 'boxing' ? 'Boxe' : item.sport === 'strength' ? 'Musculation' : item.sport} · ${item.status === 'completed' ? t("{p0} min{p1}", { p0: item.minutes ?? '—', p1: item.rounds !== null ? ` · ${item.rounds} rounds` : '' }) : { missed: 'Manquée', abandoned: 'Interrompue', in_progress: 'En cours', planned: 'Prévue', rest: 'Récupération' }[item.status]}`)); }
+  function measureHistory() { showHistory('Historique des mensurations', data.measures.slice().reverse().map(item => `${dateLabel(item.date)}\n${Object.entries(measureLabels).map(([key, label]) => `${label} : ${item[key as MeasureKey] === null ? '—' : t("{p0} cm", { p0: number(item[key as MeasureKey]!) })}`).join(' · ')}`)); }
   function openForm(next: Sheet) {
     setDate(dayKey(new Date())); setCalendar(false); setError(''); setValue(next === 'weight' ? String(data.weights.at(-1)?.value ?? '') : '');
     const last = data.measures.at(-1);
@@ -123,15 +128,15 @@ export function ProgressionScreen({ onHome, onToday, onProgram, onCoach, onProfi
     finally { setBusy(false); }
   }
   const form = sheet === 'weight' || sheet === 'measurements' || sheet === 'photo' || sheet === 'test';
-  const sheetTitle = sheet === 'history' ? history.title : sheet === 'weight' ? 'Ajouter une pesée' : sheet === 'measurements' ? 'Ajouter des mesures' : sheet === 'photo' ? 'Ajouter des photos' : sheet === 'test' ? 'Ajouter un test' : sheet === 'period' ? 'Période affichée' : sheet === 'exercise' ? 'Choisir un exercice' : `Photo ${sheet === 'before' ? 'avant' : 'après'}`;
+  const sheetTitle = sheet === 'history' ? history.title : sheet === 'weight' ? 'Ajouter une pesée' : sheet === 'measurements' ? 'Ajouter des mesures' : sheet === 'photo' ? 'Ajouter des photos' : sheet === 'test' ? 'Ajouter un test' : sheet === 'period' ? 'Période affichée' : sheet === 'exercise' ? 'Choisir un exercice' : t("Photo {p0}", { p0: sheet === 'before' ? 'avant' : 'après' });
   return <View style={s.screen}><ScreenBackdrop /><SafeAreaView style={{ flex: 1 }}><View style={[s.frame, { flex: 1 }]}>
-    {page === 'home' && onExit ? <View style={s.header}><IconButton accessibilityLabel="Retour aux records" icon={<Symbol name="back" />} onPress={onExit} /><Text style={s.heading}>Progression</Text></View> : null}
-      {page !== 'home' ? <View style={s.header}><IconButton accessibilityLabel="Retour" icon={<Symbol name={page === 'compare' ? 'close' : 'back'} />} onPress={back} /><Text style={[s.heading, s.grow, { textAlign: 'center' }]}>{titles[page]}</Text>{page === 'measurements' ? <IconButton accessibilityLabel="Historique des mesures" icon={<Symbol name="history" />} onPress={measureHistory} /> : page === 'photos' ? <IconButton accessibilityLabel="Confidentialité des photos" icon={<Symbol name="lock" />} onPress={() => showHistory('Photos privées', ['Tes photos sont enregistrées dans ton compte. Elles ne sont pas envoyées à l’IA et restent accessibles à toi seul.'])} /> : <View style={{ width: 40 }} />}</View> : null}
+    {page === 'home' && onExit ? <View style={s.header}><IconButton accessibilityLabel={localizeLabel("Retour aux records")} icon={<Symbol name="back" />} onPress={onExit} /><Text style={s.heading}>Progression</Text></View> : null}
+      {page !== 'home' ? <View style={s.header}><IconButton accessibilityLabel={localizeLabel("Retour")} icon={<Symbol name={page === 'compare' ? 'close' : 'back'} />} onPress={back} /><Text style={[s.heading, s.grow, { textAlign: 'center' }]}>{titles[page]}</Text>{page === 'measurements' ? <IconButton accessibilityLabel={localizeLabel("Historique des mesures")} icon={<Symbol name="history" />} onPress={measureHistory} /> : page === 'photos' ? <IconButton accessibilityLabel={localizeLabel("Confidentialité des photos")} icon={<Symbol name="lock" />} onPress={() => showHistory('Photos privées', ['Tes photos sont enregistrées dans ton compte. Elles ne sont pas envoyées à l’IA et restent accessibles à toi seul.'])} /> : <View style={{ width: 40 }} />}</View> : null}
     <ScrollView ref={scroll} contentContainerStyle={[s.content, page === 'home' && { paddingTop: 18 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       {loading ? <LoadingState label="Chargement de ta progression…" /> : null}
       {loadError ? <ErrorState description={loadError} onRetry={() => void refresh()} /> : null}
-      {!loading && page === 'home' ? <Dashboard data={data} onPage={setPage} onStrength={id => { setExercise(id); setPage('strength'); }} period={period} onPeriod={() => setSheet('period')} onSleep={() => showHistory('Sommeil moyen', data.sleep.slice().reverse().map(item => `${dateLabel(item.date)} · ${Math.floor(item.minutes / 60)} h ${String(item.minutes % 60).padStart(2, '0')} · qualité ${item.quality}/5`))} /> : null}
-      {page === 'weight' ? <WeightProgress entries={data.weights} onAdd={() => openForm('weight')} onHistory={() => showHistory('Historique des pesées', data.weights.slice().reverse().map(item => `${dateLabel(item.date)} · ${number(item.value)} kg`))} /> : null}
+      {!loading && page === 'home' ? <Dashboard data={data} onPage={setPage} onStrength={id => { setExercise(id); setPage('strength'); }} period={period} onPeriod={() => setSheet('period')} onSleep={() => showHistory('Sommeil moyen', data.sleep.slice().reverse().map(item => t("{p0} · {p1} h {p2} · qualité {p3}/5", { p0: dateLabel(item.date), p1: Math.floor(item.minutes / 60), p2: String(item.minutes % 60).padStart(2, '0'), p3: item.quality })))} /> : null}
+      {page === 'weight' ? <WeightProgress entries={data.weights} onAdd={() => openForm('weight')} onHistory={() => showHistory('Historique des pesées', data.weights.slice().reverse().map(item => t("{p0} · {p1} kg", { p0: dateLabel(item.date), p1: number(item.value) })))} /> : null}
       {page === 'measurements' ? <MeasurementsProgress entries={data.measures} onAdd={() => openForm('measurements')} onHistory={measureHistory} /> : null}
       {page === 'photos' ? <PhotoGallery photos={data.photos} angle={angle} selected={selectedPhoto} onSelect={setSelectedPhoto} onAngle={setAngle} onAdd={() => openForm('photo')} onCompare={compare} onDelete={id => { setError(''); setDeleting({ id, angle }); }} startDate={data.startDate} /> : null}
       {page === 'compare' ? <ComparePhotos photos={data.photos} angle={angle} onAngle={changeComparisonAngle} beforeId={before} afterId={after} onChoose={side => { setError(''); setSheet(side); }} onClose={() => setPage('photos')} /> : null}
@@ -147,12 +152,12 @@ export function ProgressionScreen({ onHome, onToday, onProgram, onCoach, onProfi
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 14, paddingBottom: 12 }}>
         {form ? <><Button text={`${dateLabel(date)} ⌄`} variant="outline" onPress={() => setCalendar(!calendar)} />{calendar ? <Calendar selectedDate={new Date(`${date}T12:00:00`)} initialMonth={new Date(`${date}T12:00:00`)} maximumDate={new Date()} onSelectDate={day => { const key = dayKey(day); setDate(key); setCalendar(false); if (sheet === 'weight') setValue(String(data.weights.find(item => item.date === key)?.value ?? '')); if (sheet === 'measurements') { const item = data.measures.find(item => item.date === key); setDraftMeasures({ waist: String(item?.waist ?? ''), chest: String(item?.chest ?? ''), arm: String(item?.arm ?? ''), thigh: String(item?.thigh ?? '') }); } if (sheet === 'test') setValue(String(data.tests.find(item => item.date === key && item.kind === kind)?.value ?? '')); }} /> : null}</> : null}
         {sheet === 'weight' ? <TextField label="Poids (kg)" value={value} onChangeText={setValue} keyboardType="decimal-pad" /> : null}
-        {sheet === 'measurements' ? (Object.keys(measureLabels) as MeasureKey[]).map(key => <TextField key={key} label={`${measureLabels[key]} (cm)`} value={draftMeasures[key]} onChangeText={text => setDraftMeasures(current => ({ ...current, [key]: text }))} keyboardType="decimal-pad" />) : null}
+        {sheet === 'measurements' ? (Object.keys(measureLabels) as MeasureKey[]).map(key => <TextField key={key} label={t("{p0} (cm)", { p0: measureLabels[key] })} value={draftMeasures[key]} onChangeText={text => setDraftMeasures(current => ({ ...current, [key]: text }))} keyboardType="decimal-pad" />) : null}
         {sheet === 'photo' ? <><Text style={s.body}>Ajoute un ou plusieurs angles. Pour faciliter la comparaison, conserve la même posture et le même éclairage.</Text><View style={{ gap: 16 }}>{angleItems.map(item => <PhotoPicker inlineActions key={item.value} label={item.label} value={draftPhotos[item.value as Angle]} onChange={uri => setDraftPhotos(current => ({ ...current, [item.value]: uri }))} />)}</View></> : null}
         {sheet === 'test' ? <><TabSelector items={['Sac', 'Corde', 'Sparring'].map(item => ({ value: item, label: item }))} value={kind} onChange={next => { setKind(next as BoxingTest['kind']); setValue(''); }} /><TextField label={kind === 'Sac' ? 'Nombre de frappes en 3 min' : kind === 'Corde' ? 'Durée sans interruption (secondes)' : 'Nombre de rounds'} value={value} onChangeText={setValue} keyboardType="number-pad" /></> : null}
         {form && error ? <Text accessibilityRole="alert" style={[s.body, { color: colors.energy }]}>{error}</Text> : null}
         {sheet === 'history' ? history.lines.length ? history.lines.map((line, index) => <View key={index} style={s.tinted}><Text style={s.body}>{line}</Text></View>) : <EmptyState title="Aucune donnée sur cette période" /> : null}
-        {sheet === 'period' ? [30, 90, 365].map(item => <Row key={item} title={item === 365 ? 'Depuis le début' : `${item} derniers jours`} onPress={() => { setPeriod(item); setSheet(null); }} />) : null}
+        {sheet === 'period' ? [30, 90, 365].map(item => <Row key={item} title={item === 365 ? 'Depuis le début' : t("{p0} derniers jours", { p0: item })} onPress={() => { setPeriod(item); setSheet(null); }} />) : null}
         {sheet === 'exercise' ? data.exercises.map(item => <Row key={item.id} title={item.title} onPress={() => { setExercise(item.id); setSheet(null); }} />) : null}
         {sheet === 'before' || sheet === 'after' ? sorted(data.photos.filter(item => item.images[angle])).map(item => <Row key={item.id} title={dateLabel(item.date)} onPress={() => {
           const other = data.photos.find(photo => photo.id === (sheet === 'before' ? after : before));

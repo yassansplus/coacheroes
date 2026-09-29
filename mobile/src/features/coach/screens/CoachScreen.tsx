@@ -1,5 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef, useState } from 'react';
-import { BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { AppNavbar } from '@/components/AppNavbar';
@@ -21,6 +24,7 @@ import { s } from '../components/styles';
 
 type CoachScreenProps = { onHome: () => void; onProgram: () => void; onToday: () => void; onNutrition: () => void; onProgress: () => void; onProfile: () => void };
 export function CoachScreen({ onHome, onProgram, onToday, onNutrition, onProgress, onProfile }: CoachScreenProps) {
+  useLanguage();
   const c = useCoach();
   const scroll = useRef<ScrollView>(null);
   const [history, setHistory] = useState(false);
@@ -56,10 +60,10 @@ export function CoachScreen({ onHome, onProgram, onToday, onNutrition, onProgres
 
   return <SafeAreaView style={s.screen}><ScreenBackdrop /><KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><View style={s.frame}>
     {chat ? <View style={[s.row, { paddingVertical: 12, gap: 8 }]}>
-      <IconButton accessibilityLabel="Questions rapides" icon={<Symbol name="back" />} variant="ghost" size={30} onPress={back} />
+      <IconButton accessibilityLabel={localizeLabel("Questions rapides")} icon={<Symbol name="back" />} variant="ghost" size={30} onPress={back} />
       <Illustration name="coach" size={48} /><View style={s.grow}><Text style={s.title}>Coach IA</Text><View style={[s.row, { gap: 5 }]}><View style={{ width: 7, height: 7, borderRadius: 5, backgroundColor: colors.success }} /><Text style={s.caption}>À ton écoute</Text></View></View>
-      <IconButton accessibilityLabel="Mes conversations" icon={<Symbol name="history" color="textSecondary" />} onPress={showHistory} />
-    </View> : <AppHeader title="Questions rapides" leading={<IconButton accessibilityLabel="Retour" variant="ghost" icon={<Symbol name="back" />} onPress={back} />} trailing={<IconButton accessibilityLabel="Mes conversations" icon={<Symbol name="history" />} onPress={showHistory} />} />}
+      <IconButton accessibilityLabel={localizeLabel("Mes conversations")} icon={<Symbol name="history" color="textSecondary" />} onPress={showHistory} />
+    </View> : <AppHeader title="Questions rapides" leading={<IconButton accessibilityLabel={localizeLabel("Retour")} variant="ghost" icon={<Symbol name="back" />} onPress={back} />} trailing={<IconButton accessibilityLabel={localizeLabel("Mes conversations")} icon={<Symbol name="history" />} onPress={showHistory} />} />}
     <ScrollView ref={scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[s.content, chat && { flexGrow: 1, justifyContent: 'flex-end', gap: 18 }]}>
       {entry ? <QuickQuestions onAsk={ask} onHistory={showHistory} count={c.conversations.length} /> : null}
       {chat ? <CoachChat conversation={c.conversation} onProposal={openProposal} onKeep={id => c.decide('declined', id)} onProgram={onProgram} /> : null}
@@ -72,13 +76,13 @@ export function CoachScreen({ onHome, onProgram, onToday, onNutrition, onProgres
         { text: 'Modifier un exercice', glyph: 'dumbbell' as const, tone: 'green' as const, onPress: () => ask('Je veux modifier le développé épaules.') },
         { text: 'Calories restantes', glyph: 'flame' as const, tone: 'red' as const, onPress: () => ask('Combien de calories me reste-t-il aujourd’hui ?') },
       ].map(item => <Button key={item.text} text={item.text} leading={item.glyph === 'flame' ? <CoachIcon icon="apple" tone={item.tone} size={29} /> : <CoachIcon glyph={item.glyph} tone={item.tone} size={29} />} variant="secondary" backgroundColor={colors.surface} containerStyle={{ flex: 1, minWidth: 0 }} style={{ paddingHorizontal: 6, paddingVertical: 9, gap: 5, minHeight: 64, flexDirection: 'column' }} textStyle={{ fontSize: 10 }} onPress={item.onPress} />)}</View> : null}
-      <MessageComposer value={c.draft} onChange={c.setDraft} onSend={() => ask()} placeholder={entry ? 'Écrire ma question' : 'Pose une question'} focusRequest={focusRequest} onDictate={chat ? () => { setFocusRequest(value => value + 1); showDetail('Dicter ta question', 'Utilise le microphone du clavier de ton téléphone pour dicter ton message, puis appuie sur Envoyer.'); } : undefined} />
+      <MessageComposer value={c.draft} onChange={c.setDraft} onSend={() => ask()} placeholder={localizeLabel(entry ? 'Écrire ma question' : 'Pose une question')} focusRequest={focusRequest} onDictate={chat ? () => { setFocusRequest(value => value + 1); showDetail('Dicter ta question', 'Utilise le microphone du clavier de ton téléphone pour dicter ton message, puis appuie sur Envoyer.'); } : undefined} />
       {chat && !keyboard ? <AppNavbar includeCoach value="coach" onChange={value => { if (value === 'today') onToday(); else if (value === 'program') onProgram(); else if (value === 'progress') onProgress(); else if (value === 'profile') onProfile(); }} /> : null}
     </View> : null}
     <BottomSheet visible={history} title="Mes conversations" onClose={() => setHistory(false)} style={{ maxHeight: '85%' }}>
-      <View style={{ gap: 12 }}><Button text="Nouvelle conversation" leading={<Symbol name="plus" color="white" />} onPress={() => { c.newConversation(); setHistory(false); }} /><TextField value={search} onChangeText={setSearch} placeholder="Rechercher une conversation" accessibilityLabel="Rechercher une conversation" leftAccessory={<Symbol name="search" color="textMuted" />} /></View>
+      <View style={{ gap: 12 }}><Button text="Nouvelle conversation" leading={<Symbol name="plus" color="white" />} onPress={() => { c.newConversation(); setHistory(false); }} /><TextField value={search} onChangeText={setSearch} placeholder={localizeLabel("Rechercher une conversation")} accessibilityLabel={localizeLabel("Rechercher une conversation")} leftAccessory={<Symbol name="search" color="textMuted" />} /></View>
       <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ marginTop: 12 }}>
-        {recent.map(item => <CoachRow key={item.id} title={item.title} description={new Date(item.updatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} icon={<CoachIcon glyph="history" />} onPress={() => { void c.resume(item); setHistory(false); }} divider />)}
+        {recent.map(item => <CoachRow key={item.id} title={item.title} description={new Date(item.updatedAt).toLocaleDateString(getLocale(), { day: 'numeric', month: 'long' })} icon={<CoachIcon glyph="history" />} onPress={() => { void c.resume(item); setHistory(false); }} divider />)}
         {!recent.length ? <EmptyState title={search ? 'Aucune conversation trouvée' : 'Ta première conversation commence ici'} description={search ? 'Essaie un autre mot.' : 'Choisis une question ou écris la tienne.'} /> : null}
       </ScrollView>
     </BottomSheet>

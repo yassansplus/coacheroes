@@ -1,7 +1,9 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, gradients } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -19,6 +21,7 @@ type TabSelectorProps = {
 };
 
 export function TabSelector({ items, onChange, style, value }: TabSelectorProps) {
+  useLanguage();
   const indicatorOffset = useRef(new Animated.Value(0)).current;
   const previousValue = useRef(value);
   const [containerWidth, setContainerWidth] = useState(0);

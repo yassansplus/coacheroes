@@ -1,3 +1,4 @@
+import { getLocale } from '@/i18n/core';
 import type { Conversation } from './types';
 
 export function weekRange(timestamp: number) {
@@ -7,8 +8,8 @@ export function weekRange(timestamp: number) {
   const reset = new Date(end); reset.setDate(reset.getDate() + 1);
   return { start, end, reset };
 }
-export const dayLabel = (date: Date) => date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-export const timeLabel = (timestamp: number) => new Date(timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+export const dayLabel = (date: Date) => date.toLocaleDateString(getLocale(), { day: 'numeric', month: 'long' });
+export const timeLabel = (timestamp: number) => new Date(timestamp).toLocaleTimeString(getLocale(), { hour: '2-digit', minute: '2-digit' });
 
 /** Local stand-in for the future decision tool. No network calls or actual model. */
 export function evaluateDemoQuestion(text: string, conversation?: Conversation) {

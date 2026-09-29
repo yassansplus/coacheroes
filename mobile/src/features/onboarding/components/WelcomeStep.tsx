@@ -1,6 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useState } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Illustration } from '@/components/Illustration';
@@ -11,6 +13,7 @@ import { fontFamily } from '@/theme/typography';
 export function WelcomeStep({ onStart, onLogin, onOpenLibrary, busy = false }: {
   busy?: boolean; onStart: () => void; onLogin: () => void; onOpenLibrary: () => void;
 }) {
+  useLanguage();
   const [appleAvailable, setAppleAvailable] = useState(false);
   useEffect(() => {
     let active = true;

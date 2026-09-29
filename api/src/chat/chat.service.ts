@@ -44,7 +44,7 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       const user = await manager.findOneByOrFail(User, { id: userId });
       let row = await manager.findOne(ChatConversation, { where: { userId, purpose: 'onboarding' }, lock: { mode: 'pessimistic_write' } });
       if (row && (['queued', 'processing'].includes(row.status) || row.status === 'failed' && row.sourceRevision === profile.revision)) return this.view(row, manager);
-      const context = buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails);
+      const context = buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails, user.language);
       const program = await manager.findOneBy(TrainingProgram, { userId });
       const pendingQuestion = program?.sourceRevision === profile.revision && program.status === 'needs_clarification' ? program.output?.result.questions[0] : undefined;
       const question = nextQuestion(context, needsReview(context) ? undefined : pendingQuestion);
@@ -53,7 +53,7 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       row ??= manager.create(ChatConversation, { userId, purpose: 'onboarding', attempts: 0, pendingMessageId: null, turnId: null, leaseUntil: null });
       Object.assign(row, { sourceRevision: profile.revision, question, status, error: null });
       await manager.save(row);
-      if (changed) await this.message(manager, row, question?.text ?? (status === 'blocked' ? 'J’ai noté ta douleur. Fais valider les mouvements adaptés avec un pro avant de lancer ton programme.' : `Nickel${user.firstName && user.firstName !== 'toi' ? ` ${user.firstName}` : ''} 💪 Je prépare ta semaine.`));
+      if (changed) await this.message(manager, row, question?.text ?? (status === 'blocked' ? (user.language === 'nl' ? 'Ik heb je pijn genoteerd. Bespreek geschikte bewegingen met een professional voordat je aan je programma begint.' : user.language === 'en' ? 'I’ve noted your pain. Check suitable movements with a professional before starting your programme.' : 'J’ai noté ta douleur. Fais valider les mouvements adaptés avec un pro avant de lancer ton programme.') : user.language === 'nl' ? 'Top 💪 Ik bereid je week voor.' : user.language === 'en' ? 'Great 💪 I’m preparing your week.' : `Nickel${user.firstName && user.firstName !== 'toi' ? ` ${user.firstName}` : ''} 💪 Je prépare ta semaine.`));
       return this.view(row, manager);
     });
   }
@@ -101,7 +101,7 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
         const messages = await this.db.getRepository(ChatMessage).find({ where: { conversationId: claim.id }, order: { createdAt: 'ASC', id: 'ASC' } });
         const pending = messages.find(m => m.id === claim.pendingMessageId);
         if (!pending || !claim.question) throw new Error('CHAT_INVALID_TURN');
-        const response = await this.ai.answer(buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails), claim.question, pending.text, messages.filter(m => m.id !== pending.id));
+        const response = await this.ai.answer(buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails, user.language), claim.question, pending.text, messages.filter(m => m.id !== pending.id));
         const ready = await this.db.transaction(async manager => {
           const current = await manager.findOneOrFail(Onboarding, { where: { userId: claim.userId }, lock: { mode: 'pessimistic_write' } });
           const row = await manager.findOneOrFail(ChatConversation, { where: { id: claim.id }, lock: { mode: 'pessimistic_write' } });
@@ -109,8 +109,8 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
           const account = await manager.findOneOrFail(User, { where: { id: claim.userId }, lock: { mode: 'pessimistic_write' } });
           if (current.revision !== claim.sourceRevision) {
             row.status = 'awaiting_answer'; row.sourceRevision = current.revision; row.leaseUntil = null;
-            row.question = nextQuestion(buildTrainingContext(current.profile, current.revision, account.firstName, current.coachingDetails));
-            if (!row.question) row.status = needsReview(buildTrainingContext(current.profile, current.revision, account.firstName, current.coachingDetails)) ? 'blocked' : 'ready';
+            row.question = nextQuestion(buildTrainingContext(current.profile, current.revision, account.firstName, current.coachingDetails, account.language));
+            if (!row.question) row.status = needsReview(buildTrainingContext(current.profile, current.revision, account.firstName, current.coachingDetails, account.language)) ? 'blocked' : 'ready';
             await manager.save(row); await this.message(manager, row, row.question?.text ?? 'Ton profil a changé. Je repars de tes dernières réponses.');
             await this.audit(manager, row, 'chat.answer_obsolete', { messageId: pending.id, answer: response.answer, trace: response.trace }); return row.status === 'ready';
           }
@@ -118,20 +118,20 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
           row.leaseUntil = null; row.error = null;
           if (!projected) {
             row.status = 'awaiting_answer'; await manager.save(row);
-            await this.message(manager, row, response.answer.understood ? 'Il me manque un détail. ' + claim.question!.text : response.answer.reply);
+            await this.message(manager, row, response.answer.understood ? (account.language === 'nl' ? 'Ik heb nog één detail nodig. ' : account.language === 'en' ? 'I need one more detail. ' : 'Il me manque un détail. ') + claim.question!.text : response.answer.reply);
             await this.audit(manager, row, 'chat.answer_received', { applied: false, answer: response.answer, trace: response.trace }); return false;
           }
           const before = { profile: current.profile, coachingDetails: current.coachingDetails, firstName: account.firstName };
           current.profile = projected.profile; current.coachingDetails = projected.details; current.revision++;
           account.firstName = projected.firstName;
           await manager.save(current); await manager.save(account);
-          const context = buildTrainingContext(current.profile, current.revision, account.firstName, current.coachingDetails);
+          const context = buildTrainingContext(current.profile, current.revision, account.firstName, current.coachingDetails, account.language);
           row.sourceRevision = current.revision; row.question = nextQuestion(context);
           row.status = row.question ? 'awaiting_answer' : needsReview(context) ? 'blocked' : 'ready';
           await manager.save(row);
           await this.audit(manager, row, 'profile.coaching_answer_applied', { messageId: pending.id, before,
             after: { profile: current.profile, coachingDetails: current.coachingDetails, firstName: account.firstName }, answer: response.answer, trace: response.trace });
-          const next = row.question?.text ?? (row.status === 'blocked' ? 'J’ai noté. Fais valider les mouvements adaptés avec un pro avant de lancer ton programme.' : `Nickel${account.firstName && account.firstName !== 'toi' ? ` ${account.firstName}` : ''} 💪 Je prépare ta semaine.`);
+          const next = row.question?.text ?? (row.status === 'blocked' ? (account.language === 'nl' ? 'Bespreek geschikte bewegingen met een professional voordat je aan je programma begint.' : account.language === 'en' ? 'Check suitable movements with a professional before starting your programme.' : 'J’ai noté. Fais valider les mouvements adaptés avec un pro avant de lancer ton programme.') : account.language === 'nl' ? 'Top 💪 Ik bereid je week voor.' : account.language === 'en' ? 'Great 💪 I’m preparing your week.' : `Nickel${account.firstName && account.firstName !== 'toi' ? ` ${account.firstName}` : ''} 💪 Je prépare ta semaine.`);
           await this.message(manager, row, next);
           return row.status === 'ready';
         });

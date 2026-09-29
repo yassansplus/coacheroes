@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import type { PropsWithChildren } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewProps, type ViewStyle } from 'react-native';
 
@@ -10,6 +11,7 @@ type CardProps = PropsWithChildren<
 >;
 
 export function Card({ children, style, ...viewProps }: CardProps) {
+  useLanguage();
   return (
     <View {...viewProps} style={[styles.card, style]}>
       {children}

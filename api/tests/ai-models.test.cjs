@@ -7,7 +7,7 @@ const { validateEnvironment } = require('../dist/config/environment.validation')
 
 test('context routing ignores the old global model and isolates context overrides', () => {
   const config = new ConfigService({ OPENAI_MODEL: 'gpt-6-astra' });
-  assert.deepEqual(aiSettings(config, 'program'), { model: 'gpt-5.6-sol', reasoningEffort: 'high' });
+  assert.deepEqual(aiSettings(config, 'program'), { model: 'gpt-5.6-sol', reasoningEffort: 'medium' });
   assert.deepEqual(aiSettings(config, 'review'), { model: 'gpt-5.6-terra', reasoningEffort: 'medium' });
   assert.deepEqual(aiSettings(config, 'onboarding'), { model: 'gpt-5.6-luna', reasoningEffort: 'low' });
   assert.deepEqual(aiSettings(config, 'coachChat'), { model: 'gpt-6-luna', reasoningEffort: 'low' });
@@ -33,7 +33,7 @@ test('GPT-6 Sol is accepted for program generation and review at startup', () =>
     OPENAI_PROGRAM_MODEL: 'gpt-6-sol',
     OPENAI_REVIEW_MODEL: 'gpt-6-sol',
   });
-  assert.deepEqual(aiSettings(config, 'program'), { model: 'gpt-6-sol', reasoningEffort: 'high' });
+  assert.deepEqual(aiSettings(config, 'program'), { model: 'gpt-6-sol', reasoningEffort: 'medium' });
   assert.deepEqual(aiSettings(config, 'review'), { model: 'gpt-6-sol', reasoningEffort: 'medium' });
   assert.doesNotThrow(() => validateEnvironment({
     DATABASE_HOST: 'test',

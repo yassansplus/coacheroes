@@ -1,4 +1,8 @@
-import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
+import { StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { IconButton } from '@/components/IconButton';
 import { Symbol } from '@/components/Symbol';
@@ -28,21 +32,22 @@ export function TagInput({ value, inputValue, onChange, label, placeholder,
   helperText = 'Sépare les éléments par des virgules, ou appuie sur + pour les ajouter.',
   disabled = false, tagColor = 'primary', tagBackgroundColor = 'primarySurface',
   style, tagStyle, tagTextStyle }: TagInputProps) {
+  useLanguage();
   function change(text: string, commitLast = false) {
     const parsed = parseTagInput(text, commitLast);
     onChange(mergeTags(value, parsed.tags), parsed.inputValue);
   }
   function commit() { if (inputValue.trim()) change(inputValue, true); }
   return <View style={[styles.container, style]}>
-    <TextField label={label} value={inputValue} onChangeText={text => change(text)} placeholder={placeholder}
+    <TextField label={label} value={inputValue} onChangeText={text => change(text)} placeholder={localizeLabel(placeholder)}
       helperText={helperText} editable={!disabled} autoCapitalize="none" returnKeyType="done"
       onSubmitEditing={commit} onBlur={commit}
-      rightAccessory={<IconButton accessibilityLabel={`Ajouter : ${label}`} variant="ghost" size={36}
+      rightAccessory={<IconButton accessibilityLabel={localizeLabel(t("Ajouter : {p0}", { p0: label }))} variant="ghost" size={36}
         disabled={disabled || !inputValue.trim()} icon={<Symbol name="plus" size={20} color={tagColor} />} onPress={commit} />} />
     {value.length ? <View style={styles.tags}>{value.map(tag => <View key={tag}
       style={[styles.tag, { backgroundColor: resolveColor(tagBackgroundColor) }, tagStyle]}>
       <Text style={[styles.tagText, { color: resolveColor(tagColor) }, tagTextStyle]}>{tag}</Text>
-      <IconButton accessibilityLabel={`Retirer ${tag} · ${label}`} variant="ghost" size={32} disabled={disabled}
+      <IconButton accessibilityLabel={localizeLabel(t("Retirer {p0} · {p1}", { p0: tag, p1: label }))} variant="ghost" size={32} disabled={disabled}
         icon={<Symbol name="close" size={14} color={tagColor} />} onPress={() => onChange(value.filter(item => item !== tag), inputValue)} />
     </View>)}</View> : null}
   </View>;

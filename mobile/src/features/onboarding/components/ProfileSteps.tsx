@@ -1,4 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
+import { StyleSheet, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { ChoiceCard } from '@/components/ChoiceCard';
@@ -15,6 +18,7 @@ import { normalizeNumber, toggleItem } from '../utils';
 import { StepHeading, stepStyles as s } from './StepContent';
 
 export function GoalStep({ profile, update }: StepProps) {
+  useLanguage();
   return <>
     <StepHeading title="Quels sont tes objectifs ?" subtitle="Tu peux en sélectionner un ou plusieurs pour personnaliser ton programme." />
     <View style={[s.grid, styles.goals]}>{goals.map(goal => <ChoiceCard key={goal.value} title={goal.title}
@@ -30,6 +34,7 @@ type ProfileStepProps = StepProps & {
 };
 
 export function ProfileStep({ profile, update, focusField, focusRequest }: ProfileStepProps) {
+  useLanguage();
   return <>
     <StepHeading title="Tes informations" centered />
     <Illustration name="profile" style={[s.hero, styles.profileHero]} />
@@ -38,7 +43,7 @@ export function ProfileStep({ profile, update, focusField, focusRequest }: Profi
     ] as const).map(([key, label, placeholder, unit]) => <Card key={key} style={styles.numberCard}>
       <TextField label={label} value={profile[key]} onChangeText={value => update({ [key]: value })}
         focusRequest={focusField === key ? focusRequest : undefined}
-        formatValue={normalizeNumber} placeholder={placeholder} keyboardType={key === 'weight' ? 'decimal-pad' : 'number-pad'}
+        formatValue={normalizeNumber} placeholder={localizeLabel(placeholder)} keyboardType={key === 'weight' ? 'decimal-pad' : 'number-pad'}
         maxLength={key === 'weight' ? 5 : 3} fieldStyle={styles.numberField} inputStyle={styles.numberInput}
         labelStyle={styles.numberLabel} rightAccessory={<Text style={styles.unit}>{unit}</Text>} />
     </Card>)}
@@ -50,6 +55,7 @@ export function ProfileStep({ profile, update, focusField, focusRequest }: Profi
 }
 
 export function LevelStep({ profile, update }: StepProps) {
+  useLanguage();
   return <>
     <StepHeading title="Ton niveau actuel" subtitle="Cela nous aide à personnaliser ton programme en fonction de ton expérience." centered />
     <Illustration name="level" style={[s.hero, styles.levelHero]} />

@@ -1,14 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type ImageSourcePropType,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Image, Pressable, StyleSheet, View, type ImageSourcePropType, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { TabSelector } from '@/components/TabSelector';
@@ -116,12 +110,13 @@ function BodyFigure({
   selectedSide,
   view,
 }: BodyFigureProps) {
+  useLanguage();
   const viewLabel = view === 'front' ? 'Vue de face' : 'Vue de dos';
 
   return (
     <View style={styles.figureColumn}>
       <View style={styles.figure}>
-        <Image accessibilityLabel={viewLabel} resizeMode="contain" source={image} style={styles.bodyImage} />
+        <Image accessibilityLabel={localizeLabel(viewLabel)} resizeMode="contain" source={image} style={styles.bodyImage} />
         {definitions
           .filter((definition) => definition.view === view && definition.side)
           .map((definition) => {
@@ -136,7 +131,7 @@ function BodyFigure({
             return (
               <Pressable
                 key={selection}
-                accessibilityLabel={`${definition.label} ${sideLabel}${selected ? ', sélectionné' : ''}`}
+                accessibilityLabel={localizeLabel(`${definition.label} ${sideLabel}${selected ? ', sélectionné' : ''}`)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected, disabled }}
                 disabled={disabled}
@@ -172,6 +167,7 @@ export function BodyPainSelector({
   style,
   value,
 }: BodyPainSelectorProps) {
+  useLanguage();
   const handleToggle = (selection: BodyPainSelection) => {
     onChange(toggleArea(value, selection));
   };
@@ -218,7 +214,7 @@ export function BodyPainSelector({
           return (
             <Pressable
               key={area}
-              accessibilityLabel={`${areaLabels[area]} ${side === 'left' ? 'gauche' : 'droite'}`}
+              accessibilityLabel={localizeLabel(`${areaLabels[area]} ${side === 'left' ? 'gauche' : 'droite'}`)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: selected, disabled }}
               disabled={disabled}

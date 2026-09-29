@@ -14,11 +14,13 @@ const { ProgramReviewService } = require('../dist/chat/program-review.service');
 const { WorkoutService } = require('../dist/workouts/workout.service');
 const { ChatConversation } = require('../dist/chat/chat.entity');
 const { buildTrainingContext } = require('../dist/program/context');
+const { renewalRequestSchema } = require('../dist/program/renewal.schema');
 const { summarizeWorkout } = require('../dist/workouts/workout.schema');
 const { profile, plan } = require('./program-fixtures.cjs');
 const { snapshot } = require('./workout-fixtures.cjs');
 
 const migrationNames = [
+  ['1791900000000-DutchLanguage','DutchLanguage1791900000000'],['1791800000000-UserLanguage','UserLanguage1791800000000'],
   ['1790000000000-IdentityAndOnboarding', 'IdentityAndOnboarding1790000000000'],
   ['1790100000000-TrainingPrograms', 'TrainingPrograms1790100000000'],
   ['1790200000000-CoachingChat', 'CoachingChat1790200000000'],
@@ -48,7 +50,8 @@ test('renewal analysis uses the program model and redacts names and emails', asy
     const generator = new ProgramGenerator(new ConfigService({ OPENAI_API_KEY: 'test-only' }), {});
     const output = await generator.analyzeRenewal(context, AbortSignal.timeout(2000));
     assert.equal(output.analysis.progress, result.progress);
-    assert.equal(request.model, 'gpt-5.6-sol'); assert.equal(request.reasoning.effort, 'high'); assert.equal(request.store, false);
+    assert.equal(request.model, 'gpt-5.6-sol'); assert.equal(request.reasoning.effort, 'medium'); assert.equal(request.store, false);
+    assert.equal(request.service_tier, undefined);
     assert.ok(!JSON.stringify(request.input).includes('max@example.test'));
     assert.ok(!JSON.stringify(request.input).includes('Max'));
   } finally { global.fetch = original; }
@@ -85,7 +88,7 @@ test('a completed block keeps its logs, records updated answers, analyzes progre
     [user.id, new Date(Date.now() - days * 86400000).toISOString().slice(0, 10), JSON.stringify({ weightKg: kg, energy: 3, sleepMinutes: 420 })]);
   const analyzed = { progress: 'Une séance enregistrée.', adherence: 'Une séance sur quatre prévues.', recovery: 'Données limitées.', weight: 'Deux pesées.', keep: ['Exercices simples'], adjust: ['Garder un rythme accessible'], cautions: [] };
   const calls = [];
-  const generator = { ensureConfigured() {}, settings: () => ({ model: 'gpt-5.6-sol', reasoningEffort: 'high' }),
+  const generator = { ensureConfigured() {}, settings: () => ({ model: 'gpt-5.6-sol', reasoningEffort: 'medium' }),
     analyzeRenewal: async input => { calls.push({ type: 'analysis', input }); return { analysis: analyzed, trace: { model: 'gpt-5.6-sol' } }; },
     generate: async input => { calls.push({ type: 'generate', input }); return { result: { ...plan(), title: 'Suite du programme' }, exercises: [], trace: {} }; } };
   const service = new ProgramService(db, generator);
@@ -122,4 +125,60 @@ test('a completed block keeps its logs, records updated answers, analyzes progre
   assert.equal(await db.getRepository(WorkoutSession).countBy({ userId: user.id, programVersionId: oldId }), 2);
   assert.equal((await service.history(user.id)).length, 2);
   assert.equal(await db.getRepository(JournalEntry).countBy({ userId: user.id, type: 'program.renewal_requested' }), 1);
+});
+
+test('explicit regeneration before the end preserves the previous block and refuses an ongoing workout', async t => {
+  const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities, migrations,
+    synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+  await db.initialize(); await db.runMigrations(); t.after(() => db.destroy());
+  const user = await db.getRepository(User).save({ appleSubject: 'regeneration-user', firstName: 'Max' });
+  const initial = profile(); initial.photos = {};
+  await db.getRepository(Onboarding).save({ userId: user.id, profile: initial, currentStep: 14, revision: 1, completedAt: new Date() });
+  const blockId = randomUUID(), acceptedAt = new Date(Date.now() - 86400000), endsAt = new Date(Date.now() + 27 * 86400000);
+  const context = buildTrainingContext(initial, 1, 'Max'), previous = { result: plan(), exercises: [], trace: {} };
+  await db.getRepository(TrainingProgram).save({ userId: user.id, runId: blockId, sourceRevision: 1, status: 'ready', phase: 'validating',
+    attempts: 0, leaseUntil: null, context, output: previous, acceptedAt, error: null });
+  await db.getRepository(ProgramBlock).save({ id: blockId, userId: user.id, prescription: { context, output: previous },
+    startedAt: acceptedAt, endsAt, extensions: 0, renewalReview: null });
+  const generator = { ensureConfigured() {}, settings: () => ({}),
+    analyzeRenewal: async input => { assert.equal(input.regeneration, true); assert.equal(input.blockSummary.replaced, true);
+      assert.equal(input.blockSummary.completed, 0); return { analysis: {}, trace: {} }; },
+    generate: async input => { assert.equal(input.regeneration, true); return { ...previous, result: { ...plan(), title: 'Nouveau programme' } }; } };
+  const service = new ProgramService(db, generator);
+  const review = await service.block(user.id, blockId);
+  assert.equal(review.summary.due, false);
+  const request = { blockId, profileRevision: review.profileRevision, requestId: randomUUID(), answers: review.answers };
+  await assert.rejects(service.renew(user.id, request), { status: 409 });
+  const confirmed = renewalRequestSchema.parse({ ...request, regenerate: true });
+  const logged = snapshot(); logged.workout.programVersionId = blockId; logged.status = 'in_progress';
+  logged.startedAt = Date.now() - 60000; logged.endedAt = null;
+  const workoutId = randomUUID();
+  await db.getRepository(WorkoutSession).save({ id: workoutId, userId: user.id, programVersionId: blockId, revision: 1,
+    status: 'in_progress', startedAt: new Date(logged.startedAt), endedAt: null, snapshot: logged,
+    summary: summarizeWorkout(logged), analysis: null, analysisAppliedAt: null });
+  await assert.rejects(service.renew(user.id, confirmed), /séance en cours/);
+  assert.equal((await db.getRepository(ProgramBlock).findOneByOrFail({ id: blockId })).endsAt.toISOString(), endsAt.toISOString());
+  logged.status = 'abandoned'; logged.endedAt = Date.now();
+  await db.getRepository(WorkoutSession).update(workoutId, { status: 'abandoned', endedAt: new Date(logged.endedAt), snapshot: logged, summary: summarizeWorkout(logged) });
+  const pending = await service.renew(user.id, confirmed);
+  assert.equal(pending.status, 'queued'); assert.equal(pending.previousBlockId, blockId);
+  assert.equal((await service.renew(user.id, confirmed)).proposalId, pending.proposalId);
+  const archived = await db.getRepository(ProgramBlock).findOneByOrFail({ id: blockId });
+  assert.ok(archived.endsAt.getTime() <= Date.now()); assert.ok(archived.endsAt.getTime() < endsAt.getTime());
+  assert.equal(archived.renewalReview.replacement.plannedEndsAt, endsAt.toISOString());
+  assert.deepEqual(archived.prescription.output, previous);
+  const finished = await service.block(user.id, blockId);
+  assert.equal(finished.summary.due, true); assert.equal(finished.summary.replaced, true);
+  assert.equal(finished.summary.completed, 0); assert.equal(finished.summary.planned, 4);
+  const journal = await db.getRepository(JournalEntry).findOneByOrFail({ requestId: request.requestId });
+  assert.equal(journal.payload.regeneration, true);
+  assert.equal(journal.payload.block.before.endsAt, endsAt.toISOString());
+  await service.tick();
+  const proposal = await service.get(user.id);
+  assert.equal(proposal.status, 'ready'); assert.equal(proposal.acceptedAt, null);
+  await service.accept(user.id, proposal.proposalId);
+  assert.equal(await db.getRepository(ProgramBlock).countBy({ userId: user.id }), 2);
+  assert.equal(await db.getRepository(WorkoutSession).countBy({ userId: user.id, programVersionId: blockId }), 1);
+  const archivedItem = (await service.history(user.id)).find(item => item.id === blockId);
+  assert.equal(archivedItem.status, 'completed'); assert.equal(archivedItem.replaced, true);
 });

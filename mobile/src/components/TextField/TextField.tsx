@@ -1,14 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type StyleProp,
-  type TextInputProps,
-  type TextStyle,
-  type ViewStyle,
-} from 'react-native';
+import { StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -50,6 +44,7 @@ export function TextField({
   value,
   ...inputProps
 }: TextFieldProps) {
+  useLanguage();
   const [focused, setFocused] = useState(false);
   const input = useRef<TextInput>(null);
   const hasError = Boolean(error);
@@ -70,8 +65,9 @@ export function TextField({
         {leftAccessory ? <View style={styles.accessory}>{leftAccessory}</View> : null}
         <TextInput
           {...inputProps}
+          placeholder={localizeLabel(inputProps.placeholder)}
           ref={input}
-          accessibilityLabel={inputProps.accessibilityLabel ?? label}
+          accessibilityLabel={localizeLabel(inputProps.accessibilityLabel ?? label)}
           onBlur={(event) => {
             setFocused(false);
             onBlur?.(event);

@@ -1,7 +1,11 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppNavbar, type AppNavTab } from '@/components/AppNavbar';
 import { Button } from '@/components/Button';
@@ -14,6 +18,7 @@ import { Symbol, type SymbolName } from '@/components/Symbol';
 import { useGameProgress } from '@/store/gameProgress';
 import { useProfileSummary } from '../hooks/useProfileSummary';
 import { useSession } from '@/providers/SessionProvider';
+import { equippedTitle } from '@/config/gameRewards';
 import { Banner } from '@/components/Banner';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -23,29 +28,51 @@ import { feedback } from '@/utils/feedback';
 import { loadSquad } from '@/services/squad';
 import { useProfileAvatar } from '@/hooks/useProfileAvatar';
 import { avatarArtStyles, avatarGenres, avatarPlatforms, defaultAvatarPreferences, type AvatarPreferences } from '@/services/profileAvatar/options';
+import { languages, type Language } from '@/i18n/core';
+import { saveLanguage } from '@/storage/language';
+import { apiRequest } from '@/services/http';
+import { RadioButton } from '@/components/RadioButton';
 
 type Props = { onTab: (tab: AppNavTab) => void; onEdit: (step: number) => void; onLibrary: () => void; onSquad: () => void; onLevel: () => void; onNutrition: () => void };
 function Avatar({ size, uri }: { size: number; uri: string | null }) {
+  useLanguage();
   const game = useGameProgress();
-  return <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: game.equipment.frame === 'cobalt' ? colors.squadPurple : colors.primary }]}>
+  return <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: game.equipment.frame === 'cobalt' ? colors.squadPurple : game.equipment.frame === 'azur' ? colors.primary : colors.border }]}>
     {uri ? <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" /> : <Illustration name="coach" size={size} />}</View>;
 }
 function RoundIcon({ illustration, symbol, color, background, size = 32 }: {
   illustration?: IllustrationName; symbol?: SymbolName; color: string; background: string; size?: number;
 }) {
+  useLanguage();
   return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: background, alignItems: 'center', justifyContent: 'center' }}>
     {illustration ? <Illustration name={illustration} size={size * 0.67} /> : <Symbol name={symbol ?? 'target'} color={color} size={size * 0.57} />}
   </View>;
 }
 function SettingsRow({ label, icon, value, last, onPress }: { label: string; icon: ReactNode; value?: string; last?: boolean; onPress?: () => void }) {
+  useLanguage();
   const content = <>{icon}<View style={[s.rowBody, !last && s.divider]}><Text style={s.label}>{label}</Text>{value ? <Text style={s.value}>{value}</Text> : null}<Symbol name="chevron" color="textSecondary" size={18} /></View></>;
   return onPress ? <Pressable accessibilityRole="button" onPress={() => { feedback('selection'); onPress(); }} style={({ pressed }) => [s.settingRow, pressed && { opacity: 0.7 }]}>{content}</Pressable> : <View style={s.settingRow}>{content}</View>;
 }
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  useLanguage();
   return <View style={{ gap: 7 }}><Text style={s.sectionTitle}>{title}</Text><Card style={s.list}>{children}</Card></View>;
 }
 
 export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNutrition }: Props) {
+  const language = useLanguage();
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [languageBusy, setLanguageBusy] = useState(false);
+  const [languageError, setLanguageError] = useState<string | null>(null);
+  const changeLanguage = async (next: Language) => {
+    if (languageBusy || next === language) return;
+    setLanguageBusy(true); setLanguageError(null);
+    try {
+      await apiRequest('/auth/language', { method: 'POST', body: { language: next } });
+      await saveLanguage(next);
+      setLanguageOpen(false);
+    } catch { setLanguageError('Impossible de changer la langue. Réessaie.'); }
+    finally { setLanguageBusy(false); }
+  };
   const profile = useProfileSummary();
   const session = useSession();
   const game = useGameProgress();
@@ -81,24 +108,22 @@ export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNu
       </View>
       {profile.error ? <ErrorState description={profile.error} onRetry={profile.retry} /> : null}
       {profile.loading ? <LoadingState label="Chargement du profil…" /> : <Card style={[s.card, s.identity]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Changer ma photo de profil" onPress={openAvatarOptions} style={s.avatarAction}>
+        <Pressable accessibilityRole="button" accessibilityLabel={localizeLabel("Changer ma photo de profil")} onPress={openAvatarOptions} style={s.avatarAction}>
           <Avatar size={70} uri={avatar.uri} /><View style={s.photoEditBadge}><Symbol name="edit" size={15} color="white" /></View>
         </Pressable>
         <View style={[s.grow, { gap: 4 }]}>
-          <View style={s.nameRow}><Text style={s.name}>Mon compte</Text><IconButton variant="ghost" size={32} accessibilityLabel="Modifier mon profil" icon={<Symbol name="edit" size={19} color="textSecondary" />} onPress={() => onEdit(3)} /></View>
-          <Text style={[s.membership, { color: colors.squadPurple }]}>{game.equipment.title === 'regular' ? 'Assidu' : 'Confirmé'}</Text><Text style={s.subtitle}>{profile.age} ans · {profile.height} cm</Text>
-          <View style={s.goalBadge}><Symbol name="target" color="success" size={16} /><Text style={s.goalBadgeText}>{profile.goals}</Text></View>
-          <Text style={s.membership}>{session.user?.createdAt ? `Membre depuis le ${new Date(session.user.createdAt).toLocaleDateString('fr-FR')}` : ''}</Text>
+          <View style={s.nameRow}><Text style={s.name}>Mon compte</Text><IconButton variant="ghost" size={32} accessibilityLabel={localizeLabel("Modifier mon profil")} icon={<Symbol name="edit" size={19} color="textSecondary" />} onPress={() => onEdit(3)} /></View>
+          {equippedTitle(game.equipment.title) ? <Text style={[s.membership, { color: colors.squadPurple }]}>{equippedTitle(game.equipment.title)}</Text> : null}<Text style={s.subtitle}>{profile.age} ans · {profile.height} cm</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={localizeLabel("Objectifs")} hitSlop={8}
+            onPress={() => { feedback('selection'); onEdit(2); }} style={({ pressed }) => [s.goalBadge, pressed && { opacity: 0.7 }]}>
+            <Symbol name="target" color="success" size={16} /><Text style={s.goalBadgeText}>{profile.goals.split(' · ').map(value => t(value)).join(' · ')}</Text><Symbol name="edit" color="successText" size={12} />
+          </Pressable>
+          <Text style={s.membership}>{session.user?.createdAt ? t("Membre depuis le {p0}", { p0: new Date(session.user.createdAt).toLocaleDateString(getLocale()) }) : ''}</Text>
           {avatar.uploading ? <Text style={s.avatarHint}>Photo en cours d’enregistrement…</Text> : avatar.avatar?.status === 'pending' || avatar.avatar?.status === 'processing' ? <Text style={s.avatarHint}>Ton avatar de jeu vidéo se prépare…</Text> : null}
         </View>
       </Card>}
       {avatar.error ? <Banner variant="error" message={avatar.error} /> : null}
       {avatar.avatar?.status === 'failed' ? <Card style={{ gap: 8 }}><Text style={s.avatarHint}>La création a échoué. Ta photo reste visible.</Text><Button text="Réessayer" variant="outline" onPress={() => void avatar.retry()} /></Card> : null}
-      <Card style={[s.card, s.objective]}>
-        <RoundIcon symbol="target" color={colors.primary} background={colors.primaryTint} size={54} />
-        <View style={[s.grow, { gap: 4 }]}><Text style={s.subtitle}>Objectif actuel</Text><Text style={s.objectiveTitle}>Boxeur athlétique</Text><Text style={s.subtitle}>74 kg cible · juin 2027</Text></View>
-        <Button text="Modifier" variant="secondary" radius={16} backgroundColor={colors.primarySurface} textColor={colors.googleBlue} trailing={<Symbol name="chevron" size={14} color="primary" />} onPress={() => onEdit(2)} hapticFeedback="selection" style={s.modify} textStyle={{ fontSize: 11 }} />
-      </Card>
       <Section title="Mon entraînement">
         <SettingsRow label="Disponibilités" icon={<RoundIcon illustration="calendar" color={colors.primary} background={colors.primarySurface} />} onPress={() => onEdit(7)} />
         <SettingsRow label="Préférences d’entraînement" icon={<RoundIcon illustration="dumbbell" color={colors.accent} background={colors.accentSurface} />} onPress={() => onEdit(6)} last />
@@ -108,10 +133,13 @@ export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNu
         <SettingsRow label="Objectifs calories et macros" icon={<RoundIcon illustration="flame" color={colors.energy} background={colors.energySurface} />} onPress={onNutrition} last />
       </Section>
       <Section title="Communauté">
-        <SettingsRow label="Niveau et XP" value={`Niveau ${game.level}`} onPress={onLevel} icon={<RoundIcon illustration="trophy" color={colors.warning} background={colors.warningSurface} />} />
-        <SettingsRow label="Squad" value={`${squadCounts.groups} groupes · ${squadCounts.friends} amis`} icon={<RoundIcon symbol="users" color={colors.primary} background={colors.primarySurface} />} onPress={onSquad} last />
+        <SettingsRow label="Niveau et XP" value={t("Niveau {p0}", { p0: game.level })} onPress={onLevel} icon={<RoundIcon illustration="trophy" color={colors.warning} background={colors.warningSurface} />} />
+        <SettingsRow label="Squad" value={t("{p0} groupes · {p1} amis", { p0: squadCounts.groups, p1: squadCounts.friends })} icon={<RoundIcon symbol="users" color={colors.primary} background={colors.primarySurface} />} onPress={onSquad} last />
       </Section>
       <Section title="Données et application">
+        <SettingsRow label="Langue" value={languages.find(item => item.value === language)?.label}
+          icon={<RoundIcon symbol="settings" color={colors.primary} background={colors.primarySurface} />}
+          onPress={() => { setLanguageError(null); setLanguageOpen(true); }} />
         <SettingsRow label="Apple Santé" icon={<RoundIcon symbol="heart" color={colors.energyVeryLow} background={colors.energySurface} />} />
         <SettingsRow label="Notifications" icon={<RoundIcon symbol="bell" color={colors.primary} background={colors.primarySurface} />} />
         <SettingsRow label="Confidentialité et données" icon={<RoundIcon symbol="shield" color={colors.successText} background={colors.successSurface} />} />
@@ -122,6 +150,14 @@ export function ProfileScreen({ onTab, onEdit, onLibrary, onSquad, onLevel, onNu
       <Pressable accessibilityRole="link" onPress={onLibrary} hitSlop={8} style={s.library}><Text style={s.libraryText}>Bibliothèque de composants</Text></Pressable>
     </ScrollView>
     <AppNavbar includeCoach value="profile" onChange={onTab} style={{ marginHorizontal: 14, marginBottom: 5 }} />
+    <BottomSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} title="Langue">
+      <View style={{ gap: 18 }}>
+        {languages.map(item => <RadioButton key={item.value} label={item.label} selected={item.value === language}
+          disabled={languageBusy} onSelect={() => void changeLanguage(item.value)} />)}
+        {languageBusy ? <LoadingState label="Enregistrement…" /> : null}
+        {languageError ? <Banner variant="error" message={languageError} /> : null}
+      </View>
+    </BottomSheet>
     <BottomSheet visible={avatarOptions} onClose={() => setAvatarOptions(false)} title="Mon personnage" style={{ maxHeight: '85%' }}
       footer={<View style={{ gap: 8 }}><Button text="Choisir ma photo" onPress={() => void pickAvatar()} />
         {pickerError ? <Text style={{ color: colors.energy, fontFamily: fontFamily.medium, fontSize: 12 }}>{pickerError}</Text> : null}</View>}>
@@ -161,9 +197,6 @@ const s = StyleSheet.create({
   membership: { fontFamily: fontFamily.medium, fontSize: 10, color: colors.textSecondary },
   goalBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, borderRadius: 20, backgroundColor: colors.successSurface, paddingHorizontal: 8, paddingVertical: 4 },
   goalBadgeText: { fontFamily: fontFamily.semiBold, fontSize: 10, color: colors.successText, flexShrink: 1 },
-  objective: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  objectiveTitle: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.text },
-  modify: { paddingHorizontal: 10, minHeight: 34, gap: 4 },
   sectionTitle: { fontFamily: fontFamily.bold, fontSize: 15, color: colors.text },
   list: { paddingHorizontal: 13, paddingVertical: 0, borderWidth: 1, borderColor: colors.primarySurface, borderRadius: 13 },
   settingRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },

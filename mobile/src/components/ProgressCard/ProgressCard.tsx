@@ -1,15 +1,11 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { feedback } from '@/utils/feedback';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  Animated,
-  StyleSheet,
-  Text,
-  View,
-  type LayoutChangeEvent,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Animated, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Card } from '@/components/Card';
@@ -56,7 +52,7 @@ function inferAnimatedValue(value: string) {
 }
 
 function formatNumber(value: number) {
-  return Math.round(value).toLocaleString('fr-FR');
+  return Math.round(value).toLocaleString(getLocale());
 }
 
 export function ProgressCard({
@@ -80,6 +76,7 @@ export function ProgressCard({
   square = true,
   style,
 }: ProgressCardProps) {
+  useLanguage();
   const [cardWidth, setCardWidth] = useState(0);
   const [displayedProgress, setDisplayedProgress] = useState(0);
   const [displayedValue, setDisplayedValue] = useState(0);

@@ -14,7 +14,7 @@ export class DailyReminder implements OnModuleInit, OnModuleDestroy {
  async tick(now=new Date()){
   if(this.busy)return;this.busy=true;
   try{
-   const users=await this.db.query(`SELECT p.* FROM daily_preferences p WHERE EXISTS(SELECT 1 FROM daily_push_devices d JOIN sessions s ON s.token_hash=d.session_hash WHERE d.user_id=p.user_id AND s.revoked_at IS NULL AND s.expires_at>now())`);
+   const users=await this.db.query(`SELECT p.*, u.language FROM daily_preferences p JOIN users u ON u.id=p.user_id WHERE EXISTS(SELECT 1 FROM daily_push_devices d JOIN sessions s ON s.token_hash=d.session_hash WHERE d.user_id=p.user_id AND s.revoked_at IS NULL AND s.expires_at>now())`);
    for(const user of users){
     const {date,hour,minute}=localClock(user.timezone,now);
     if(hour!==9||minute>=5)continue;
@@ -28,7 +28,7 @@ export class DailyReminder implements OnModuleInit, OnModuleDestroy {
      if(!claimed.length)return;
      // Do not retry an ambiguous send: Expo cannot guarantee exactly-once delivery.
      try{
-      const response=await fetch('https://exp.host/--/api/v2/push/send',{method:'POST',headers:{'Content-Type':'application/json',...(this.config.get<string>('EXPO_ACCESS_TOKEN')?{Authorization:`Bearer ${this.config.get<string>('EXPO_ACCESS_TOKEN')}`}:{})},signal:AbortSignal.timeout(8000),body:JSON.stringify({to:tokens[0].token,title:'Ton bilan du matin',body:'Comment tu te sens aujourd’hui ? Fais le point en 1 minute.',sound:'default',channelId:'daily',ttl:3600,data:{type:'daily',date}})});
+      const response=await fetch('https://exp.host/--/api/v2/push/send',{method:'POST',headers:{'Content-Type':'application/json',...(this.config.get<string>('EXPO_ACCESS_TOKEN')?{Authorization:`Bearer ${this.config.get<string>('EXPO_ACCESS_TOKEN')}`}:{})},signal:AbortSignal.timeout(8000),body:JSON.stringify({to:tokens[0].token,title:user.language==='nl'?'Je ochtendcheck-in':user.language==='en'?'Your morning check-in':'Ton bilan du matin',body:user.language==='nl'?'Hoe voel je je vandaag? Doe je check-in in 1 minuut.':user.language==='en'?'How are you feeling today? Check in in 1 minute.':'Comment tu te sens aujourd’hui ? Fais le point en 1 minute.',sound:'default',channelId:'daily',ttl:3600,data:{type:'daily',date}})});
       const result=await response.json() as {data?:{status:string;id?:string;details?:{error?:string}}};
       const ticket=result.data;
       await m.query('UPDATE daily_reminders SET status=$3,tickets=$4 WHERE user_id=$1 AND date=$2',[user.user_id,date,response.ok&&ticket?.status==='ok'?'sent':'failed',JSON.stringify(ticket?.id?[{id:ticket.id,token:tokens[0].token}]:[])]);

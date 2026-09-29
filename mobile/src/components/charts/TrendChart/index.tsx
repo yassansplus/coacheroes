@@ -1,3 +1,6 @@
+import { t } from '@/i18n/core';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useId, useState } from 'react';
 import { Text as Label, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text } from 'react-native-svg';
@@ -12,6 +15,7 @@ export type TrendPoint = { label: string; value: number; detail?: string };
 export type TrendSeries = { label: string; color: string; points: TrendPoint[]; kind?: 'line' | 'dots' | 'bar'; gradient?: boolean };
 /** Shared SVG chart: bundled runtime, touch selection, responsive labels and empty state. */
 export function TrendChart({ series, height = 220, unit = '', showValues = false, hideAxis = false, domain, groupedBars = false, showLegend = true }: { series: TrendSeries[]; height?: number; unit?: string; showValues?: boolean; hideAxis?: boolean; domain?: [number, number]; groupedBars?: boolean; showLegend?: boolean }) {
+  useLanguage();
   const [width, setWidth] = useState(0);
   const [selected, setSelected] = useState<{ series: number; point: number } | null>(null);
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -26,12 +30,12 @@ export function TrendChart({ series, height = 220, unit = '', showValues = false
   const left = hideAxis ? 10 : 39, right = Math.max(left + 1, width - 20), top = 26, bottom = height - 30;
   const x = (index: number, count: number) => groupedBars ? left + (index + 0.5) / Math.max(1, count) * (right - left) : count < 2 ? (left + right) / 2 : left + index / (count - 1) * (right - left);
   const y = (value: number) => bottom - (value - low) / Math.max(1, high - low) * (bottom - top);
-  const format = (value: number) => value.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  const format = (value: number) => value.toLocaleString(getLocale(), { maximumFractionDigits: 1 });
   const active = selected ? valid[selected.series]?.points[selected.point] : undefined;
   const labels = valid.find(item => item.points.length)?.points ?? [];
   return <View ref={scrub.ref} {...scrub.panHandlers} onLayout={event => setWidth(event.nativeEvent.layout.width)} style={{ gap: 8 }}>
     {active ? <Label accessibilityLiveRegion="polite" style={{ color: colors.text, fontFamily: fontFamily.semiBold, fontSize: 12, textAlign: 'right' }}>{active.detail ?? active.label} · {format(active.value)} {unit}</Label> : null}
-    {width > 60 ? <Svg width={width} height={height} accessibilityLabel={valid.map(item => `${item.label} : ${item.points.map(p => `${p.detail ?? p.label} ${format(p.value)} ${unit}`).join(', ')}`).join('. ')}>
+    {width > 60 ? <Svg width={width} height={height} accessibilityLabel={localizeLabel(valid.map(item => `${item.label} : ${item.points.map(p => `${p.detail ?? p.label} ${format(p.value)} ${unit}`).join(', ')}`).join('. '))}>
       <Defs><ClipPath id={`${uid}reveal`}><Rect x={0} y={0} width={(right + 4) * entrance.line} height={height} /></ClipPath>{valid.map((item, index) => <LinearGradient key={index} id={`${uid}g${index}`} x1="0" y1="0" x2="1" y2="0"><Stop offset="0" stopColor={item.color} /><Stop offset="1" stopColor={item.gradient ? colors.accent : item.color} /></LinearGradient>)}</Defs>
       {[0, 1, 2, 3].map(tick => { const value = low + (high - low) * tick / 3; return <ViewGrid key={tick} left={left} right={right} y={y(value)} text={hideAxis ? '' : format(value)} />; })}
       {labels.map((point, index) => { const every = Math.max(1, Math.ceil(labels.length / 4)); return index % every === 0 || index === labels.length - 1 ? <Text key={index} x={x(index, labels.length)} y={height - 7} fill={colors.textSecondary} fontSize={9} fontFamily={fontFamily.medium} textAnchor="middle">{point.label}</Text> : null; })}
@@ -52,4 +56,5 @@ export function TrendChart({ series, height = 220, unit = '', showValues = false
     {showLegend && valid.length > 1 ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>{valid.map((item, index) => <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color }} /><Label style={{ fontFamily: fontFamily.medium, color: colors.textSecondary, fontSize: 10 }}>{item.label}</Label></View>)}</View> : null}
   </View>;
 }
-function ViewGrid({ left, right, y, text }: { left: number; right: number; y: number; text: string }) { return <G><Line x1={left} x2={right} y1={y} y2={y} stroke={colors.border} strokeDasharray="3 3" />{text ? <Text x={left - 8} y={y + 3} textAnchor="end" fontSize={9} fontFamily={fontFamily.medium} fill={colors.textMuted}>{text}</Text> : null}</G>; }
+function ViewGrid({ left, right, y, text }: { left: number; right: number; y: number; text: string }) {
+  useLanguage(); return <G><Line x1={left} x2={right} y1={y} y2={y} stroke={colors.border} strokeDasharray="3 3" />{text ? <Text x={left - 8} y={y + 3} textAnchor="end" fontSize={9} fontFamily={fontFamily.medium} fill={colors.textMuted}>{text}</Text> : null}</G>; }

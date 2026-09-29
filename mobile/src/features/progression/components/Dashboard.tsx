@@ -1,4 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { Pressable, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -15,6 +18,7 @@ export function Dashboard({ onPage, period, onPeriod, onSleep, onStrength, data 
   onPage: (page: ProgressPage) => void; period: number; onPeriod: () => void; onSleep: () => void;
   onStrength: (exercise: string) => void; data: ProgressData;
 }) {
+  useLanguage();
   const { weights, measures, sessions, photos, sleep, exercises, block, startDate } = data;
   const today = dayKey(new Date());
   const recent = withinDays(weights, 7, today), previous = weights.filter(item => { const age = daysBetween(item.date, today); return age >= 7 && age < 14; });
@@ -39,20 +43,20 @@ export function Dashboard({ onPage, period, onPeriod, onSleep, onStrength, data 
     return { label: month, value: rows.filter(item => item.status === 'completed').length / rows.length * 100 };
   });
   return <>
-    <View style={[s.row, { justifyContent: 'space-between', flexWrap: 'wrap' }]}><Text style={s.title}>Progression</Text><Button text={period === 365 ? 'Depuis le début ⌄' : `${period} derniers jours ⌄`} variant="secondary" backgroundColor={colors.surface} radius={16} style={{ minHeight: 36, paddingHorizontal: 12 }} textStyle={{ fontSize: 11 }} onPress={onPeriod} /></View>
+    <View style={[s.row, { justifyContent: 'space-between', flexWrap: 'wrap' }]}><Text style={s.title}>Progression</Text><Button text={period === 365 ? 'Depuis le début ⌄' : t("{p0} derniers jours ⌄", { p0: period })} variant="secondary" backgroundColor={colors.surface} radius={16} style={{ minHeight: 36, paddingHorizontal: 12 }} textStyle={{ fontSize: 11 }} onPress={onPeriod} /></View>
     <Card style={s.card}><View style={s.row}><View style={s.grow}><Text style={s.heading}>Transformation</Text><Text style={[s.value, { marginTop: 6, fontSize: 32 }]}>Jour {day || '—'} <Text style={{ color: colors.textMuted }}>/ {total ?? '—'}</Text></Text></View><TileIcon glyph="calendar" /></View><View style={s.row}><View style={s.grow}><ProgressBar progress={progress} height={12} /></View><Text style={s.body}>{Math.round(progress)} %</Text></View></Card>
-    <View style={s.wrap}><Metric title="Poids moyen" value={show(mean, 'kg')} icon={<TileIcon name="scale" />} change={mean !== null && prior !== null ? `${number(mean - prior)} kg cette semaine` : undefined} smallChange onPress={() => onPage('weight')} /><Metric title="Tour de taille" value={show(waist, 'cm')} icon={<TileIcon name="tape" tone="green" />} change={waist !== null && waists.length > 1 ? `${number(waist - waists[0].waist!)} cm` : undefined} smallChange onPress={() => onPage('measurements')} /></View>
-    <View style={s.wrap}><Metric title="Entraînements" value={String(completed)} icon={<TileIcon name="dumbbell" tone="purple" />} change={due.length ? `${Math.round(completed / due.length * 100)} % réalisés` : undefined} smallChange onPress={() => onPage('attendance')} /><Metric title="Sommeil moyen" value={sleepMean === null ? '—' : `${Math.floor(sleepMean / 60)} h ${String(Math.round(sleepMean % 60)).padStart(2, '0')}`} icon={<TileIcon name="moon" />} change={sleepMean !== null && priorSleep !== null ? `${Math.round(sleepMean - priorSleep)} min` : undefined} smallChange onPress={onSleep} /></View>
+    <View style={s.wrap}><Metric title="Poids moyen" value={show(mean, 'kg')} icon={<TileIcon name="scale" />} change={mean !== null && prior !== null ? t("{p0} kg cette semaine", { p0: number(mean - prior) }) : undefined} smallChange onPress={() => onPage('weight')} /><Metric title="Tour de taille" value={show(waist, 'cm')} icon={<TileIcon name="tape" tone="green" />} change={waist !== null && waists.length > 1 ? t("{p0} cm", { p0: number(waist - waists[0].waist!) }) : undefined} smallChange onPress={() => onPage('measurements')} /></View>
+    <View style={s.wrap}><Metric title="Entraînements" value={String(completed)} icon={<TileIcon name="dumbbell" tone="purple" />} change={due.length ? t("{p0} % réalisés", { p0: Math.round(completed / due.length * 100) }) : undefined} smallChange onPress={() => onPage('attendance')} /><Metric title="Sommeil moyen" value={sleepMean === null ? '—' : t("{p0} h {p1}", { p0: Math.floor(sleepMean / 60), p1: String(Math.round(sleepMean % 60)).padStart(2, '0') })} icon={<TileIcon name="moon" />} change={sleepMean !== null && priorSleep !== null ? t("{p0} min", { p0: Math.round(sleepMean - priorSleep) }) : undefined} smallChange onPress={onSleep} /></View>
     <Card style={s.card}><View style={s.row}><Text style={[s.heading, s.grow]}>Performances</Text><Pressable accessibilityRole="button" onPress={() => onPage('strength')}><Text style={[s.label, { color: colors.primary }]}>Voir toutes ›</Text></Pressable></View>{top.map(item => {
       const first = item.points[0], last = item.points.at(-1);
-      const change = first && last && item.points.length > 1 ? item.unit === 'kg' ? `${number(last.weight - first.weight)} kg` : `${first.reps} → ${last.reps}` : '—';
+      const change = first && last && item.points.length > 1 ? item.unit === 'kg' ? t("{p0} kg", { p0: number(last.weight - first.weight) }) : `${first.reps} → ${last.reps}` : '—';
       return <Row key={item.id} title={item.title} icon={<TileIcon name="dumbbell" size={32} />} trailing={<Change text={change} />} onPress={() => onStrength(item.id)} />;
-    })}{boxing.length ? <Row title="Boxe" icon={<TileIcon name="boxing" tone="red" size={32} />} trailing={<Change text={`${boxing.length} séances`} tone="blue" />} onPress={() => onPage('boxing')} /> : null}{!top.length && !boxing.length ? <Text style={s.small}>Tes performances apparaîtront après tes premières séances.</Text> : null}</Card>
+    })}{boxing.length ? <Row title="Boxe" icon={<TileIcon name="boxing" tone="red" size={32} />} trailing={<Change text={t("{p0} séances", { p0: boxing.length })} tone="blue" />} onPress={() => onPage('boxing')} /> : null}{!top.length && !boxing.length ? <Text style={s.small}>Tes performances apparaîtront après tes premières séances.</Text> : null}</Card>
     <Card style={s.card}><Text style={s.heading}>Évolution globale</Text><Text style={s.small}>Poids et force indexés · assiduité en %</Text><TrendChart hideAxis height={150} series={[
-      { label: 'Poids', color: colors.accent, points: firstWeight ? weightPoints.map(item => ({ label: dateLabel(item.date, true), value: item.value / firstWeight * 100, detail: `${dateLabel(item.date)} · ${number(item.value)} kg` })) : [] },
+      { label: 'Poids', color: colors.accent, points: firstWeight ? weightPoints.map(item => ({ label: dateLabel(item.date, true), value: item.value / firstWeight * 100, detail: t("{p0} · {p1} kg", { p0: dateLabel(item.date), p1: number(item.value) }) })) : [] },
       { label: 'Force', color: colors.primary, points: firstStrength ? strength.map(item => ({ label: dateLabel(item.date, true), value: item.estimatedMax! / firstStrength * 100 })) : [] },
       { label: 'Assiduité', color: colors.success, points: attendance },
     ]} /></Card>
-    <Card style={s.card}><Row title="Photos de progression" subtitle={`${photos.length} prises de vue · Face, profil et dos`} icon={<TileIcon glyph="image" tone="purple" />} onPress={() => onPage('photos')} /><Button text="Voir mes photos" variant="outline" onPress={() => onPage('photos')} /></Card>
+    <Card style={s.card}><Row title="Photos de progression" subtitle={t("{p0} prises de vue · Face, profil et dos", { p0: photos.length })} icon={<TileIcon glyph="image" tone="purple" />} onPress={() => onPage('photos')} /><Button text="Voir mes photos" variant="outline" onPress={() => onPage('photos')} /></Card>
   </>;
 }

@@ -1,20 +1,27 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ProgressBar } from '@/components/ProgressBar';
 import type { ProgramBlockSummary } from '@/services/trainingProgram';
 import { styles as s } from './styles';
 
-const date = (value: string) => new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+const date = (value: string) => new Date(value).toLocaleDateString(getLocale(), { day: 'numeric', month: 'short' });
 export function BlockSummary({ summary, showWorkouts = true }: { summary: ProgramBlockSummary; showWorkouts?: boolean }) {
+  useLanguage();
   const [expanded, setExpanded] = useState<string | null>(null);
   return <View style={s.stack}>
     <Card style={s.stack}>
       <Text style={s.section}>{summary.title}</Text>
-      <Text style={s.body}>{date(summary.startedAt)} – {date(summary.endsAt)} · {summary.weeks} semaines</Text>
+      {summary.replaced ? <Text style={s.label}>Terminé · remplacé</Text> : null}
+      <Text style={s.body}>{t('{p0} – {p1} · {p2} semaines prévues', { p0: date(summary.startedAt), p1: date(summary.endsAt), p2: summary.weeks })}</Text>
       <Text style={s.label}>{summary.completed} séances réalisées sur {summary.planned} prévues</Text>
       <ProgressBar progress={summary.planned ? summary.completed / summary.planned * 100 : 0} height={10} />
+      {summary.replaced ? <Text style={s.body}>{t('{p0} séances non réalisées', { p0: Math.max(0, summary.planned - summary.completed) })}</Text> : null}
       <Text style={s.body}>{summary.durationMinutes} min d’entraînement · {summary.abandoned} séance{summary.abandoned > 1 ? 's' : ''} interrompue{summary.abandoned > 1 ? 's' : ''}</Text>
       <View style={s.wrap}>{summary.weekly.map(item => <Text key={item.week} style={s.body}>S{item.week} : {item.completed}/{item.planned}</Text>)}</View>
       {Object.entries(summary.bySport).map(([sport, count]) => <Text key={sport} style={s.body}>{sport === 'strength' ? 'Musculation' : sport} · {count} séance{count > 1 ? 's' : ''}</Text>)}
@@ -43,8 +50,8 @@ export function BlockSummary({ summary, showWorkouts = true }: { summary: Progra
         {expanded === workout.id ? <View style={{ paddingHorizontal: 8, gap: 5 }}>
           <Text style={s.body}>{Math.round((workout.summary.durationSeconds ?? 0) / 60)} min · {workout.summary.sets ?? 0} séries{workout.summary.pain ? ' · douleur signalée' : ''}</Text>
           {workout.summary.difficulty ? <Text style={s.body}>Ressenti : {workout.summary.difficulty} · énergie {workout.summary.energy ?? '—'}/5</Text> : null}
-          {workout.summary.comment ? <Text style={s.body}>{workout.summary.comment}</Text> : null}
-          {workout.exercises.map(exercise => <Text key={exercise.id} style={s.body}>{exercise.name} : {exercise.sets.map(set => `${set.weightKg} kg × ${set.reps}`).join(' · ') || 'aucune série saisie'}</Text>)}
+          {workout.summary.comment ? <Text translate={false} style={s.body}>{workout.summary.comment}</Text> : null}
+          {workout.exercises.map(exercise => <Text key={exercise.id} style={s.body}>{exercise.name} : {exercise.sets.map(set => t("{p0} kg × {p1}", { p0: set.weightKg, p1: set.reps })).join(' · ') || 'aucune série saisie'}</Text>)}
         </View> : null}
       </View>) : <Text style={s.body}>Aucune séance enregistrée sur ce bloc.</Text>}
     </Card> : null}

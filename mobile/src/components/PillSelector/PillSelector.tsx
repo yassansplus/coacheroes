@@ -1,6 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, gradients } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -20,6 +22,7 @@ type PillSelectorProps = {
 };
 
 export function PillSelector({ items, onChange, style, value, variant = 'outline', itemStyle }: PillSelectorProps) {
+  useLanguage();
   const handleChange = (nextValue: string) => {
     if (nextValue !== value) {
       void Haptics.selectionAsync().catch(() => undefined);

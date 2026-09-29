@@ -1,10 +1,13 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useEffect, useRef } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { s } from './NutritionUI';
 
 export function BarcodeScanner({ onScan, onClose }: { onScan: (code: string) => void; onClose: () => void }) {
+  useLanguage();
   const [permission, request] = useCameraPermissions();
   const scanned = useRef(false);
   useEffect(() => { if (permission?.status === 'undetermined') void request(); }, [permission?.status, request]);

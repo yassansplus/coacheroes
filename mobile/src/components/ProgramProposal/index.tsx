@@ -1,5 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Keyboard, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet } from '@/components/BottomSheet';
 import { IconButton } from '@/components/IconButton';
@@ -14,16 +17,18 @@ import type { TrainingProgram } from '@/services/trainingProgram';
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
-type Props = { program: TrainingProgram | null; loading: boolean; error: string | null; accepting: boolean; acceptError: string | null;
-  onRetry: () => void; onRefresh: () => void; onAccept: () => void; onEditProfile?: () => void };
+type Props = { program: TrainingProgram | null; loading: boolean; error: string | null; accepting: boolean; acceptError: string | null; starting?: boolean;
+  onRetry: () => void; onForceGenerate?: () => void; onRefresh: () => void; onAccept: () => void; onEditProfile?: () => void };
 export function ProgramProposal(props: Props) {
+  useLanguage();
   const ready = props.program?.status === 'ready' && !props.program.stale && !props.program.acceptedAt;
   return <View style={s.stack}>
-    <TrainingProgramView program={props.program} loading={props.loading} error={props.error} onRetry={props.onRetry} onEditProfile={props.onEditProfile} />
+    <TrainingProgramView program={props.program} loading={props.loading} error={props.error} onRetry={props.onRetry} onForceGenerate={props.onForceGenerate} forcing={props.starting} onEditProfile={props.onEditProfile} />
     {ready && props.program ? <ReviewChat proposalId={props.program.proposalId} onRefresh={props.onRefresh} onAccept={props.onAccept} accepting={props.accepting} acceptError={props.acceptError} onEditProfile={props.onEditProfile} /> : null}
   </View>;
 }
 function ReviewChat({ proposalId, onRefresh, onAccept, accepting, acceptError, onEditProfile }: Pick<Props, 'onRefresh' | 'onAccept' | 'accepting' | 'acceptError' | 'onEditProfile'> & { proposalId: string }) {
+  useLanguage();
   const chat = usePreparationChat('program_review');
   const [opened, setOpened] = useState(false);
   const { height } = useWindowDimensions();
@@ -38,14 +43,14 @@ function ReviewChat({ proposalId, onRefresh, onAccept, accepting, acceptError, o
     {chat.error || conversation?.error ? <Banner variant="error" message={chat.error ?? conversation?.error ?? ''} /> : null}
     {acceptError ? <Banner variant="error" message={acceptError} /> : null}
     <View style={s.actions}>
-      <Button text={accepting ? 'Validation…' : 'Valider'} accessibilityLabel="Valider mon programme" containerStyle={{ flex: 2, minWidth: 0 }} style={{ minHeight: 52 }} radius={16} leading={<Symbol name="check" color="white" size={18} />} onPress={onAccept} disabled={waiting || accepting || chat.retryPending || !conversation || !!chat.error || conversation.proposalId !== proposalId} />
-      <IconButton accessibilityLabel="Discuter avec mon coach" variant="surface" size={52} style={s.actionIcon} icon={<Symbol name="sparkles" color="primary" />} onPress={() => setOpened(true)} disabled={accepting} />
-      {onEditProfile ? <IconButton accessibilityLabel="Modifier mes disponibilités ou mon profil" variant="surface" size={52} style={s.actionIcon} icon={<Symbol name="calendar" color="primary" />} onPress={onEditProfile} disabled={waiting || accepting} /> : null}
+      <Button text={accepting ? 'Validation…' : 'Valider'} accessibilityLabel={localizeLabel("Valider mon programme")} containerStyle={{ flex: 2, minWidth: 0 }} style={{ minHeight: 52 }} radius={16} leading={<Symbol name="check" color="white" size={18} />} onPress={onAccept} disabled={waiting || accepting || chat.retryPending || !conversation || !!chat.error || conversation.proposalId !== proposalId} />
+      <IconButton accessibilityLabel={localizeLabel("Discuter avec mon coach")} variant="surface" size={52} style={s.actionIcon} icon={<Symbol name="sparkles" color="primary" />} onPress={() => setOpened(true)} disabled={accepting} />
+      {onEditProfile ? <IconButton accessibilityLabel={localizeLabel("Modifier mes disponibilités ou mon profil")} variant="surface" size={52} style={s.actionIcon} icon={<Symbol name="calendar" color="primary" />} onPress={onEditProfile} disabled={waiting || accepting} /> : null}
     </View>
     <BottomSheet visible={opened} onClose={close} style={{ height: height * 0.82, maxHeight: '100%', flexShrink: 1, paddingBottom: Math.max(insets.bottom, 16) }} footer={
-      <MessageComposer value={chat.draft} onChange={chat.setDraft} onSend={() => void chat.send()} placeholder="Une question ou un ajustement ?" disabled={waiting || accepting || chat.retryPending || conversation?.status !== 'awaiting_answer'} />
+      <MessageComposer value={chat.draft} onChange={chat.setDraft} onSend={() => void chat.send()} placeholder={localizeLabel("Une question ou un ajustement ?")} disabled={waiting || accepting || chat.retryPending || conversation?.status !== 'awaiting_answer'} />
     }>
-      <View style={s.row}><Text style={[s.title, { flex: 1 }]}>Ton coach</Text><IconButton accessibilityLabel="Fermer la discussion" variant="ghost" icon={<Symbol name="close" />} onPress={close} /></View>
+      <View style={s.row}><Text style={[s.title, { flex: 1 }]}>Ton coach</Text><IconButton accessibilityLabel={localizeLabel("Fermer la discussion")} variant="ghost" icon={<Symbol name="close" />} onPress={close} /></View>
       <ScrollView ref={scroll} style={{ flex: 1, minHeight: 0 }} contentContainerStyle={s.messages} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
         onLayout={() => scroll.current?.scrollToEnd({ animated: false })} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
         <ChatMessages messages={conversation?.messages ?? []} />

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { DataSource, EntityManager } from 'typeorm';
 import { JournalEntry, Onboarding, User } from '../database/entities';
-import { buildTrainingContext, requiredClarifications } from './context';
+import { buildTrainingContext, requiredClarifications, withForcedGeneration } from './context';
 import { ProgramGenerator, type GenerationOutput, type Phase } from './generator';
 import { ChatConversation } from '../chat/chat.entity';
 import { TrainingProgram } from './program.entity';
@@ -46,7 +46,7 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
     await manager.save(JournalEntry, manager.create(JournalEntry, { userId: row.userId, requestId: randomUUID(),
       type, occurredAt: new Date(), payload: { schemaVersion: 1, runId: row.runId, sourceRevision: row.sourceRevision, ...payload } }));
   }
-  async start(userId: string, retry = false, renew = false) {
+  async start(userId: string, retry = false, renew = false, force = false) {
     if (renew) throw new BadRequestException('Fais le bilan du programme avant de préparer le suivant.');
     return this.db.transaction(async manager => {
       const profile = await manager.findOneOrFail(Onboarding, { where: { userId }, lock: { mode: 'pessimistic_write' } });
@@ -57,10 +57,22 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
         await manager.save(row); await this.journal(manager, row, 'program.renewal_retried', { sourceBlockId: row.context.sourceBlockId });
         return this.view(row);
       }
-      if (!renew && row && row.sourceRevision === profile.revision && row.context.schemaVersion === 2 && !(retry && row.status === 'failed')) return this.view(row);
+      if (!renew && row && row.sourceRevision === profile.revision && row.context.schemaVersion === 2
+        && !(retry && row.status === 'failed') && !(force && row.status === 'needs_clarification')) return this.view(row);
       const user = await manager.findOneByOrFail(User, { id: userId });
-      const context = buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails);
-      if (!requiredClarifications(context).length) this.generator.ensureConfigured();
+      const shouldForce = force || (retry && row?.status === 'failed' && row.context.forceGeneration === true);
+      const rawContext = buildTrainingContext(profile.profile, profile.revision, user.firstName, profile.coachingDetails, user.language);
+      const context = shouldForce ? withForcedGeneration(rawContext) : rawContext;
+      if (shouldForce) {
+        const fixed = context.sportSchedules.filter(s => s.mode === 'fixed');
+        const fixedDays = fixed.flatMap(s => s.weekdays);
+        if (new Set(fixedDays).size !== fixedDays.length || fixed.some(s => s.weekdays.some(d => !context.availability!.weekdaysMondayZero.includes(d)) || (s.minutes ?? 0) > context.availability!.maxSessionMinutes)
+          || fixedDays.length + context.selectedSports.length - fixed.length > context.availability!.sessionsPerWeek
+          || context.availability!.sessionsPerWeek > context.availability!.weekdaysMondayZero.length
+          || context.availability!.sessionsPerWeek > 7)
+          throw new ConflictException('Tes créneaux se chevauchent ou ne couvrent pas tous tes sports. Ajuste tes disponibilités pour continuer.');
+        this.generator.ensureConfigured();
+      } else if (!requiredClarifications(context).length) this.generator.ensureConfigured();
       const history=await manager.find(WorkoutSession,{where:{userId,status:'completed'},order:{startedAt:'DESC'},take:30});
       Object.assign(context,{renewal:renew,trainingHistory:history.map(w=>workoutAiContext(w.snapshot,user.firstName))});
       const previous = row ? { sourceRevision: row.sourceRevision, status: row.status, context: row.context, output: row.output, error: row.error } : null;
@@ -82,8 +94,19 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
       if (previousReceipt) throw new ConflictException('Cet identifiant de requête a déjà été utilisé.');
       if (!row?.acceptedAt || row.runId !== input.blockId) throw new ConflictException('Le programme actif a changé. Recharge le bilan.');
       const block = await manager.findOne(ProgramBlock, { where: { id: input.blockId, userId }, lock: { mode: 'pessimistic_write' } });
-      if (!block || block.endsAt.getTime() > Date.now()) throw new ConflictException('Ton bloc est encore en cours.');
+      if (!block || (!input.regenerate && block.endsAt.getTime() > Date.now())) throw new ConflictException('Ton bloc est encore en cours.');
+      if (await manager.existsBy(WorkoutSession, { userId, programVersionId: block.id, status: 'in_progress' }))
+        throw new ConflictException('Termine ou arrête ta séance en cours avant de créer un nouveau programme.');
       if (profileRow.revision !== input.profileRevision) throw new ConflictException('Ton profil a changé. Recharge tes réponses.');
+      const previousBlock = { endsAt: block.endsAt, renewalReview: block.renewalReview };
+      if (input.regenerate) {
+        const completedAt = new Date();
+        block.renewalReview = { ...block.renewalReview, replacement: {
+          completedAt: completedAt.toISOString(), plannedEndsAt: block.endsAt.toISOString(),
+        } };
+        block.endsAt = new Date(Math.min(block.endsAt.getTime(), completedAt.getTime()));
+        await manager.save(block);
+      }
       const answers = input.answers;
       const beforeProfile = profileSchema.parse(profileRow.profile);
       const review = await this.renewalSummary.get(userId, block.id, manager);
@@ -112,23 +135,25 @@ export class ProgramService implements OnModuleInit, OnModuleDestroy {
         await manager.query(`INSERT INTO progression_weights(user_id,date,value_kg,source) VALUES($1,$2,$3,'renewal')
           ON CONFLICT(user_id,date) DO UPDATE SET value_kg=EXCLUDED.value_kg,source='renewal',revision=progression_weights.revision+1,updated_at=now()`, [userId, date, answers.weightKg]);
       }
-      const context = buildTrainingContext(updated, profileRow.revision, user.firstName, nextCoaching);
+      const context = buildTrainingContext(updated, profileRow.revision, user.firstName, nextCoaching, user.language);
       const history = await manager.find(WorkoutSession, { where: { userId, programVersionId: block.id }, order: { startedAt: 'ASC' } });
       const previousProgram = (block.prescription as any).output?.result;
-      Object.assign(context, { renewal: true, sourceBlockId: block.id, previousProgram,
+      Object.assign(context, { renewal: true, regeneration: input.regenerate === true, sourceBlockId: block.id, previousProgram,
         blockSummary: { ...review.summary, workouts: undefined }, renewalAnswers: answers,
         trainingHistory: history.filter(session => session.status === 'completed' || session.status === 'abandoned')
           .map(session => workoutAiContext(session.snapshot, user.firstName)) });
       if (!requiredClarifications(context).length) this.generator.ensureConfigured();
       const previous = { status: row.status, context: row.context, output: row.output, acceptedAt: row.acceptedAt };
-      block.renewalReview = { answers, submittedAt: new Date().toISOString(), analysis: null };
+      block.renewalReview = { ...block.renewalReview, answers, submittedAt: new Date().toISOString(), analysis: null };
       await manager.save(block);
       Object.assign(row, { sourceRevision: profileRow.revision, context, output: null, acceptedAt: null, status: 'queued',
         phase: 'preparing', runId: randomUUID(), attempts: 0, leaseUntil: null, error: null });
       await manager.save(row);
       await manager.save(JournalEntry, manager.create(JournalEntry, { userId, requestId: input.requestId,
         type: 'program.renewal_requested', occurredAt: new Date(), payload: { schemaVersion: 1, runId: row.runId,
-          sourceBlockId: block.id, before: previous, answers, summary: review.summary, settings: this.generator.settings() } }));
+          sourceBlockId: block.id, regeneration: input.regenerate === true, before: previous,
+          block: { before: previousBlock, after: { endsAt: block.endsAt, renewalReview: block.renewalReview } },
+          answers, summary: review.summary, settings: this.generator.settings() } }));
       return this.view(row);
     });
   }

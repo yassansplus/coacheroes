@@ -1,3 +1,5 @@
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef } from 'react';
 import {
@@ -36,6 +38,7 @@ export function ProgressBar({
   style,
   trackColor = '#e8edf8',
 }: ProgressBarProps) {
+  useLanguage();
   const progressAnimation = useRef(new Animated.Value(0)).current;
   const clampedProgress = Math.min(100, Math.max(0, progress));
   const radius = height / 2;
@@ -72,7 +75,7 @@ export function ProgressBar({
 
   return (
     <View
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={localizeLabel(accessibilityLabel)}
       accessibilityRole="progressbar"
       accessibilityValue={{ max: 100, min: 0, now: clampedProgress }}
       style={[styles.track, { backgroundColor: trackColor, borderRadius: radius, height }, style]}

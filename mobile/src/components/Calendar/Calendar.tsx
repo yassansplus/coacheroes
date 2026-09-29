@@ -1,5 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Motion } from '@/components/Motion';
 import { feedback } from '@/utils/feedback';
@@ -60,7 +63,7 @@ export function Calendar({
   renderDay,
   disabledDate,
   initialMonth,
-  locale = 'fr-FR',
+  locale = getLocale(),
   maximumDate,
   minimumDate,
   onMonthChange,
@@ -68,6 +71,7 @@ export function Calendar({
   selectedDate,
   style,
 }: CalendarProps) {
+  useLanguage();
   const [displayedMonth, setDisplayedMonth] = useState(() => {
     const source = initialMonth ?? selectedDate ?? new Date();
     return new Date(source.getFullYear(), source.getMonth(), 1);
@@ -88,7 +92,7 @@ export function Calendar({
     <View style={[styles.calendar, style]}>
       <View style={styles.monthHeader}>
         <IconButton
-          accessibilityLabel="Mois précédent"
+          accessibilityLabel={localizeLabel("Mois précédent")}
           icon={<Text style={styles.arrow}>‹</Text>}
           onPress={() => changeMonth(-1)}
           size={36}
@@ -96,7 +100,7 @@ export function Calendar({
         />
         <Text style={styles.monthTitle}>{monthTitle}</Text>
         <IconButton
-          accessibilityLabel="Mois suivant"
+          accessibilityLabel={localizeLabel("Mois suivant")}
           icon={<Text style={styles.arrow}>›</Text>}
           onPress={() => changeMonth(1)}
           size={36}
@@ -105,7 +109,7 @@ export function Calendar({
       </View>
 
       <View style={styles.weekRow}>
-        {weekdays.map((weekday, index) => (
+        {(locale.startsWith('nl') ? ['M', 'D', 'W', 'D', 'V', 'Z', 'Z'] : locale.startsWith('en') ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : weekdays).map((weekday, index) => (
           <Text key={`${weekday}-${index}`} style={styles.weekday}>{weekday}</Text>
         ))}
       </View>
@@ -127,11 +131,11 @@ export function Calendar({
           return (
             <Pressable
               key={date.toISOString()}
-              accessibilityLabel={date.toLocaleDateString(locale, {
+              accessibilityLabel={localizeLabel(date.toLocaleDateString(locale, {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric',
-              })}
+              }))}
               accessibilityRole="button"
               accessibilityState={{ disabled, selected }}
               disabled={disabled}

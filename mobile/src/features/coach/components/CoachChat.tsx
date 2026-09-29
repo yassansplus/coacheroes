@@ -1,4 +1,6 @@
-import { Text, View } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { ChatMessages } from '@/components/ChatMessages';
 import { Symbol } from '@/components/Symbol';
@@ -6,6 +8,7 @@ import { colors } from '@/theme/colors';
 import type { Conversation } from '../types';
 import { s } from './styles';
 export function CoachChat({ conversation, onProposal, onKeep, onProgram }: { conversation?: Conversation; onProposal: (id: string) => void; onKeep: (id: string) => void; onProgram: () => void }) {
+  useLanguage();
   return <ChatMessages messages={(conversation?.messages ?? []).map(message => ({ ...message, role: message.role === 'coach' ? 'assistant' : 'user', renderKey: conversation?.proposals.find(p => p.id === message.proposalId)?.status }))} renderActions={id => {
     const message = conversation?.messages.find(m => m.id === id);
     const proposal = conversation?.proposals.find(p => p.id === message?.proposalId);

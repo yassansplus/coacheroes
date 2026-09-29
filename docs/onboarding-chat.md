@@ -35,6 +35,13 @@ les contraintes de club et les précisions indispensables demandées par le gén
 Une douleur déclarée reste conservée ; le chat ne délivre aucune autorisation
 médicale et ne débloque pas automatiquement la génération dans ce cas.
 
+Sous « Revoir mon profil », « Créer mon programme » permet de lancer la génération
+malgré une précision manquante. Le serveur garde les réponses originales, consigne
+les hypothèses utilisées dans le contexte du programme et le journal, puis demande
+au coach une proposition prudente. Un conflit réel entre créneaux fixes et sports
+reste à corriger dans le profil ; le bouton affiche alors l'erreur sans relancer
+la même boucle de questions. La proposition reste à valider par l'utilisateur.
+
 Quatre séances signifient quatre séances **au total**, par exemple deux de boxe
 et deux de musculation. Le coach organise les jours libres. Si les cours du club
 sont fixes, il demande leurs jours et respecte leur durée lorsqu'elle est connue.
@@ -88,7 +95,7 @@ mobile n'est ajouté par ce lot. Le prénom nécessite de tester une première
 connexion Apple ; le parcours de secours fonctionne aussi avec les anciens comptes.
 
 `OPENAI_API_KEY` reste exclusivement côté serveur. L’extraction des réponses est configurable via
-`OPENAI_ONBOARDING_MODEL`, avec le défaut `gpt-5.6-luna` et effort `low`. Le chat de révision utilise Terra/medium (`OPENAI_REVIEW_MODEL`) et les modifications de programme Sol/high (`OPENAI_PROGRAM_MODEL`). Leur disponibilité
+`OPENAI_ONBOARDING_MODEL`, avec le défaut `gpt-5.6-luna` et effort `low`. Le chat de révision utilise Terra/medium (`OPENAI_REVIEW_MODEL`) et les modifications de programme Sol/medium (`OPENAI_PROGRAM_MODEL`). Leur disponibilité
 sur le compte reste à valider lors du premier essai réel. Aucun appel OpenAI réel
 n'est effectué dans les tests.
 

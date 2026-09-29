@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Motion } from '@/components/Motion';
 import { colors } from '@/theme/colors';
@@ -34,6 +36,7 @@ export function Toast({
   variant = 'info',
   visible,
 }: ToastProps) {
+  useLanguage();
   const hide = useRef(onHide);
   hide.current = onHide;
   const canHide = Boolean(onHide);

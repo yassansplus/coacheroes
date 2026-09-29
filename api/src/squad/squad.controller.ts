@@ -1,4 +1,5 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { z } from 'zod';
 import { AuthGuard, type AuthRequest } from '../auth/auth.guard';
 import { actionSchema, challengeSchema, createGroupSchema, decisionSchema, idSchema, inviteSchema, preferenceSchema, renameGroupSchema, tokenSchema, transferSchema } from './squad.schema';
@@ -14,6 +15,11 @@ const parse = <T>(schema: z.ZodType<T>, value: unknown): T => {
 export class SquadController {
   constructor(private readonly squad: SquadService) {}
   @Get() overview(@Req() req: AuthRequest) { return this.squad.overview(req.session.userId); }
+  @Get('avatars/:id/:kind') async avatar(@Req() req: AuthRequest, @Param('id') id: string,
+    @Param('kind') kind: string, @Res() res: Response) {
+    const image = await this.squad.avatarImage(req.session.userId, parse(idSchema, id), parse(z.enum(['source', 'generated']), kind));
+    res.set({ 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }).send(image);
+  }
   @Get('invitations') invitations(@Req() req: AuthRequest) { return this.squad.invitations(req.session.userId); }
   @Post('invitations') invite(@Req() req: AuthRequest, @Body() body: unknown) {
     return this.squad.createInvitation(req.session.userId, parse(inviteSchema, body));

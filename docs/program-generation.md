@@ -50,6 +50,13 @@ au raisonnement privé du modèle. Les étapes du loader correspondent aux état
 serveur et peuvent revenir à la recherche pendant une exploration ou correction.
 Aucun pourcentage arbitraire ni validation visuelle simulée.
 
+Si le chat demande encore une précision, l'utilisateur peut choisir « Créer mon
+programme ». `POST /program/generate` avec `force: true` relance alors la même
+ligne métier, journalise le contexte et emploie des hypothèses prudentes pour
+les seules informations absentes (jours libres et matériel au poids du corps).
+Les créneaux fixes incompatibles sont signalés à corriger. Une douleur signalée
+reste une restriction, jamais une autorisation médicale implicite.
+
 ## Parcours du code
 
 ```mermaid
@@ -69,16 +76,16 @@ sequenceDiagram
   API-->>H: queued
   W->>DB: Réserver le travail avec bail
   W->>G: Contexte figé, signal d’annulation, callback phase
-  G->>O: Instructions + profil + rules + tools + text.format
-  loop Exploration bornée
-    O-->>G: function_call
-    G->>E: Filtres, recherche ou détails
-    E->>WG: GET sans informations utilisateur
+  G->>O: Profil + règles ; schéma des intentions de mouvements
+  O-->>G: Mouvements adaptés + noms anglais à rechercher
+  loop Pour chaque intention, recherche bornée
+    G->>E: Recherche wger par nom, matériel autorisé
+    E->>WG: GET name__search sans informations utilisateur
     WG-->>E: JSON public
-    E-->>G: Fiches filtrées sans médias
-    G->>O: function_call_output + contexte de conversation
+    E-->>G: Fiches compatibles classées par pertinence
   end
-  O-->>G: JSON conforme au schéma
+  G->>O: Intentions + fiches vérifiées + schéma du programme
+  O-->>G: JSON conforme au schéma, IDs issus des fiches
   G->>G: Validation Zod + règles métier ; une réparation maximum
   G-->>W: Programme + fiches sources + trace technique
   W->>DB: Vérifier runId et révision, UPDATE + journal
@@ -93,12 +100,13 @@ sequenceDiagram
 
 - `api/src/program/context.ts` : conversions de nombres/unité, étapes ignorées,
   matériel autorisé, données manquantes. Aucune photo, email ni identifiant Apple.
-- `wger.service.ts` : origine HTTPS fixe, délais de 15 s, cache, pagination,
-  préférence français puis anglais, métadonnées de licence et auteur.
-- `generator.ts` : prompt versionné, quatre outils, boucle Responses HTTP,
+- `wger.service.ts` : origine HTTPS fixe, recherche par nom anglais, deux pages
+  maximum par requête, classement local, compatibilité matérielle, cache, préférence
+  français puis anglais, métadonnées de licence et auteur.
+- `generator.ts` : prompt versionné, deux étapes Responses à schémas stricts,
   `store: false`, conservation des éléments de reasoning chiffrés entre appels,
   refus/réponses incomplètes explicites. Modèle configuré via `OPENAI_PROGRAM_MODEL`,
-  défaut `gpt-5.6-sol`, effort `high` (génération et ajustements).
+  défaut `gpt-5.6-sol`, effort `medium` (génération et ajustements).
 - `program.schema.ts` : schéma Zod strict et JSON Schema transmis dans
   `text.format` avec `strict: true`. La forme du résultat n’est pas une preuve
   de qualité sportive.
@@ -114,18 +122,27 @@ sequenceDiagram
   clarifications, séances et attribution des exercices. Composant partagé.
 - `mobile/src/features/program/screens/GeneratedProgramScreen.tsx` : consultation.
 
-## Outils donnés au modèle
+## Sélection des exercices
 
-| Outil | Entrée | Résultat |
-| --- | --- | --- |
-| `get_training_context` | objet vide | Même contexte figé et règles que dans le premier appel |
-| `get_exercise_filters` | objet vide | Catégories, matériel, muscles et leurs identifiants |
-| `search_exercises` | categoryId, equipmentId, muscleId (null autorisé), offset | Page de 20 fiches avant filtrage, nextOffset |
-| `get_exercise_details` | 1 à 8 identifiants | Fiches compatibles |
+Le premier appel IA choisit jusqu'à dix intentions de mouvements en fonction du
+profil, de l'objectif, des douleurs, du matériel et, en renouvellement, du bloc
+précédent et des performances. Il produit un ou deux noms anglais par intention,
+sans identifiant wger. Le serveur cherche ensuite ces noms sur l'API publique,
+sur deux pages de vingt résultats au maximum par nom, filtre le matériel et
+classe les correspondances par nom. Le second appel IA reçoit les fiches retenues
+avec leur description et ne peut utiliser que leurs identifiants. La validation
+serveur rejette toute référence inventée. Si aucune fiche compatible n'est
+trouvée pour une musculation, la génération échoue explicitement.
 
-Les paramètres sont validés côté serveur, même en mode strict OpenAI. Une page
-vide après filtrage peut avoir une page suivante. Les URLs de pagination wger ne
-sont jamais suivies directement ; le serveur reconstruit une URL de l’origine fixe.
+La création d'un programme demande `service_tier: "fast"` sur les deux appels
+OpenAI (intentions puis composition, y compris l'éventuelle correction), avec
+le raisonnement `medium`. Cela s'applique aussi à la création du bloc suivant.
+Les ajustements via le chat et l'analyse préalable au renouvellement gardent
+leur mode de traitement habituel.
+
+Les URLs de pagination wger ne sont jamais suivies directement ; le serveur
+reconstruit une URL de l’origine fixe. Les notes utilisateur ne sont pas envoyées
+à wger ; seules les requêtes d'exercices produites par le modèle le sont.
 Une fiche sans matériel explicite est exclue (information inconnue). Les items
 non reconnus du formulaire restent explicitement inconnus. Une salle déclarée
 « complète » sans sélection précise autorise le matériel standard du catalogue ;
@@ -143,7 +160,7 @@ cette hypothèse est transmise et doit être expliquée à l’utilisateur.
   bail expiré, trois prises en charge maximum avant échec visible.
 - `runId` empêche un ancien worker de publier sur une relance récente. La révision
   du profil est revérifiée dans la transaction de publication.
-- Maximum 10 appels modèle, 20 outils, 1 correction et 6 minutes par travail.
+- Maximum 3 appels modèle (intentions, programme, éventuelle correction), 1 correction et 6 minutes par travail.
   Chaque appel OpenAI a un délai de 90 s. Un arrêt brutal peut conduire à refaire
   un appel externe à la reprise ; la publication locale reste protégée.
 - Aucune clé : réponse HTTP 503 explicite, profil conservé, aucune fausse réussite.
@@ -155,7 +172,7 @@ cette hypothèse est transmise et doit être expliquée à l’utilisateur.
 
 Ajouter `OPENAI_API_KEY` uniquement dans `api/.env` (ou `.env.local`, prioritaire),
 puis redémarrer l’API. Ne jamais utiliser une variable `EXPO_PUBLIC_` pour la clé.
-`OPENAI_PROGRAM_MODEL`, `OPENAI_REVIEW_MODEL` et `OPENAI_ONBOARDING_MODEL` sont optionnels. Leurs défauts sont respectivement Sol/high, Terra/medium et Luna/low. L’ancienne variable `OPENAI_MODEL` est ignorée. Astra est exclu des modèles autorisés. L’accès réel au modèle dépend du projet OpenAI.
+`OPENAI_PROGRAM_MODEL`, `OPENAI_REVIEW_MODEL` et `OPENAI_ONBOARDING_MODEL` sont optionnels. Leurs défauts sont respectivement Sol/medium, Terra/medium et Luna/low. L’ancienne variable `OPENAI_MODEL` est ignorée. Astra est exclu des modèles autorisés. L’accès réel au modèle dépend du projet OpenAI.
 
 ```sh
 cd api

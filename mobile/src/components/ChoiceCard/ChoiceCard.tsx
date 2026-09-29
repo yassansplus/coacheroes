@@ -1,7 +1,10 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Symbol } from '@/components/Symbol';
@@ -30,12 +33,13 @@ type ChoiceCardProps = {
 export function ChoiceCard({ title, description, icon, selected, onPress, disabled = false,
   role = 'checkbox', layout = 'tile', indicatorPosition = 'top', selectedColor = 'primary',
   style, contentStyle, titleStyle, descriptionStyle, indicatorSize = 23 }: ChoiceCardProps) {
+  useLanguage();
   const indicator = <View style={[styles.indicator, { width: indicatorSize, height: indicatorSize, borderRadius: indicatorSize / 2 }, selected && { borderColor: resolveColor(selectedColor) }]}>
     {selected ? <LinearGradient colors={gradients.primary} style={styles.selectedIndicator}>
       {role === 'radio' && layout === 'row' ? <View style={styles.dot} /> : <Symbol name="check" color="white" size={Math.round(indicatorSize * 0.65)} />}
     </LinearGradient> : null}
   </View>;
-  return <Pressable accessibilityLabel={title} accessibilityRole={role} accessibilityState={{ checked: selected, disabled }}
+  return <Pressable accessibilityLabel={localizeLabel(title)} accessibilityRole={role} accessibilityState={{ checked: selected, disabled }}
     aria-checked={selected} aria-disabled={disabled}
     disabled={disabled} onPress={() => { void Haptics.selectionAsync().catch(() => undefined); onPress(); }}
     style={({ pressed }) => [styles.pressable, pressed && styles.pressed, disabled && styles.disabled, style]}>

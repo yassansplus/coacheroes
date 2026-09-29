@@ -49,7 +49,7 @@ export class WorkoutService {
    }
    await m.save(row);
    await m.query('INSERT INTO workout_write_receipts(user_id,request_id,session_id,request_hash,revision) VALUES($1,$2,$3,$4,$5)',[userId,input.requestId,id,hash,row.revision]);
-   await m.save(JournalEntry,m.create(JournalEntry,{userId,requestId:input.requestId,type:`workout.${!before?'started':s.status==='completed'?'completed':s.status==='abandoned'?'abandoned':'updated'}`,occurredAt:new Date(),payload:{schemaVersion:1,sessionId:id,before,after:{snapshot:s,summary:row.summary,revision:row.revision}}}));
+   await m.save(JournalEntry,m.create(JournalEntry,{userId,requestId:input.requestId,type:`workout.${s.status==='completed'?'completed':s.status==='abandoned'?'abandoned':!before?'started':'updated'}`,occurredAt:new Date(),payload:{schemaVersion:1,sessionId:id,before,after:{snapshot:s,summary:row.summary,revision:row.revision}}}));
    return {session:row,acknowledgedRevision:row.revision};
   });
  }
@@ -69,7 +69,7 @@ export class WorkoutService {
   const work=(async()=>{
    const history=await this.db.getRepository(WorkoutSession).createQueryBuilder('w').where('w.user_id=:userId AND w.status=:status AND w.started_at<=:start',{userId,status:'completed',start:row.startedAt}).orderBy('w.started_at','DESC').take(30).getMany();
    const user=await this.db.getRepository(User).findOneByOrFail({id:userId});const profile=await this.db.getRepository(Onboarding).findOneBy({userId});
-   const result=await this.ai.analyze(row.snapshot,history.map(w=>w.snapshot),profile?.profile??{},user.firstName);
+   const result=await this.ai.analyze(row.snapshot,history.map(w=>w.snapshot),profile?.profile??{},user.firstName,user.language);
    return this.db.transaction(async m=>{const current=await m.findOneOrFail(WorkoutSession,{where:{id,userId},lock:{mode:'pessimistic_write'}});if(current.revision!==row.revision)throw new ConflictException('La séance a changé. Relance le bilan.');if(current.analysis)return current.analysis;
     current.analysis={...result,sourceRevision:row.revision,source:'openai'};await m.save(current);await m.save(JournalEntry,m.create(JournalEntry,{userId,requestId:randomUUID(),type:'workout.analyzed',occurredAt:new Date(),payload:{sessionId:id,analysis:current.analysis}}));return current.analysis;
    });

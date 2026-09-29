@@ -1,3 +1,5 @@
+import { t } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef, useState } from 'react';
 import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 
@@ -5,6 +7,7 @@ type Props = { sources: readonly ImageSourcePropType[]; onReady: () => void };
 
 /** Mount actual native images behind the splash; prefetch alone warms disk. */
 export function ImageWarmup({ sources, onReady }: Props) {
+  useLanguage();
   const [batch, setBatch] = useState(0);
   const completed = useRef(new Set<number>());
   const ready = useRef(false);

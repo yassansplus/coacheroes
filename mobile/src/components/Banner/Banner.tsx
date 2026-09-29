@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
@@ -31,6 +33,7 @@ export function Banner({
   title,
   variant = 'info',
 }: BannerProps) {
+  useLanguage();
   const palette = variants[variant];
 
   return (

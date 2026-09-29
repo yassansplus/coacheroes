@@ -1,5 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useRef, useState } from 'react';
-import { Image, PanResponder, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
+import { Image, PanResponder, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 import { feedback } from '@/utils/feedback';
 import { Symbol } from '@/components/Symbol';
 import { colors } from '@/theme/colors';
@@ -7,6 +10,7 @@ import { fontFamily } from '@/theme/typography';
 
 /** Local, reusable before/after image reveal. Each image keeps its full dimensions. */
 export function PhotoComparison({ before, after, beforeLabel, afterLabel, accessibilityLabel = 'Comparer les photos' }: { before: ImageSourcePropType; after: ImageSourcePropType; beforeLabel?: string; afterLabel?: string; accessibilityLabel?: string }) {
+  useLanguage();
   const [width, setWidth] = useState(0);
   const [fraction, setFraction] = useState(0.5);
   const [failed, setFailed] = useState(false);
@@ -33,7 +37,7 @@ export function PhotoComparison({ before, after, beforeLabel, afterLabel, access
     </> : null}
     <View pointerEvents="none" style={{ position: 'absolute', top: 10, left: 10, right: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 20 }}>{[beforeLabel, afterLabel].map((label, index) => <Text key={index} numberOfLines={1} style={{ maxWidth: '45%', fontFamily: fontFamily.semiBold, fontSize: 10, color: colors.text, backgroundColor: colors.surface, padding: 6, borderRadius: 10 }}>{label ?? (index === 0 ? 'Avant' : 'Après')}</Text>)}</View>
     {failed ? <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.primarySurface, alignItems: 'center', justifyContent: 'center', padding: 20 }]}><Text style={{ fontFamily: fontFamily.medium, color: colors.textSecondary, textAlign: 'center' }}>Une photo est indisponible. Choisis une autre prise de vue ou importe-la à nouveau.</Text></View> : null}
-    <View {...responder.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel={accessibilityLabel} accessibilityValue={{ min: 0, max: 100, now: Math.round(fraction * 100) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]} onAccessibilityAction={event => setFraction(value => Math.max(0.03, Math.min(0.97, value + (event.nativeEvent.actionName === 'increment' ? 0.1 : -0.1))))} style={{ position: 'absolute', top: 0, bottom: 0, left: width * fraction - 22, width: 44, alignItems: 'center', justifyContent: 'center' }}>
+    <View {...responder.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel={localizeLabel(accessibilityLabel)} accessibilityValue={{ min: 0, max: 100, now: Math.round(fraction * 100) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]} onAccessibilityAction={event => setFraction(value => Math.max(0.03, Math.min(0.97, value + (event.nativeEvent.actionName === 'increment' ? 0.1 : -0.1))))} style={{ position: 'absolute', top: 0, bottom: 0, left: width * fraction - 22, width: 44, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: colors.white }} /><View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.white, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}><Symbol name="back" size={14} /><Symbol name="chevron" size={14} /></View>
     </View>
   </View>;

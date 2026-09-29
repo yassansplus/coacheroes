@@ -1,5 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { ChoiceCard } from '@/components/ChoiceCard';
@@ -13,6 +16,7 @@ import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
 export function OnboardingComponentsPreview() {
+  useLanguage();
   const [selected, setSelected] = useState('muscle');
   const [count, setCount] = useState(4);
   const [days, setDays] = useState([0, 2, 4, 6]);
@@ -28,7 +32,7 @@ export function OnboardingComponentsPreview() {
     <Card style={styles.section}><Text style={styles.label}>Compteur numérique</Text><NumberStepper label="la valeur" value={count} onChange={setCount} minimum={1} maximum={7} size="large" />
       <Text style={styles.label}>Jours disponibles</Text><WeekdaySelector value={days} onChange={setDays} /></Card>
     <Card><TagInput label="Saisie libre en tags" value={tags} inputValue={tagInput}
-      onChange={(values, inputValue) => { setTags(values); setTagInput(inputValue); }} placeholder="Ex. : avocat, lentilles" /></Card>
+      onChange={(values, inputValue) => { setTags(values); setTagInput(inputValue); }} placeholder={localizeLabel("Ex. : avocat, lentilles")} /></Card>
     <Card style={styles.row}><View style={styles.grow}><ProgressRing progress={72} size={130} strokeWidth={6} double><Illustration name="brain" size={46} /><Text style={styles.label}>72 %</Text></ProgressRing></View>
       <PhotoPicker label="Photo" value={photo} onChange={setPhoto} /></Card>
   </View>;

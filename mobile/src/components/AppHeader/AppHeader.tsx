@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { fontFamily } from '@/theme/typography';
 
@@ -12,6 +14,7 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ leading, style, subtitle, title, trailing }: AppHeaderProps) {
+  useLanguage();
   return (
     <View style={[styles.header, style]}>
       <View style={styles.side}>{leading}</View>

@@ -1,3 +1,6 @@
+const { DutchLanguage1791900000000 } = require('../dist/database/migrations/1791900000000-DutchLanguage');
+const { UserLanguage1791800000000 } = require('../dist/database/migrations/1791800000000-UserLanguage');
+const { GameBadges1791700000000 } = require('../dist/database/migrations/1791700000000-GameBadges');
 const { DailyCheckIns1790600000000 } = require('../dist/database/migrations/1790600000000-DailyCheckIns');
 const { Nutrition1790700000000 } = require('../dist/database/migrations/1790700000000-Nutrition');
 const { NutritionCoachOpinions1790800000000 } = require('../dist/database/migrations/1790800000000-NutritionCoachOpinions');
@@ -5,6 +8,10 @@ const { ProgramRenewal1791100000000 } = require('../dist/database/migrations/179
 const { Progression1791200000000 } = require('../dist/database/migrations/1791200000000-Progression');
 const { Squad1791300000000 } = require('../dist/database/migrations/1791300000000-Squad');
 const { ProfileAvatar1791400000000 } = require('../dist/database/migrations/1791400000000-ProfileAvatar');
+const { ProfileAvatarChoices1791500000000 } = require('../dist/database/migrations/1791500000000-ProfileAvatarChoices');
+const { GameProgress1791600000000 } = require('../dist/database/migrations/1791600000000-GameProgress');
+const { GameController } = require('../dist/game/game.controller');
+const { GameService } = require('../dist/game/game.service');
 const { ProfileAvatarController } = require('../dist/profile-avatar/profile-avatar.controller');
 const { ProfileAvatarService } = require('../dist/profile-avatar/profile-avatar.service');
 const sharp = require('sharp');
@@ -80,7 +87,7 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
   const verifier = new AppleVerifier(new ConfigService({ APPLE_CLIENT_ID: 'com.test.app' }));
   verifier.keys = jose.createLocalJWKSet({ keys: [{ ...jwk, kid: 'test', alg: 'RS256' }] });
   const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities,
-    migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000, Squad1791300000000, ProfileAvatar1791400000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+    migrations: [DutchLanguage1791900000000, GameBadges1791700000000, UserLanguage1791800000000, IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000, Squad1791300000000, ProfileAvatar1791400000000, ProfileAvatarChoices1791500000000, GameProgress1791600000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
   await db.initialize();
   await db.runMigrations();
   // HTTP tests exercise routes only; queue execution is tested explicitly in program.test.cjs.
@@ -97,7 +104,7 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
   chatService.onModuleInit = () => {}; reviewService.onModuleInit = () => {};
   nutritionService.onModuleInit = () => {};
   class TestModule {}
-  Module({ controllers: [NutritionController,DailyController,ProgressionController,SquadController,ProfileAvatarController,WorkoutController,AuthController, OnboardingController, ProgramController, ChatController, ProgramReviewController], providers: [{ provide: NutritionService, useValue: nutritionService }, { provide: NutritionCatalog, useValue: catalog }, { provide: ProfileAvatarService, useValue: avatarService }, {provide:WorkoutAi,useValue:{analyze:async()=>{throw new Error('Not called in HTTP tests');}}},WorkoutService,DailyService,ProgressionService,SquadService,AuthGuard, AuthService, OnboardingService,
+  Module({ controllers: [NutritionController,DailyController,ProgressionController,SquadController,ProfileAvatarController,WorkoutController,GameController,AuthController, OnboardingController, ProgramController, ChatController, ProgramReviewController], providers: [{ provide: NutritionService, useValue: nutritionService }, { provide: NutritionCatalog, useValue: catalog }, { provide: ProfileAvatarService, useValue: avatarService }, {provide:WorkoutAi,useValue:{analyze:async()=>{throw new Error('Not called in HTTP tests');}}},WorkoutService,DailyService,ProgressionService,SquadService,GameService,AuthGuard, AuthService, OnboardingService,
     { provide: ProgramService, useValue: programService },
     { provide: ChatService, useValue: chatService }, { provide: ProgramReviewService, useValue: reviewService },
     { provide: DataSource, useValue: db }, { provide: AppleVerifier, useValue: verifier }] })(TestModule);
@@ -124,10 +131,10 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
       .setProtectedHeader({ alg: 'RS256', kid: 'test' }).setSubject(subject).setIssuer(options.issuer ?? 'https://appleid.apple.com')
       .setAudience(options.audience ?? 'com.test.app').setIssuedAt().setExpirationTime(options.expiry ?? '5m').sign(key.privateKey);
   }
-  async function login(subject = 'apple-user-one') {
+  async function login(subject = 'apple-user-one', language) {
     const challenge = await call('/auth/apple/challenge', { method: 'POST' });
     const nonce = challenge.data.nonce;
-    const body = { nonce, firstName: 'Max', identityToken: await appleToken(nonce, subject) };
+    const body = { nonce, firstName: 'Max', identityToken: await appleToken(nonce, subject), ...(language ? { language } : {}) };
     const result = await call('/auth/apple', { method: 'POST', body });
     assert.equal(result.status, 201, JSON.stringify(result.data));
     return { token: result.data.token, loginBody: body };
@@ -347,6 +354,25 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
     assert.equal((await call('/onboarding', account)).status, 401);
     assert.equal(await db.getRepository(Onboarding).count(), 2);
   });
+  await t.test('language HTTP validates the allowlist and changes only the authenticated account', async () => {
+    const first = await login('language-http');
+    const other = await login('language-http-other');
+    assert.equal((await call('/auth/language', { method: 'POST', body: { language: 'en' } })).status, 401);
+    assert.equal((await call('/auth/me', { token: first.token })).data.language, 'fr');
+    assert.equal((await call('/auth/language', { token: first.token, method: 'POST', body: { language: 'de' } })).status, 400);
+    assert.equal((await call('/auth/language', { token: first.token, method: 'POST', body: { language: 'en' } })).status, 201);
+    assert.equal((await call('/auth/me', { token: first.token })).data.language, 'en');
+    assert.equal((await call('/auth/me', { token: other.token })).data.language, 'fr');
+    assert.equal((await call('/auth/language', { token: first.token, method: 'POST', body: { language: 'nl' } })).status, 201);
+    assert.equal((await call('/auth/me', { token: first.token })).data.language, 'nl');
+    const created = await login('dutch-device-user', 'nl');
+    assert.equal((await call('/auth/me', created)).data.language, 'nl');
+    const returning = await login('dutch-device-user', 'en');
+    assert.equal((await call('/auth/me', returning)).data.language, 'nl');
+    await call('/auth/language', { token: first.token, method: 'POST', body: { language: 'fr' } });
+    assert.equal((await call('/auth/me', { token: first.token })).data.language, 'fr');
+  });
+
   await t.test('daily HTTP validates input, authenticates ownership and persists completion', async () => {
     assert.equal((await call('/daily?timezone=UTC')).status, 401);
     const first = await login('daily-http-user');
@@ -360,6 +386,12 @@ test('Apple identity, sessions, onboarding and history through the HTTP API and 
     assert.equal((await call('/daily?timezone=UTC', { token: first.token })).data.row.revision, 1);
     assert.equal((await call('/daily?timezone=UTC', { token: second.token })).data.row, null);
     assert.equal((await call('/daily', { token: first.token, method: 'PUT', body: { ...body, data: { ...body.data, energy: 9 } } })).status, 400);
+    assert.equal((await call('/game')).status, 401);
+    const game = await call('/game?after=0', { token: first.token });
+    assert.equal(game.status, 200, JSON.stringify(game.data));
+    assert.equal(game.data.total, 20);
+    assert.deepEqual(game.data.events.map(event => event.rule), ['daily']);
+    assert.equal((await call(`/game?after=${game.data.latestEventId}`, { token: first.token })).data.events.length, 0);
   });
 
 });

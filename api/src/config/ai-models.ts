@@ -1,7 +1,7 @@
 import type { ConfigService } from '@nestjs/config';
 
 export const aiContexts = {
-  program: { variable: 'OPENAI_PROGRAM_MODEL', model: 'gpt-5.6-sol', reasoningEffort: 'high' },
+  program: { variable: 'OPENAI_PROGRAM_MODEL', model: 'gpt-5.6-sol', reasoningEffort: 'medium' },
   review: { variable: 'OPENAI_REVIEW_MODEL', model: 'gpt-5.6-terra', reasoningEffort: 'medium' },
   onboarding: { variable: 'OPENAI_ONBOARDING_MODEL', model: 'gpt-5.6-luna', reasoningEffort: 'low' },
   nutritionPlan: { variable: 'OPENAI_NUTRITION_PLAN_MODEL', model: 'gpt-5.6-sol', reasoningEffort: 'high' },

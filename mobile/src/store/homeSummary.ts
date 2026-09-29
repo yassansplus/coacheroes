@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
 
 /** Session-only summaries published by the existing frontend flows. */
-let summary: { calories: number; protein: number; calorieGoal: number | null; proteinGoal: number | null; sleepMinutes: number; energy: number; checkedIn: boolean } =
-  { calories: 0, protein: 0, calorieGoal: null, proteinGoal: null, sleepMinutes: 380, energy: 3, checkedIn: false };
+let summary: { calories: number; protein: number; calorieGoal: number | null; proteinGoal: number | null; sleepMinutes: number | null; energy: number | null; checkedIn: boolean } =
+  { calories: 0, protein: 0, calorieGoal: null, proteinGoal: null, sleepMinutes: null, energy: null, checkedIn: false };
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 const getSnapshot = () => summary;

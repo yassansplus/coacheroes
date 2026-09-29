@@ -1,3 +1,5 @@
+const { DutchLanguage1791900000000 } = require('../dist/database/migrations/1791900000000-DutchLanguage');
+const { UserLanguage1791800000000 } = require('../dist/database/migrations/1791800000000-UserLanguage');
 const { WorkoutHistory1790500000000 } = require('../dist/database/migrations/1790500000000-WorkoutHistory');
 const { DailyCheckIns1790600000000 } = require('../dist/database/migrations/1790600000000-DailyCheckIns');
 const { Nutrition1790700000000 } = require('../dist/database/migrations/1790700000000-Nutrition');
@@ -20,10 +22,10 @@ const { entities, User, Onboarding, JournalEntry } = require('../dist/database/e
 const { TrainingProgram } = require('../dist/program/program.entity');
 const { IdentityAndOnboarding1790000000000 } = require('../dist/database/migrations/1790000000000-IdentityAndOnboarding');
 const { TrainingPrograms1790100000000 } = require('../dist/database/migrations/1790100000000-TrainingPrograms');
-const { buildTrainingContext: buildContext, requiredClarifications } = require('../dist/program/context');
+const { buildTrainingContext: buildContext, requiredClarifications, withForcedGeneration } = require('../dist/program/context');
 const { ProgramGenerator } = require('../dist/program/generator');
 const { ProgramService } = require('../dist/program/program.service');
-const { programResultSchema, programJsonSchema } = require('../dist/program/program.schema');
+const { programResultSchema, programJsonSchema, clarification } = require('../dist/program/program.schema');
 const { WgerService, normalizeExercise } = require('../dist/program/wger.service');
 const { validateProgram } = require('../dist/program/validation');
 const buildTrainingContext = (p, r) => buildContext(p, r, 'Max');
@@ -39,9 +41,9 @@ const prescription = id => ({ exerciseId: id, sets: 3, minReps: 8, maxReps: 12, 
 const plan = () => ({ outcome: 'ready', title: 'Reprise', summary: 'Une séance adaptée à ton matériel.', blockWeeks: 4, questions: [], assumptions: [], progression: 'Ajuster après tes séances.',
   sessions: [{ name: 'Corps entier', sport: 'strength', setting: 'self', blocks: [], weekday: 0, warmupMinutes: 5, warmup: 'Mobilité douce et séries progressives.', estimatedMinutes: 20, exercises: [prescription(1), prescription(2)] }] });
 const message = result => ({ id: 'resp-test', status: 'completed', output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: JSON.stringify(result) }] }] });
-const functionCall = (name, args) => ({ id: 'resp-tool', status: 'completed', output: [{ type: 'reasoning', id: 'reasoning', encrypted_content: 'opaque' }, { type: 'function_call', name, arguments: JSON.stringify(args), call_id: 'call-1' }] });
-const searchCall = () => functionCall('search_exercises', { categoryId: null, equipmentId: 3, muscleId: null, offset: 0 });
-const fakeWger = () => ({ search: async () => ({ results: [normalizeExercise(raw(1)), normalizeExercise(raw(2))], nextOffset: null }), filters: async () => ({}), details: async () => [] });
+const intents = () => ({ needs: [{ movement: 'Pousser', purpose: 'Travailler le haut du corps.', queries: ['Dumbbell press'] },
+  { movement: 'Tirer', purpose: 'Equilibrer le haut du corps.', queries: ['Dumbbell row'] }] });
+const fakeWger = () => ({ searchByName: async () => [normalizeExercise(raw(1)), normalizeExercise(raw(2))] });
 const generator = wger => new ProgramGenerator(new ConfigService({ OPENAI_API_KEY: 'test-only-not-a-real-key' }), wger ?? fakeWger());
 
 // Fetch is stubbed only inside each sequential test; no OpenAI request or credential is required.
@@ -78,6 +80,24 @@ test('wger adapter uses only the public endpoint, strips media, filters all equi
     assert.ok(requests[0].startsWith('https://wger.de/api/v2/exerciseinfo/?')); assert.ok(requests[0].includes('category=11'));
   } finally { global.fetch = previous; }
 });
+test('wger name search ranks matches, filters unavailable equipment and checks another page if needed', async () => {
+  const previous = global.fetch, requests = [];
+  global.fetch = async url => {
+    requests.push(String(url));
+    const first = !String(url).includes('offset=20');
+    const named = id => ({ ...raw(id), translations: [{ ...raw(id).translations[0], name: id === 1 ? 'Dumbbell row' : 'Dumbbell curl' }] });
+    return new Response(JSON.stringify({ count: 3, next: first ? 'https://wger.de/api/v2/exerciseinfo/?offset=20' : null,
+      results: first ? [{ ...named(1), equipment: [{ id: 8, name: 'Bench' }] }, named(2)] : [named(1)] }));
+  };
+  try {
+    const found = await new WgerService().searchByName('Dumbbell row', [3, 7]);
+    assert.deepEqual(found.map(item => item.id), [1, 2]);
+    assert.ok(requests.every(url => url.startsWith('https://wger.de/api/v2/exerciseinfo/?')));
+    assert.ok(requests[0].includes('name__search=Dumbbell+row'));
+    assert.ok(requests[0].includes('language__code=en'));
+    assert.ok(requests[1].includes('offset=20'));
+  } finally { global.fetch = previous; }
+});
 test('schema and semantic checks reject invented IDs, unavailable days, impossible durations and duplicated sessions', () => {
   const c = buildTrainingContext(profile(), 1), catalog = new Map([1, 2].map(id => [id, normalizeExercise(raw(id))]));
   assert.deepEqual(validateProgram(programResultSchema.parse(plan()), c, catalog), []);
@@ -87,36 +107,52 @@ test('schema and semantic checks reject invented IDs, unavailable days, impossib
     const p = plan(); mutate(p); assert.ok(validateProgram(p, c, catalog).length);
   }
 });
-test('tool exploration uses strict schemas, high reasoning, and preserves encrypted reasoning between turns', async () => {
+test('exercise intentions precede wger lookup and final program uses only verified catalog IDs', async () => {
   const c = buildTrainingContext(profile(), 1);
-  await withResponses([searchCall(), message(plan())], async requests => {
+  await withResponses([message(intents()), message(plan())], async requests => {
     const phases = []; const output = await generator().generate(c, async phase => phases.push(phase), AbortSignal.timeout(2000));
     assert.equal(output.result.outcome, 'ready'); assert.equal(output.exercises.length, 2);
-    assert.equal(requests[0].model, 'gpt-5.6-sol'); assert.equal(requests[0].reasoning.effort, 'high');
+    assert.equal(requests[0].model, 'gpt-5.6-sol'); assert.equal(requests[0].reasoning.effort, 'medium');
     assert.equal(requests[0].text.format.strict, true); assert.equal(requests[0].store, false);
-    assert.ok(requests[0].tools.every(t => t.strict && !t.parameters.additionalProperties));
-    assert.ok(requests[1].input.some(i => i.encrypted_content === 'opaque'));
-    assert.ok(requests[1].input.some(i => i.type === 'function_call_output'));
-    assert.ok(phases.includes('validating')); assert.equal(output.trace.calls.length, 1);
+    assert.equal(requests[0].text.format.name, 'exercise_intents');
+    assert.equal(requests[0].text.format.schema.additionalProperties, false);
+    assert.equal(requests[1].text.format.name, 'training_program');
+    assert.ok(requests.every(request => request.service_tier === 'fast' && request.reasoning.effort === 'medium'));
+    assert.ok(requests[1].input.some(i => i.role === 'user' && i.content.includes('exerciseMatches')));
+    assert.ok(phases.includes('searching')); assert.ok(phases.includes('validating'));
+    assert.equal(output.trace.calls.length, 2);
+    assert.equal(output.trace.calls[0].query, 'Dumbbell press');
+  });
+});
+test('a plan without strength sessions does not query wger', async () => {
+  const context = buildTrainingContext({ ...profile(), sports: ['boxing'] }, 1);
+  const boxing = plan();
+  boxing.sessions[0].sport = 'boxing'; boxing.sessions[0].exercises = [];
+  boxing.sessions[0].blocks = [{ title: 'Technique', minutes: 15, intensity: 'moderate', instruction: 'Travaille les enchaînements simples.' }];
+  await withResponses([message({ needs: [] }), message(boxing)], async () => {
+    const wger = { searchByName: async () => { throw new Error('WGER_SHOULD_NOT_BE_CALLED'); } };
+    const output = await generator(wger).generate(context, async () => {}, AbortSignal.timeout(2000));
+    assert.equal(output.result.outcome, 'ready');
+    assert.deepEqual(output.exercises, []);
   });
 });
 test('one repair fixes invalid references; repeated invalid output fails rather than publishing', async () => {
   const bad = plan(); bad.sessions[0].exercises[0].exerciseId = 999;
   const c = buildTrainingContext(profile(), 1);
-  await withResponses([searchCall(), message(bad), message(plan())], async requests => {
+  await withResponses([message(intents()), message(bad), message(plan())], async requests => {
     const output = await generator().generate(c, async () => {}, AbortSignal.timeout(2000));
     assert.equal(output.trace.repaired, true); assert.ok(JSON.stringify(requests[2].input).includes('validationErrors'));
   });
-  await withResponses([searchCall(), message(bad), message(bad)], async () => {
+  await withResponses([message(intents()), message(bad), message(bad)], async () => {
     await assert.rejects(generator().generate(c, async () => {}, AbortSignal.timeout(2000)), /PROGRAM_VALIDATION_FAILED/);
   });
 });
-test('refusal, incomplete response and tool budget are explicit failures', async () => {
+test('refusal, incomplete response and absent catalog matches are explicit failures', async () => {
   const c = buildTrainingContext(profile(), 1);
   for (const response of [{ id: 'x', status: 'incomplete', output: [] }, { id: 'x', status: 'completed', output: [{ type: 'message', content: [{ type: 'refusal', refusal: 'No' }] }] }]) {
     await withResponses([response], async () => assert.rejects(generator().generate(c, async () => {}, AbortSignal.timeout(2000)), /OPENAI_/));
   }
-  await withResponses(Array.from({ length: 10 }, searchCall), async () => assert.rejects(generator().generate(c, async () => {}, AbortSignal.timeout(2000)), /TOOL_BUDGET_EXCEEDED/));
+  await withResponses([message(intents())], async () => assert.rejects(generator({ searchByName: async () => [] }).generate(c, async () => {}, AbortSignal.timeout(2000)), /WGER_NO_COMPATIBLE_EXERCISES/));
 });
 test('missing key leaves existing data intact; clarifications do not call OpenAI', async () => {
   const noKey = new ProgramGenerator(new ConfigService({}), fakeWger());
@@ -124,9 +160,61 @@ test('missing key leaves existing data intact; clarifications do not call OpenAI
   const output = await noKey.generate(buildTrainingContext({ ...profile(), skippedSteps: [7] }, 1), async () => {}, AbortSignal.timeout(2000));
   assert.equal(output.result.outcome, 'needs_clarification'); assert.deepEqual(output.exercises, []);
 });
+test('forced generation uses cautious defaults and repairs a repeated clarification instead of returning to chat', async () => {
+  const missing = withForcedGeneration(buildTrainingContext({ ...profile(), skippedSteps: [7, 8] }, 1));
+  assert.equal(missing.availability.sessionsPerWeek, 3);
+  assert.deepEqual(missing.equipment.allowedEquipmentIds, [7]);
+  assert.equal(missing.forceGeneration, true);
+  assert.ok(missing.generationAssumptions.length);
+  const pain = withForcedGeneration(buildTrainingContext({ ...profile(), pains: ['left_wrist'], noPain: false }, 1));
+  await withResponses([message(intents()), message(clarification(['Quels mouvements te gênent ?'])), message(plan())], async requests => {
+    const output = await generator().generate(pain, async () => {}, AbortSignal.timeout(2000));
+    assert.equal(output.result.outcome, 'ready');
+    assert.equal(output.trace.repaired, true);
+    assert.equal(requests[0].reasoning.effort, 'medium');
+    assert.match(requests[0].input[0].content, /L’utilisateur choisit de créer son programme maintenant/);
+    assert.match(JSON.stringify(requests[2].input), /sans nouvelle question/);
+  });
+  await withResponses([message(intents()), message(plan())], async requests => {
+    const previous = { result: plan(), exercises: [1, 2].map(id => normalizeExercise(raw(id))), trace: {} };
+    const output = await generator().generate(pain, async () => {}, AbortSignal.timeout(2000), { request: 'Change le titre.', previous });
+    assert.equal(output.result.outcome, 'ready');
+    assert.match(requests[0].input[0].content, /Ajuste uniquement la demande explicite/);
+  });
+});
+test('forcing a clarification queues one new run, logs the decision and preserves the accepted proposal', async t => {
+  const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities,
+    migrations: [DutchLanguage1791900000000, UserLanguage1791800000000, IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000,
+      ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000,
+      ProgramRenewal1791100000000],
+    synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+  await db.initialize(); await db.runMigrations(); t.after(() => db.destroy());
+  const user = await db.getRepository(User).save({ appleSubject: 'force-program-test', firstName: 'Max' });
+  await db.getRepository(Onboarding).save({ userId: user.id, profile: profile(), currentStep: 14, revision: 1, completedAt: new Date() });
+  const fake = { ensureConfigured() {}, settings: () => ({ model: 'test' }),
+    generate: async () => ({ result: clarification(['Précise ton objectif.']), exercises: [], trace: {} }) };
+  const service = new ProgramService(db, fake);
+  await service.start(user.id); await service.tick();
+  assert.equal((await service.get(user.id)).status, 'needs_clarification');
+  await service.start(user.id, true);
+  assert.equal(await db.getRepository(JournalEntry).countBy({ type: 'program.requested' }), 1);
+  const forced = await service.start(user.id, true, false, true);
+  assert.equal(forced.status, 'queued');
+  assert.equal((await db.getRepository(TrainingProgram).findOneByOrFail({ userId: user.id })).context.forceGeneration, true);
+  assert.equal(await db.getRepository(JournalEntry).countBy({ type: 'program.requested' }), 2);
+  fake.generate = async () => ({ result: plan(), exercises: [], trace: {} });
+  await service.tick();
+  const ready = await service.get(user.id);
+  assert.equal(ready.status, 'ready');
+  await service.accept(user.id, ready.proposalId);
+  await service.start(user.id, true, false, true);
+  assert.equal((await service.get(user.id)).proposalId, ready.proposalId);
+  assert.ok((await service.get(user.id)).acceptedAt);
+  assert.equal(await db.getRepository(JournalEntry).countBy({ type: 'program.requested' }), 2);
+});
 test('durable queue serializes requests, retains revisions in journal, recovers leases and fences old workers', async t => {
   const db = new DataSource({ type: 'postgres', driver: createTestDriver(), database: 'postgres', entities,
-    migrations: [IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
+    migrations: [DutchLanguage1791900000000, UserLanguage1791800000000, IdentityAndOnboarding1790000000000, TrainingPrograms1790100000000, CoachingChat1790200000000, ProgramAcceptance1790300000000, AllowJournalDeletion1790400000000, WorkoutHistory1790500000000, DailyCheckIns1790600000000, Nutrition1790700000000, NutritionCoachOpinions1790800000000, CoachConversations1790900000000, CoachTablePrivileges1791000000000, ProgramRenewal1791100000000, Progression1791200000000], synchronize: false, installExtensions: false, uuidExtension: 'pgcrypto' });
   await db.initialize(); await db.runMigrations(); t.after(() => db.destroy());
   const user = await db.getRepository(User).save({ appleSubject: 'program-test', firstName: 'Max' });
   const other = await db.getRepository(User).save({ appleSubject: 'other' });
@@ -162,19 +250,16 @@ test('durable queue serializes requests, retains revisions in journal, recovers 
   assert.equal((await db.driver.createSchemaBuilder().log()).upQueries.length, 0);
 });
 
- test('program requests and context tools redact account identity before sending history', async () => {
+ test('program planning redacts account identity before sending history', async () => {
   const context = buildTrainingContext(profile(), 1);
   context.coachingNotes = ['Max utilise max@example.test'];
   context.trainingHistory = [{ status: 'completed', comment: 'Max : max@example.test', exercises: [] }];
-  await withResponses([functionCall('get_training_context', {}), searchCall(), message(plan())], async requests => {
+  await withResponses([message(intents()), message(plan())], async requests => {
     await generator().generate(context, async () => {}, AbortSignal.timeout(2000));
     const first = JSON.parse(requests[0].input[0].content);
     assert.equal(first.context.firstName, 'toi');
     assert.ok(!JSON.stringify(first).includes('max@example.test'));
-    const tool = requests[1].input.find(i => i.type === 'function_call_output');
-    assert.equal(JSON.parse(tool.output).context.firstName, 'toi');
-    assert.ok(!tool.output.includes('Max'));
-    assert.ok(!tool.output.includes('max@example.test'));
+    assert.ok(!JSON.stringify(requests[1].input).includes('max@example.test'));
     assert.equal(context.firstName, 'Max');
   });
 });

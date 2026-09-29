@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import { AppState } from 'react-native';
 import { syncWorkouts } from '@/services/workouts';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
@@ -6,19 +7,29 @@ import { apiRequest, ApiError, setUnauthorizedHandler } from '@/services/http';
 import { restoreSessionToken, storeSessionToken } from '@/storage/session';
 import { clearPhotoCache } from '@/storage/photos';
 import { resetHomeNutritionSummary } from '@/store/homeSummary';
-export type SessionUser = { id: string; firstName: string | null; email: string | null; createdAt: string; onboardingCompleted: boolean };
+import { applyLanguage, isLanguage, type Language } from '@/i18n/core';
+import { saveLanguage } from '@/storage/language';
+export type SessionUser = { id: string; firstName: string | null; email: string | null; createdAt: string; onboardingCompleted: boolean; language?: Language };
 type SessionContextValue = {
   user: SessionUser | null; loading: boolean; busy: boolean; error: string | null;
   signIn: () => Promise<void>; signOut: () => Promise<void>; restore: () => Promise<void>; refresh: () => Promise<void>;
 };
 const SessionContext = createContext<SessionContextValue | null>(null);
 export function SessionProvider({ children }: PropsWithChildren) {
+  useLanguage();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const working = useRef(false);
-  const refresh = useCallback(async () => { setUser(await apiRequest<SessionUser>('/auth/me')); }, []);
+  const refresh = useCallback(async () => {
+    const next = await apiRequest<SessionUser>('/auth/me');
+    if (isLanguage(next.language)) {
+      applyLanguage(next.language);
+      void saveLanguage(next.language).catch(() => {});
+    }
+    setUser(next);
+  }, []);
   const restore = useCallback(async () => {
     setLoading(true); setError(null);
     try { if (await restoreSessionToken()) await refresh(); }

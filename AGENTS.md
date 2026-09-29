@@ -296,6 +296,34 @@ token ou un code hexadécimal pour les composants personnalisables.
 Ajouter les futures couleurs et dégradés dans ce fichier avant de les employer
 dans un composant.
 
+## Langues
+
+L’interface propose français, anglais et néerlandais via Profil → Langue.
+Sans choix enregistré, le démarrage suit la langue principale de l’appareil
+(fr/en/nl, sinon français). Le choix mémorisé puis celui du compte restent
+prioritaires. La connexion initialise seulement les nouveaux comptes avec cette
+langue ; elle ne remplace jamais la préférence d’un compte existant.
+`src/i18n/core.ts`, `en.json`, `nl.json` et `useLanguage` centralisent les traductions et
+formats. Les textes de présentation utilisent `LocalizedText` ; les phrases
+interpolées passent par `t`, les dates et nombres par `getLocale`. Garder les
+identifiants et valeurs métier stables ; utiliser `translate={false}` pour les
+messages et contenus saisis. La préférence passe par `src/storage/language.ts`
+et `users.language`. Les prompts métier restent communs et reçoivent la langue
+explicitement via `api/src/ai/language.ts`. Voir `docs/languages.md`.
+
+## Widget iPhone
+
+Le widget `CoacHeroesToday` utilise `expo-widgets` et `@expo/ui` uniquement dans
+`src/services/widgets/TodayWidget.tsx`. Les features gardent les composants maison.
+`HomeWidgetSync` publie une projection en lecture seule des calories, de la séance
+et des activités d’amis partagées. Vider le widget à la déconnexion/changement de
+compte et invalider les chiffres au prochain minuit local. Le bridge doit rester
+facultatif pour Expo Go et les anciennes builds. Le catalogue expose un aperçu
+React Native qui ne synchronise aucune donnée. Conserver les identifiants de
+l’extension et du widget ; `with-widget-fonts.cjs` est déclaré avant `expo-widgets`
+pour être exécuté après son mod Xcode. Une nouvelle build iOS est requise.
+Voir `docs/home-widget.md` pour les limites de synchronisation et les vérifications.
+
 ## Typographie
 
 La police de l'application est Montserrat, chargée dans `app/_layout.tsx` avant
@@ -456,7 +484,7 @@ Les suppressions explicites dans `journal_entries` sont autorisées par la migra
 
 Le coach choisit directement des exercices simples adaptés au profil, avec priorité aux polyarticulaires sauf restriction ou difficulté technique inadaptée. Les consignes communes sont dans `api/src/program/exercise-policy.ts`. Aucun agent distinct de classification de difficulté n’est utilisé. Voir `docs/ai-model-comparison.md` pour le comparatif documentaire et les limites de validation.
 
-Le routage OpenAI est centralisé dans `api/src/config/ai-models.ts` : Sol/high pour génération et ajustements (`OPENAI_PROGRAM_MODEL`), Terra/medium pour discussion sur le programme (`OPENAI_REVIEW_MODEL`), Luna/low pour extraction onboarding (`OPENAI_ONBOARDING_MODEL`). Astra est exclu. `OPENAI_MODEL` est ignorée. Les traces conservent modèle et effort par appel métier.
+Le routage OpenAI est centralisé dans `api/src/config/ai-models.ts` : Sol/medium pour génération et ajustements (`OPENAI_PROGRAM_MODEL`), Terra/medium pour discussion sur le programme (`OPENAI_REVIEW_MODEL`), Luna/low pour extraction onboarding (`OPENAI_ONBOARDING_MODEL`). Astra est exclu. `OPENAI_MODEL` est ignorée. Les traces conservent modèle et effort par appel métier.
 
 Le ton du coach est centralisé dans `api/src/ai/coach-voice.ts` : style SMS, une idée et 5 à 25 mots par défaut, 40 maximum si nécessaire. Les détails viennent sur demande explicite. Le prompt contient des exemples et interdit les introductions administratives, les encouragements systématiques et la répétition du prénom. Les champs techniques gardent leur précision.
 
@@ -466,6 +494,23 @@ La persistance des séances est dans `api/src/workouts/` : une ligne `workout_se
 Le mobile passe par `src/services/workouts/` et `src/storage/workouts.ts` (cache persistant par compte, file de synchronisation et reprise). Les composants existants conservent leur mise en page. Voir `docs/workout-history.md`, notamment les mesures inconnues, les conflits de révision et la projection anonyme autorisée explicitement pour l’analyse IA et le renouvellement des programmes.
 
 L’envoi à OpenAI des données utiles des séances, ressentis, douleurs et bilans a été explicitement autorisé le 22 septembre 2026, sans nom ni email. Utiliser `api/src/workouts/ai-context.ts`, Sol/high et les schémas existants. Les tests simulent les réponses ; ne pas lancer de générations payantes pour tester sans nécessité autorisée.
+
+## Badges et célébrations
+
+Les huit badges sont calculés par `api/src/game/game.badges.ts` et persistés dans
+`game_badges`. Le catalogue visuel est dans `src/config/badges.ts` ; les PNG
+transparents de la série `assets/badges/niveaux/runtime/` passent par `Illustration`
+et le préchargement commun sous le splash. Le script `scripts/prepare-badge-assets.cjs`
+génère les versions 768 px depuis les originaux. `badgeStyles` expose dix rangs
+visuels ; huit sont associés aux accomplissements existants, tous sont visibles
+et animables dans la bibliothèque de composants.
+`AchievementBadge` affiche l'écusson et son cadenas éventuel.
+`BadgeCelebrations`, monté par `GameProvider`, présente les déblocages un par un
+avec `AchievementCelebration` et `AppModal aboveAll`, après les notifications XP.
+La fermeture est mémorisée par compte et confirmée au serveur ; un rafraîchissement
+ne doit pas rejouer un badge fermé. Le catalogue `/components` expose un aperçu
+sans modifier les données. Voir `docs/badges.md` pour les critères validés, la
+migration additive, la reprise hors ligne et les tests.
 
 ## Bilan quotidien
 

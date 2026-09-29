@@ -1,3 +1,5 @@
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Animated, View } from 'react-native';
 import { IconButton } from '@/components/IconButton';
@@ -5,6 +7,7 @@ import { Symbol } from '@/components/Symbol';
 import { colors } from '@/theme/colors';
 
 export function DailyCheckInButton({onPress}:{onPress:()=>void}){
+  useLanguage();
  const glow=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   let animation:Animated.CompositeAnimation|undefined,alive=true,changed=false;
@@ -13,5 +16,5 @@ export function DailyCheckInButton({onPress}:{onPress:()=>void}){
   const listener=AccessibilityInfo.addEventListener('reduceMotionChanged',value=>{changed=true;configure(value);});
   return()=>{alive=false;animation?.stop();listener.remove();};
  },[glow]);
- return <View style={{width:48,height:48}}><Animated.View pointerEvents="none" style={{position:'absolute',inset:-4,borderRadius:28,backgroundColor:colors.primary,opacity:glow.interpolate({inputRange:[0,1],outputRange:[0.04,0.22]}),transform:[{scale:glow.interpolate({inputRange:[0,1],outputRange:[1,1.03]})}]}}/><IconButton accessibilityLabel="Faire mon bilan" onPress={onPress} variant="outline" size={48} icon={<Symbol name="calendar" color="primary" size={23}/>} /></View>;
+ return <View style={{width:48,height:48}}><Animated.View pointerEvents="none" style={{position:'absolute',inset:-4,borderRadius:28,backgroundColor:colors.primary,opacity:glow.interpolate({inputRange:[0,1],outputRange:[0.04,0.22]}),transform:[{scale:glow.interpolate({inputRange:[0,1],outputRange:[1,1.03]})}]}}/><IconButton accessibilityLabel={localizeLabel("Faire mon bilan")} onPress={onPress} variant="outline" size={48} icon={<Symbol name="calendar" color="primary" size={23}/>} /></View>;
 }

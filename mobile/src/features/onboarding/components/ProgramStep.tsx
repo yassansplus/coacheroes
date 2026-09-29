@@ -1,5 +1,9 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Badge } from '@/components/Badge';
 import { Banner } from '@/components/Banner';
@@ -23,6 +27,7 @@ export function ProgramStep({ profile, completed, detailVisible, onCloseDetail, 
   profile: OnboardingProfile; completed: boolean; detailVisible: boolean; onCloseDetail: () => void;
   onEdit: () => void; onOpenLibrary: () => void;
 }) {
+  useLanguage();
   const [adjustment, setAdjustment] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const schedule = buildPreviewSchedule(profile);
@@ -36,7 +41,7 @@ export function ProgramStep({ profile, completed, detailVisible, onCloseDetail, 
     <StepHeading title={completed ? 'Mon programme' : 'Ton programme\nest prêt'} centered />
     {completed ? <Banner variant="success" message="C’est parti ! Retrouve ta semaine et les informations de ton profil." /> : null}
     <View style={styles.week}>{schedule.map(item => <Pressable key={item.day} accessibilityRole="button"
-      accessibilityLabel={`${weekdays[item.day]} : ${item.sport ? sports[item.sport].title : 'Repos'}`}
+      accessibilityLabel={localizeLabel(`${weekdays[item.day]} : ${item.sport ? sports[item.sport].title : 'Repos'}`)}
       onPress={() => setSelectedDay(item.day)} style={[styles.day, item.sport && item.sport !== 'strength' && styles.complementaryDay]}>
       <Text style={styles.dayName}>{weekdays[item.day]}</Text>
       {item.sport ? <Illustration name={sports[item.sport].icon ?? 'calendar'} size={30} /> : <Text style={styles.rest}>—</Text>}
@@ -57,7 +62,7 @@ export function ProgramStep({ profile, completed, detailVisible, onCloseDetail, 
     <Card style={[s.section, s.row]}>
       <Illustration name="performance" size={43} /><View style={s.grow}><Text style={s.label}>Ajustement</Text>
         <Text style={s.body}>Réévaluation chaque dimanche selon tes données.</Text></View>
-      <IconButton accessibilityLabel="Voir les ajustements" variant="ghost" size={30} icon={<Symbol name="chevron" color="textSecondary" />} onPress={() => setAdjustment(true)} />
+      <IconButton accessibilityLabel={localizeLabel("Voir les ajustements")} variant="ghost" size={30} icon={<Symbol name="chevron" color="textSecondary" />} onPress={() => setAdjustment(true)} />
     </Card>
     <View style={styles.preview}><Badge label="Aperçu" variant="neutral" /><Text style={[s.caption, s.grow]}>Programme d’exemple. Les objectifs nutritionnels sont illustratifs.</Text></View>
     {completed ? <View style={s.stack}><Button text="Modifier mon profil" variant="outline" onPress={onEdit} />
@@ -75,8 +80,8 @@ export function ProgramStep({ profile, completed, detailVisible, onCloseDetail, 
       </ScrollView>
     </BottomSheet>
     <BottomSheet visible={selectedDay !== null} onClose={() => setSelectedDay(null)} title={selectedDay === null ? '' : weekdays[selectedDay]}>
-      <View style={s.stack}><Text style={s.label}>{selected?.sport ? `Séance · ${sports[selected.sport].title}` : 'Journée de repos'}</Text>
-        <Text style={s.body}>{selected?.sport ? `${selected.minutes} minutes prévues. Le contenu des séances sera disponible lorsque ton programme personnalisé sera connecté.` : 'Un moment pour récupérer et prendre du temps pour toi.'}</Text>
+      <View style={s.stack}><Text style={s.label}>{selected?.sport ? t("Séance · {p0}", { p0: sports[selected.sport].title }) : 'Journée de repos'}</Text>
+        <Text style={s.body}>{selected?.sport ? t("{p0} minutes prévues. Le contenu des séances sera disponible lorsque ton programme personnalisé sera connecté.", { p0: selected.minutes }) : 'Un moment pour récupérer et prendre du temps pour toi.'}</Text>
         <Button text="Fermer" onPress={() => setSelectedDay(null)} /></View>
     </BottomSheet>
     <BottomSheet visible={adjustment} onClose={() => setAdjustment(false)} title="Un programme qui évolue avec toi">
@@ -88,6 +93,7 @@ export function ProgramStep({ profile, completed, detailVisible, onCloseDetail, 
 }
 
 function Stat({ icon, value, label, compact = false }: { icon: IllustrationName; value: string; label: string; compact?: boolean }) {
+  useLanguage();
   return <View style={styles.stat}><Illustration name={icon} size={compact ? 28 : 31} />
     <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.statValue, compact && styles.compactValue]}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>;
 }

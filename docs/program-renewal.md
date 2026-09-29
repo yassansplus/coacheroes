@@ -4,8 +4,24 @@ Le programme accepté ouvre un bloc de quatre semaines (`program_blocks`). Une p
 
 Le formulaire de renouvellement préremplit les objectifs, sports, jours, durée, lieux, matériel et douleurs du profil. Une pesée n'est préremplie que si elle date de moins de sept jours ; sinon l'utilisateur peut indiquer son poids actuel ou laisser le champ vide. Dans ce dernier cas, le backend conserve la dernière pesée enregistrée comme référence, puis le poids de l'inscription si aucune pesée n'existe. L'utilisateur indique si l'effort était trop facile, adapté ou trop dur, et peut préciser ce qu'il souhaite garder ou changer. Les sports complémentaires peuvent conserver un cours fixe ou être organisés par le coach. Le backend valide les contraintes, met à jour la même ligne `onboardings`, journalise l'avant/après et sauvegarde les réponses dans `program_blocks.renewal_review`.
 
-La génération suit deux étapes avec le modèle du programme (`OPENAI_PROGRAM_MODEL`, Sol/high par défaut) : analyse structurée de l'ancien bloc, puis génération d'une nouvelle proposition. L'analyse confronte les séries réalisées d'un même exercice, l'assiduité, les ressentis, la récupération, les douleurs et les pesées disponibles ; elle distingue les données manquantes. Le contexte de génération inclut l'ancien programme, ce bilan, les séances terminées ou interrompues du bloc et les réponses mises à jour. Les séances interrompues peuvent éclairer une douleur, mais ne comptent pas comme une progression accomplie. La consigne demande de poursuivre les choix efficaces et d'ajuster le reste en fonction des résultats, sans progression automatique en présence de douleur. Les données envoyées utilisent la projection sans identifiants de compte, nom, email ni photos ; `store:false` est conservé.
+La génération suit deux étapes avec le modèle du programme (`OPENAI_PROGRAM_MODEL`, Sol/medium par défaut) : analyse structurée de l'ancien bloc, puis génération d'une nouvelle proposition. L'analyse confronte les séries réalisées d'un même exercice, l'assiduité, les ressentis, la récupération, les douleurs et les pesées disponibles ; elle distingue les données manquantes. Le contexte de génération inclut l'ancien programme, ce bilan, les séances terminées ou interrompues du bloc et les réponses mises à jour. Les séances interrompues peuvent éclairer une douleur, mais ne comptent pas comme une progression accomplie. La consigne demande de poursuivre les choix efficaces et d'ajuster le reste en fonction des résultats, sans progression automatique en présence de douleur. Les données envoyées utilisent la projection sans identifiants de compte, nom, email ni photos ; `store:false` est conservé.
 
 La nouvelle sortie respecte le schéma et les validations du premier programme, puis reste une proposition à discuter et à accepter. La nutrition du nouveau run est préparée par le worker nutrition existant. Après validation, l'accueil et `Mon programme` utilisent le nouveau bloc. L'ancien bloc demeure archivé avec ses séances et son bilan dans `Mes programmes`. Chaque proposition possède sa propre conversation de revue, sans effacer les anciens messages.
 
 API authentifiée : `GET /program/blocks`, `GET /program/blocks/:id`, `POST /program/renew`, puis les routes existantes `GET /program` et `POST /program/accept`. `POST /program/generate` avec `renew:true` est refusé afin de ne pas contourner les réponses de fin de bloc. Les séances mobiles en attente sont synchronisées avant la demande de renouvellement.
+
+Le menu de `Mon programme`, accessible par la roue crantée, regroupe `Toutes les
+semaines`, `Historique des programmes` et `Créer un nouveau programme`. Cette
+dernière action demande explicitement de remplacer le programme actuel, synchronise les séances puis réutilise les
+réponses actuelles du profil avec `POST /program/renew` et `regenerate: true`.
+Ce choix explicite permet de préparer une nouvelle proposition avant l'échéance.
+Une séance en cours bloque la demande. Après confirmation, l'ancien bloc est
+clôturé à la date du remplacement dans la même transaction que la demande de
+génération. Sa date de fin prévue est conservée dans
+`renewal_review.replacement.plannedEndsAt` et le journal conserve l'avant/après.
+Son contenu, les séances réalisées et les séances interrompues restent conservés.
+L'historique le présente comme terminé et remplacé, avec le nombre de séances
+non réalisées. La durée et le total prescrits ne sont pas réduits artificiellement.
+L'analyse distingue les séances non réalisées d'une progression accomplie.
+La proposition suit le loader et la validation habituels, avec Fast sur les
+deux appels de création.

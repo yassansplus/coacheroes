@@ -20,6 +20,10 @@ export const searchSchema = z.strictObject({ categoryId: z.number().int().positi
   equipmentId: z.number().int().positive().nullable(), muscleId: z.number().int().positive().nullable(),
   offset: z.number().int().min(0).max(1000) });
 export const detailsSchema = z.strictObject({ ids: z.array(z.number().int().positive()).min(1).max(8) });
+const nameSearchSchema = z.string().trim().min(2).max(80);
+const searchPage = z.object({ count: z.number(), next: z.string().nullable(), results: z.array(z.unknown()) });
+const words = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(word => word.length > 2 && !['with', 'and', 'the'].includes(word));
 export function normalizeExercise(value: unknown): CatalogExercise | null {
   const e = rawExercise.parse(value);
   const t = e.translations.find(t => t.language === 12) ?? e.translations.find(t => t.language === 2);
@@ -64,9 +68,31 @@ export class WgerService {
     if (p.categoryId !== null) query.set('category', String(p.categoryId));
     if (p.equipmentId !== null) query.set('equipment', String(p.equipmentId));
     if (p.muscleId !== null) query.set('muscles', String(p.muscleId));
-    const page = z.object({ count: z.number(), next: z.string().nullable(), results: z.array(z.unknown()) }).parse(await this.get(`exerciseinfo/?${query}`, signal));
+    const page = searchPage.parse(await this.get(`exerciseinfo/?${query}`, signal));
     const results = page.results.map(normalizeExercise).filter((e): e is CatalogExercise => e !== null && compatible(e, allowed));
     return { results, nextOffset: page.next ? p.offset + 20 : null, totalBeforeCompatibilityFilter: page.count };
+  }
+  async searchByName(name: string, allowed: number[], signal?: AbortSignal): Promise<CatalogExercise[]> {
+    const query = nameSearchSchema.parse(name);
+    const terms = words(query);
+    const found = new Map<number, { exercise: CatalogExercise; score: number }>();
+    for (const offset of [0, 20]) {
+      const params = new URLSearchParams({ limit: '20', offset: String(offset), name__search: query, language__code: 'en' });
+      const page = searchPage.parse(await this.get(`exerciseinfo/?${params}`, signal));
+      for (const raw of page.results) {
+        const exercise = normalizeExercise(raw);
+        if (!exercise || !compatible(exercise, allowed)) continue;
+        const englishName = rawExercise.parse(raw).translations.find(t => t.language === 2)?.name ?? exercise.name;
+        const title = englishName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const titleWords = words(title);
+        const overlap = terms.filter(term => titleWords.some(word => word === term || word.startsWith(term) || term.startsWith(word))).length;
+        if (!overlap) continue;
+        const score = overlap / Math.max(terms.length, 1) + (title.includes(query.toLowerCase()) ? 1 : 0);
+        found.set(exercise.id, { exercise, score });
+      }
+      if (!page.next || found.size >= 3) break;
+    }
+    return [...found.values()].sort((a, b) => b.score - a.score).slice(0, 5).map(item => item.exercise);
   }
   async details(ids: number[], allowed: number[], signal?: AbortSignal) {
     detailsSchema.parse({ ids });

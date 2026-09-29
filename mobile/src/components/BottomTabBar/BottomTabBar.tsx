@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Motion } from '@/components/Motion';
 import { feedback } from '@/utils/feedback';
@@ -27,6 +29,7 @@ export function BottomTabBar<T extends string>({
   value,
   highlightActiveTab = false,
 }: BottomTabBarProps<T>) {
+  useLanguage();
   const [width, setWidth] = useState(0);
   return (
     <View accessibilityRole="tablist" onLayout={event => setWidth(event.nativeEvent.layout.width)} style={[styles.bar, style]}>

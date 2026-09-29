@@ -84,7 +84,7 @@ export class NutritionService implements OnModuleInit, OnModuleDestroy {
       likedFoods: p.likedFoods, avoidedFoods: p.avoidedFoods, allergies: p.allergies };
     const anonymousProgram = { blockWeeks: program.output.result.blockWeeks, sessions: sessions.map(s => ({ sport: s.sport, weekday: s.weekday, estimatedMinutes: s.estimatedMinutes, setting: s.setting })) };
     const estimate = baseline(p, sessions);
-    const { targets, trace } = await this.ai.plan(anonymousProfile, anonymousProgram, estimate);
+    const { targets, trace } = await this.ai.plan(anonymousProfile, anonymousProgram, estimate, (await this.db.getRepository(User).findOneByOrFail({ id: job.userId })).language);
     await this.db.transaction(async manager => {
       const row = await manager.findOne(NutritionPlan, { where: { programRunId: job.programRunId }, lock: { mode: 'pessimistic_write' } });
       const current = await manager.findOneBy(TrainingProgram, { userId: job.userId });
@@ -138,7 +138,7 @@ export class NutritionService implements OnModuleInit, OnModuleDestroy {
     const onboarding = await this.db.getRepository(Onboarding).findOneBy({ userId });
     const profile = onboarding ? profileSchema.safeParse(onboarding.profile) : null;
     const preferences = profile?.success ? { objective: profile.data.goal, avoidedFoods: profile.data.avoidedFoods, allergies: profile.data.allergies } : {};
-    const { analysis, trace } = await this.ai.analyze(source, description, plan?.targets ?? null, preferences, photo);
+    const { analysis, trace } = await this.ai.analyze(source, description, plan?.targets ?? null, preferences, photo, (await this.db.getRepository(User).findOneByOrFail({ id: userId })).language);
     const items: { id: string; foodId: string; amount: number; estimatedFood: { id: string; name: string; baseUnit: 'g' | 'ml'; per100: typeof analysis.foods[number]['per100']; macroSource: 'estimated' | 'web'; sourceUrl: string | null } }[] = [];
     const foods: Record<string, unknown>[] = [];
     const unresolved: string[] = [];
@@ -215,7 +215,7 @@ export class NutritionService implements OnModuleInit, OnModuleDestroy {
     const { text, trace } = await this.ai.opinion(mealContext, targets, {
       sevenDayJournal: () => this.coachContext.sevenDayJournal(userId, row.date),
       coachMemory: (offset, limit) => this.coachContext.coachMemory(userId, offset, limit),
-    });
+    }, user?.language);
     return this.db.transaction(async manager => {
       const current = await manager.findOne(NutritionMeal, { where: { userId, id }, lock: { mode: 'pessimistic_write' } });
       if (!current || current.deletedAt || current.revision !== row.revision) throw new ConflictException('Ce repas a changé. Recharge-le avant de demander un avis.');

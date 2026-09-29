@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Illustration } from '@/components/Illustration';
@@ -13,6 +15,7 @@ import { StepHeading, stepStyles as s } from './StepContent';
 const phases = ['Profil analysé', 'Contraintes prises en compte', 'Répartition des séances', 'Calcul des calories et macros'];
 
 export function GenerationStep({ onDone }: { onDone: () => void }) {
+  useLanguage();
   const [progress, setProgress] = useState(0);
   const { width } = useWindowDimensions();
   useEffect(() => {

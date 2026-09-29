@@ -26,6 +26,8 @@ export function useTrainingProgram(enabled = true, autoStart = false) {
     loading: enabled && !state.program && (!state.hydrated || state.refreshing || state.starting),
     error: state.error,
     start: () => state.start(true),
+    forceStart: () => state.start(true, true),
+    starting: state.starting,
     refresh: state.refresh,
     accept: state.accept,
     accepting: state.accepting,

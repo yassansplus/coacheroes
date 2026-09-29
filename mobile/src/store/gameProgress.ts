@@ -1,17 +1,20 @@
 import { useSyncExternalStore } from 'react';
+import type { GameProgressResponse, Equipment } from '@/services/game';
 
-export type Equipment = { frame: string; title: string; theme: string };
-let state = { level: 8, xp: 320, total: 3820, weekly: 740, claimed: [] as string[], abandoned: [] as string[], equipment: { frame: 'azur', title: 'confirmed', theme: 'light' } as Equipment };
+export type { Equipment } from '@/services/game';
+export type GameProgress = Omit<GameProgressResponse, 'events' | 'latestEventId' | 'nextEventId'> & { loading: boolean; equipment: Equipment };
+const initial: GameProgress = {
+  level: 1, xp: 0, target: 200, total: 0, weekly: 0, recent: [], breakdown: {}, badges: [], loading: true,
+  missions: { daily: { checkin: false, meals: 0, workout: false }, weekly: { plan: { completed: 0, target: 0, awarded: false }, checkins: { completed: 0, target: 4 } } },
+  equipment: { frame: 'none', title: 'none', theme: 'light' }, unlockedRewards: [],
+};
+let state = initial;
 const listeners = new Set<() => void>();
-function publish(patch: Partial<typeof state>) { state = { ...state, ...patch }; listeners.forEach(listener => listener()); }
+function publish(next: GameProgress) { state = next; listeners.forEach(listener => listener()); }
 export function useGameProgress() { return useSyncExternalStore(callback => { listeners.add(callback); return () => { listeners.delete(callback); }; }, () => state, () => state); }
-// Local preview only. Server-side reward rules and persistence will replace this.
-export function claimGameReward(id: string, xp: number) {
-  if (state.claimed.includes(id) || state.abandoned.includes(id)) return false;
-  const level = state.level + Math.floor((state.xp + xp) / 500);
-  const leveledUp = level > state.level;
-  publish({ level, xp: (state.xp + xp) % 500, total: state.total + xp, weekly: state.weekly + xp, claimed: [...state.claimed, id] });
-  return leveledUp;
+export function setGameProgress(response: GameProgressResponse) {
+  const { events: _events, latestEventId: _latest, nextEventId: _next, ...data } = response;
+  publish({ ...state, ...data, loading: false });
 }
-export function abandonGameMission(id: string) { if (!state.claimed.includes(id)) publish({ abandoned: [...new Set([...state.abandoned, id])] }); }
-export function equipGameItems(equipment: Equipment) { publish({ equipment }); }
+export function resetGameProgress() { publish(initial); }
+export function equipGameItems(equipment: Equipment) { publish({ ...state, equipment }); }

@@ -4,6 +4,7 @@ import { apiUrl } from '@/config/api';
 import { getSessionToken } from './session';
 const directory = () => `${FileSystem.cacheDirectory}onboarding-photos/`;
 const avatarDirectory = () => `${FileSystem.cacheDirectory}profile-avatars/`;
+const squadAvatarDownloads = new Map<string, Promise<string>>();
 export async function cachePhoto(userId: string, id: string): Promise<string> {
   const token = getSessionToken();
   if (!token) throw new Error('Reconnecte-toi pour consulter tes photos.');
@@ -39,6 +40,28 @@ export async function cacheAvatarPhoto(userId: string, versionId: string, kind: 
   if (result.status === 401) handleUnauthorized(token);
   if (result.status !== 200) { await FileSystem.deleteAsync(path, { idempotent: true }); throw new Error('Impossible de charger ton avatar.'); }
   return path;
+}
+export function cacheSquadAvatarPhoto(userId: string, versionId: string, kind: 'source' | 'generated'): Promise<string> {
+  const key = `${userId}-squad-${versionId}-${kind}`;
+  const pending = squadAvatarDownloads.get(key);
+  if (pending) return pending;
+  const download = (async () => {
+    const token = getSessionToken();
+    if (!token) throw new Error('Session indisponible.');
+    await FileSystem.makeDirectoryAsync(avatarDirectory(), { intermediates: true });
+    const path = `${avatarDirectory()}${key}.jpg`;
+    if ((await FileSystem.getInfoAsync(path)).exists) return path;
+    const result = await FileSystem.downloadAsync(apiUrl(`/squad/avatars/${versionId}/${kind}`), path,
+      { headers: { Authorization: `Bearer ${token}` } });
+    if (result.status === 401) handleUnauthorized(token);
+    if (result.status !== 200 || getSessionToken() !== token) {
+      await FileSystem.deleteAsync(path, { idempotent: true });
+      throw new Error('Photo indisponible.');
+    }
+    return path;
+  })().finally(() => squadAvatarDownloads.delete(key));
+  squadAvatarDownloads.set(key, download);
+  return download;
 }
 export async function clearPhotoCache() {
   await Promise.all([directory(), avatarDirectory()].map(path => FileSystem.deleteAsync(path, { idempotent: true })));

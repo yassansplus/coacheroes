@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 import { useSession } from './SessionProvider';
@@ -13,7 +14,7 @@ type ContextValue = {
   error: string | null;
   acceptError: string | null;
   refresh: () => Promise<TrainingProgram | null>;
-  start: (retry?: boolean) => Promise<TrainingProgram | null>;
+  start: (retry?: boolean, force?: boolean) => Promise<TrainingProgram | null>;
   accept: () => Promise<boolean>;
 };
 
@@ -34,6 +35,7 @@ function fingerprint(program: TrainingProgram | null) {
 }
 
 export function TrainingProgramProvider({ children }: PropsWithChildren) {
+  useLanguage();
   const { user } = useSession();
   const userId = user?.id ?? null;
   const [program, setProgram] = useState<TrainingProgram | null>(null);
@@ -84,14 +86,14 @@ export function TrainingProgramProvider({ children }: PropsWithChildren) {
     return pending;
   }, [publish, userId]);
 
-  const start = useCallback(async (retry = true): Promise<TrainingProgram | null> => {
+  const start = useCallback(async (retry = true, force = false): Promise<TrainingProgram | null> => {
     if (!userId || actionBusy.current) return current.current;
     actionBusy.current = true;
     const owner = userId;
     const version = epoch.current;
     setStarting(true); setError(null);
     try {
-      const next = await startTrainingProgram(retry);
+      const next = await startTrainingProgram(retry, force);
       if (account.current !== owner || epoch.current !== version) return current.current;
       return publish(owner, next);
     } catch (error) {

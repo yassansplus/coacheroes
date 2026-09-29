@@ -12,25 +12,3 @@ export const missions: Mission[] = [
   { id: 'boxing', title: '2 séances de boxe', icon: 'boxing', xp: 250, value: 2, target: 2, unit: 'séances', label: '18 septembre', criterion: 'Terminer 2 séances de boxe.', destination: 'program', cta: 'Voir mes séances', weekly: true },
 ];
 export type GamePage = { kind: 'level' | 'daily' | 'weekly' | 'streak' | 'records' | 'badges' | 'rewards' | 'levelup' } | { kind: 'mission'; id: string };
-export const badges = [
-  { id: 'month', title: 'Premier mois', subtitle: '30 jours', date: '12 sept.', category: 'regularity', icon: 'calendar', current: 30, target: 30 },
-  { id: 'hundred', title: '100 entraînements', subtitle: '100 séances', date: '4 sept.', category: 'sport', icon: 'dumbbell', current: 100, target: 100 },
-  { id: 'pullups', title: '10 tractions', subtitle: 'Record', date: '28 août', category: 'sport', icon: 'dumbbell', current: 10, target: 10 },
-  { id: 'boxer', title: 'Retour du boxeur', subtitle: '20 séances', date: '16 août', category: 'sport', icon: 'boxing', current: 20, target: 20 },
-  { id: 'sleep', title: 'Sommeil régulier', subtitle: '18 / 30 nuits', date: '', category: 'regularity', icon: 'sleep', current: 18, target: 30 },
-  { id: 'protein', title: 'Protéines', subtitle: '42 / 50 jours', date: '', category: 'nutrition', icon: 'shaker', current: 42, target: 50 },
-] as const;
-export const rewards = [
-  { id: 'azur', title: 'Cadre azur', category: 'frame', requirement: 'Niveau 5', level: 5 },
-  { id: 'cobalt', title: 'Cadre cobalt', category: 'frame', requirement: 'Niveau 9', level: 9 },
-  { id: 'confirmed', title: 'Titre Confirmé', category: 'title', requirement: 'Niveau 8', level: 8 },
-  { id: 'regular', title: 'Titre Assidu', category: 'title', requirement: 'Série de 14 jours', level: 99 },
-  { id: 'light', title: 'Thème clair', category: 'theme', requirement: 'Disponible', level: 1 },
-  { id: 'violet', title: 'Thème violet', category: 'theme', requirement: '5 000 XP total', level: 99 },
-] as const;
-export const records = [
-  { id: 'pullups', title: 'Tractions', detail: '8 reps · +4 depuis le début', category: 'strength', icon: 'dumbbell' },
-  { id: 'legpress', title: 'Presse à cuisses', detail: '120 kg × 10', category: 'strength', icon: 'dumbbell' },
-  { id: 'bag', title: 'Sac', detail: '204 frappes en 3 min', category: 'boxing', icon: 'punchingBag' },
-  { id: 'rope', title: 'Corde', detail: '7 min 10 sans arrêt', category: 'boxing', icon: 'shoe' },
-] as const;

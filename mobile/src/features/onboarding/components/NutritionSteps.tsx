@@ -1,5 +1,8 @@
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { ChoiceCard } from '@/components/ChoiceCard';
@@ -28,6 +31,7 @@ const habits: { key: 'meals' | 'cooking' | 'restaurants'; title: string; subtitl
 const trackingItems = [{ value: 'none', label: 'Aucun' }, { value: 'calories', label: 'Calories' }, { value: 'macros', label: 'Macros' }] as const;
 
 export function EatingHabitsStep({ profile, update }: StepProps) {
+  useLanguage();
   function toggleTracking(value: (typeof trackingItems)[number]['value']) {
     if (value === 'none') { update({ tracking: ['none'] }); return; }
     const next = toggleItem(profile.tracking.filter(item => item !== 'none'), value);
@@ -51,6 +55,7 @@ export function FoodPreferencesStep({ profile, update, foodInputs, onFoodChange 
   foodInputs: FoodInputs;
   onFoodChange: (section: FoodSection, values: string[], inputValue: string) => void;
 }) {
+  useLanguage();
   const [query, setQuery] = useState('');
   const { width } = useWindowDimensions();
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
@@ -62,7 +67,7 @@ export function FoodPreferencesStep({ profile, update, foodInputs, onFoodChange 
   }
   return <>
     <StepHeading title="Tes préférences alimentaires" subtitle="Sélectionne les aliments que tu aimes et ceux que tu préfères éviter afin de recevoir un plan adapté à tes habitudes." />
-    <TextField accessibilityLabel="Rechercher un aliment" value={query} onChangeText={setQuery} placeholder="Rechercher un aliment"
+    <TextField accessibilityLabel={localizeLabel("Rechercher un aliment")} value={query} onChangeText={setQuery} placeholder={localizeLabel("Rechercher un aliment")}
       leftAccessory={<Symbol name="search" size={20} color="textSecondary" />} inputStyle={{ paddingLeft: 10 }} />
     {(['liked', 'avoided'] as const).map(section => <View key={section} style={s.stack}>
       <SectionHeading title={section === 'liked' ? 'Aliments appréciés' : 'À éviter'}
@@ -73,13 +78,13 @@ export function FoodPreferencesStep({ profile, update, foodInputs, onFoodChange 
         style={width < 400 ? s.half : s.third} contentStyle={styles.food} titleStyle={styles.foodTitle} />)}</View>
       <TagInput label={section === 'liked' ? 'Ajouter des aliments appréciés' : 'Ajouter des aliments à éviter'}
         helperText="Sépare les aliments par des virgules, ou appuie sur + pour les ajouter."
-        placeholder={section === 'liked' ? 'Ex. : avocat, fraises, lentilles' : 'Ex. : brocoli, olives, champignons'}
+        placeholder={localizeLabel(section === 'liked' ? 'Ex. : avocat, fraises, lentilles' : 'Ex. : brocoli, olives, champignons')}
         value={(section === 'liked' ? profile.likedFoods : profile.avoidedFoods).filter(value => value !== 'none').map(value => foodLabel(value, foods))}
         inputValue={foodInputs[section]} onChange={(values, inputValue) => onFoodChange(section, values, inputValue)} />
     </View>)}
     {!matches.length ? <EmptyState title="Aucun aliment trouvé" description="Ajoute cet aliment dans le champ libre de la section de ton choix." /> : null}
     <TextField label="Autre préférence ou allergie" value={profile.allergies} onChangeText={allergies => update({ allergies })}
-      placeholder="Ex. : fruits de mer, soja, etc." maxLength={100} />
+      placeholder={localizeLabel("Ex. : fruits de mer, soja, etc.")} maxLength={100} />
     <Text style={[s.caption, styles.counter]}>{profile.allergies.length}/100</Text>
   </>;
 }

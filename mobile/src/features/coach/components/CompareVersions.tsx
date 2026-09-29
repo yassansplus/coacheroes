@@ -1,4 +1,6 @@
-import { Text, View } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Symbol } from '@/components/Symbol';
@@ -8,6 +10,7 @@ import { CoachIcon, CoachRow } from './CoachUI';
 import { s } from './styles';
 
 export function CompareVersions({ onContinue, onData, onDetail }: { onContinue: () => void; onData: () => void; onDetail: (title: string, text: string) => void }) {
+  useLanguage();
   return <>
     <View style={{ gap: 6 }}><Text style={[s.title, s.center]}>Comparer</Text><Text style={[s.body, s.center]}>Muscu B · Jeudi</Text></View>
     <Card style={{ padding: 12 }}><View style={[s.row, { gap: 4, marginBottom: 8 }]}><View style={{ flex: 1.25 }} /><Text style={[s.label, s.center, { flex: 1, backgroundColor: colors.background, borderRadius: 10, paddingVertical: 10 }]}>Actuel</Text><Text style={[s.label, s.center, { flex: 1, backgroundColor: colors.primarySurface, borderRadius: 10, paddingVertical: 10 }]}>Proposé</Text></View>

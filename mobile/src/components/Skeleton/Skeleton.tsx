@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import { useEffect, useRef } from 'react';
 import {
   Animated,
@@ -15,6 +16,7 @@ type SkeletonProps = {
 };
 
 export function Skeleton({ borderRadius = 12, height = 16, style, width = '100%' }: SkeletonProps) {
+  useLanguage();
   const opacity = useRef(new Animated.Value(0.45)).current;
 
   useEffect(() => {

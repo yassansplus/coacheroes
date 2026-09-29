@@ -2,6 +2,7 @@ export type SportCount = { sport: string; count: number };
 export type SharedStats = { sessionsWeek: number; sessions28: number | null; attendance: number | null; streak: number | null;
   weekly: { date: string; count: number }[]; sports: SportCount[]; records: { id: string; title: string; value: string }[] };
 export type SquadPerson = { id: string; name: string; role?: 'owner' | 'member'; details: boolean; isFriend?: boolean;
+  avatar?: { versionId: string; kind: 'source' | 'generated' } | null;
   shareActivity: boolean; stats: SharedStats };
 export type SquadGroup = { id: string; name: string; owner_id?: string; ownerId?: string; revision: number; member_count?: number;
   memberCount?: number; sessionsWeek?: number; attendance?: number | null };

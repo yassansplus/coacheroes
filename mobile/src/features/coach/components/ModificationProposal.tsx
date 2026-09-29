@@ -1,4 +1,6 @@
-import { Text, View } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Illustration } from '@/components/Illustration';
@@ -10,6 +12,7 @@ import { CoachIcon, CoachRow, tones } from './CoachUI';
 import { s } from './styles';
 
 export function ModificationProposal({ createdAt, onCompare, onRefuse, onDetail }: { createdAt: number; onCompare: () => void; onRefuse: () => void; onDetail: (title: string, body: string) => void }) {
+  useLanguage();
   return <>
     <View style={{ alignItems: 'center', gap: 8 }}><Illustration name="coach" size={56} /><Text style={[s.title, s.center]}>Modification proposée</Text><Text style={[s.body, s.center]}>Semaine du {dayLabel(weekRange(createdAt).start)}</Text></View>
     <Card style={s.card}><View style={s.row}><CoachIcon icon="dumbbell" tone="green" size={64} /><View style={[s.grow, { gap: 7 }]}><Text style={s.heading}>Muscu B allégée</Text><Text style={[s.label, { color: colors.accent, backgroundColor: colors.accentSurface, alignSelf: 'flex-start', borderRadius: 14, paddingHorizontal: 9, paddingVertical: 3, fontSize: 11 }]}>Temporaire · 1 semaine</Text></View></View></Card>

@@ -1,14 +1,10 @@
+import { t } from '@/i18n/core';
+import { dayInitials } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState, type ComponentProps } from 'react';
-import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/AppHeader';
@@ -58,6 +54,8 @@ import { colors } from '@/theme/colors';
 import { fontFamily } from '@/theme/typography';
 
 import { OnboardingComponentsPreview } from '../components/OnboardingComponentsPreview';
+import { BadgesPreviewLauncher } from '../components/BadgesPreviewLauncher';
+import { WidgetPreviewSection } from '../components/WidgetPreviewSection';
 
 type ProgressCardPreviewProps = Omit<ComponentProps<typeof ProgressCard>, 'icon'> & {
   iconName: IllustrationName;
@@ -122,7 +120,7 @@ const progressCardExamples: ProgressCardExample[] = [
       const hours = Math.floor(roundedMinutes / 60);
       const remainingMinutes = roundedMinutes % 60;
 
-      return `${hours} h ${String(remainingMinutes).padStart(2, '0')}`;
+      return t("{p0} h {p1}", { p0: hours, p1: String(remainingMinutes).padStart(2, '0') });
     },
   },
   {
@@ -179,6 +177,7 @@ const dailyQuestExamples: DailyQuest[] = [
 ];
 
 function ProgressCardPreview({ iconName, ...progressCardProps }: ProgressCardPreviewProps) {
+  useLanguage();
   return (
     <ProgressCard
       {...progressCardProps}
@@ -197,12 +196,14 @@ function renderProgressCardExamples(
 }
 
 function WeightSelectorV2Preview() {
+  useLanguage();
   const [wheelWeight, setWheelWeight] = useState(77.5);
 
   return <WeightSelectorV2 onChange={setWheelWeight} value={wheelWeight} />;
 }
 
 function TextFieldPreview() {
+  useLanguage();
   const [calorieGoal, setCalorieGoal] = useState('2200');
 
   return (
@@ -211,7 +212,7 @@ function TextFieldPreview() {
       keyboardType="number-pad"
       label="Objectif calories"
       onChangeText={setCalorieGoal}
-      placeholder="Ex. 2 200"
+      placeholder={localizeLabel("Ex. 2 200")}
       rightAccessory={<Text style={styles.fieldUnit}>kcal</Text>}
       value={calorieGoal}
     />
@@ -219,6 +220,7 @@ function TextFieldPreview() {
 }
 
 function OverlayPreview() {
+  useLanguage();
   const [isSheetVisible, setSheetVisible] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [isToastVisible, setToastVisible] = useState(false);
@@ -257,12 +259,14 @@ function OverlayPreview() {
 }
 
 function CalendarPreview() {
+  useLanguage();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   return <Calendar onSelectDate={setSelectedDate} selectedDate={selectedDate} />;
 }
 
 function NavigationPreview() {
+  useLanguage();
   const [selectedTab, setSelectedTab] = useState('home');
   const [appTab, setAppTab] = useState<AppNavTab>('program');
 
@@ -271,7 +275,7 @@ function NavigationPreview() {
       <AppHeader
         leading={
           <IconButton
-            accessibilityLabel="Retour"
+            accessibilityLabel={localizeLabel("Retour")}
             icon={<Text style={styles.headerIcon}>‹</Text>}
             onPress={() => Alert.alert('Retour')}
             size={36}
@@ -282,7 +286,7 @@ function NavigationPreview() {
         title="Aujourd'hui"
         trailing={
           <IconButton
-            accessibilityLabel="Plus d'options"
+            accessibilityLabel={localizeLabel("Plus d'options")}
             icon={<Text style={styles.moreIcon}>•••</Text>}
             onPress={() => Alert.alert('Options')}
             size={36}
@@ -318,6 +322,7 @@ function NavigationPreview() {
 }
 
 function BodyPainSelectorPreview() {
+  useLanguage();
   const [painAreas, setPainAreas] = useState<BodyPainSelection[]>(['left_elbow', 'right_knee']);
   const [painSide, setPainSide] = useState<BodyPainSide>('left');
   const [painNote, setPainNote] = useState('');
@@ -346,7 +351,7 @@ function BodyPainSelectorPreview() {
         maxLength={200}
         multiline
         onChangeText={setPainNote}
-        placeholder="Ex. : douleur au genou droit lors de la course…"
+        placeholder={localizeLabel("Ex. : douleur au genou droit lors de la course…")}
         value={painNote}
       />
       <Card style={styles.painToggleCard}>
@@ -362,7 +367,8 @@ function BodyPainSelectorPreview() {
   );
 }
 
-export function ComponentLibraryScreen({ onOpenOnboarding, onOpenDailyCheckIn, onOpenProgram, onOpenNutrition, onOpenCoach, onOpenProgression }: { onOpenOnboarding: () => void; onOpenDailyCheckIn: () => void; onOpenProgram: () => void; onOpenNutrition: () => void; onOpenCoach: () => void; onOpenProgression: () => void }) {
+export function ComponentLibraryScreen({ onOpenOnboarding, onOpenDailyCheckIn, onOpenProgram, onOpenNutrition, onOpenCoach, onOpenProgression, onOpenBadges, onOpenSplash }: { onOpenOnboarding: () => void; onOpenDailyCheckIn: () => void; onOpenProgram: () => void; onOpenNutrition: () => void; onOpenCoach: () => void; onOpenProgression: () => void; onOpenBadges: () => void; onOpenSplash: () => void }) {
+  useLanguage();
   const [selectedPeriod, setSelectedPeriod] = useState('semaine');
   const [selectedObjective, setSelectedObjective] = useState('maintien');
   const [weight, setWeight] = useState(72.5);
@@ -394,6 +400,9 @@ export function ComponentLibraryScreen({ onOpenOnboarding, onOpenDailyCheckIn, o
             <Button text="Jouer la progression" variant="outline" onPress={onOpenProgression} style={{ marginTop: 10 }} />
           </Card>
 
+          <BadgesPreviewLauncher onOpenPage={onOpenBadges} />
+          <Card style={{ marginTop: 20, gap: 14 }}><Text style={{ fontFamily: fontFamily.bold, fontSize: 16, color: colors.text }}>Splash animé</Text><Button text="Voir le splash animé" onPress={onOpenSplash} /></Card>
+          <WidgetPreviewSection />
           <OnboardingComponentsPreview />
           <Card><Text style={styles.title}>Saisie de conversation</Text><MessageComposer value={messagePreview} onChange={setMessagePreview} onSend={() => { setMessagePreview(''); Alert.alert('Message envoyé'); }} /></Card>
           <Card>
@@ -409,8 +418,8 @@ export function ComponentLibraryScreen({ onOpenOnboarding, onOpenDailyCheckIn, o
           </Card>
           <Card>
             <Text style={styles.sectionTitle}>Tendance sur 7 jours</Text>
-            <LineChart accessibilityLabel="Exemple de tendance du poids sur sept jours"
-              data={[78.5, 78.2, 77.9, 77.6, 77.4, 77.3, 77.5].map((value, day) => ({ day, value, label: ['L', 'M', 'M', 'J', 'V', 'S', 'D'][day] }))} />
+            <LineChart accessibilityLabel={localizeLabel("Exemple de tendance du poids sur sept jours")}
+              data={[78.5, 78.2, 77.9, 77.6, 77.4, 77.3, 77.5].map((value, day) => ({ day, value, label: dayInitials()[day] }))} />
           </Card>
 
           <View style={styles.section}>

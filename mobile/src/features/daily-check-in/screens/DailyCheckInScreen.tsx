@@ -1,7 +1,11 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { localizeLabel, getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Children, createContext, useContext, useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { AccessibilityInfo, Animated, BackHandler, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, BackHandler, Easing, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { feedback } from '@/utils/feedback';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDaily } from '@/providers/DailyProvider';
@@ -30,13 +34,15 @@ function selectionFeedback() {
   if (Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => undefined);
 }
 function Button(props: ComponentProps<typeof SharedButton>) {
+  useLanguage();
   return <SharedButton hapticFeedback="light" {...props} />;
 }
-const minutesLabel = (minutes: number) => `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
+const minutesLabel = (minutes: number) => t("{p0} h {p1}", { p0: Math.floor(minutes / 60), p1: String(minutes % 60).padStart(2, '0') });
 const weightLabel = (weight: number) => weight.toFixed(1).replace('.', ',');
 
 
 export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
+  useLanguage();
   const daily = useDaily();
   const initialized = useRef<string | null>(null);
   const [proposal, setProposal] = useState<DailyProposal | null>(null);
@@ -107,14 +113,14 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
   const previous = (daily.status?.history ?? []).filter(row => { const age = dayTime - Date.parse(`${row.date}T12:00:00Z`); return age >= 7 * 86400000 && age < 14 * 86400000; });
   const average = recent.length ? recent.reduce((sum, row) => sum + row.weight, 0) / recent.length : null;
   const delta = average !== null && previous.length ? average - previous.reduce((sum, row) => sum + row.weight, 0) / previous.length : null;
-  const history = recent.map(row => ({ day: Date.parse(`${row.date}T12:00:00Z`) / 86400000, value: row.weight, label: new Date(`${row.date}T12:00:00Z`).toLocaleDateString('fr-FR', { weekday: 'short' }) }));
+  const history = recent.map(row => ({ day: Date.parse(`${row.date}T12:00:00Z`) / 86400000, value: row.weight, label: new Date(`${row.date}T12:00:00Z`).toLocaleDateString(getLocale(), { weekday: 'short' }) }));
   const step = page === 'overview' ? 1 : page === 'weight' ? 2 : 3;
   return <ReducedMotion.Provider value={reducedMotion}><View style={s.root}>
     <LinearGradient colors={gradients.onboarding} style={StyleSheet.absoluteFill} />
     <View pointerEvents="none" style={s.decoration}><LinearGradient colors={gradients.decoration} style={StyleSheet.absoluteFill} /></View>
     <SafeAreaView style={s.safe}>
-      <View style={s.header}><AppHeader title={page === 'adjustment' ? 'Ajustement du jour' : 'Bilan du matin'} subtitle={page === 'adjustment' ? undefined : `${step} sur 3`}
-        leading={<IconButton accessibilityLabel={page === 'overview' ? 'Fermer le bilan' : 'Retour'} variant="surface" icon={<Symbol name={page === 'overview' ? 'close' : 'back'} />} onPress={() => { selectionFeedback(); back(); }} />} />
+      <View style={s.header}><AppHeader title={page === 'adjustment' ? 'Ajustement du jour' : 'Bilan du matin'} subtitle={page === 'adjustment' ? undefined : t("{p0} sur 3", { p0: step })}
+        leading={<IconButton accessibilityLabel={localizeLabel(page === 'overview' ? 'Fermer le bilan' : 'Retour')} variant="surface" icon={<Symbol name={page === 'overview' ? 'close' : 'back'} />} onPress={() => { selectionFeedback(); back(); }} />} />
         {page !== 'adjustment' ? <ProgressBar progress={step / 3 * 100} height={5} style={{ marginTop: 14, marginBottom: 8 }} /> : null}</View>
       <ScrollView ref={scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {daily.loading ? <LoadingState label="Chargement de ton bilan…" /> : null}
@@ -123,8 +129,8 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
         {!daily.status && !daily.loading ? <Button text="Réessayer" onPress={() => void daily.refresh()} /> : null}
         {page === 'overview' ? <EntranceGroup>
           <Text style={s.title}>Ton état ce matin</Text>
-          <Text style={s.date}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
-          <SummaryCard icon="scale" title="Poids" value={savedWeight === null ? weightSkipped ? 'Ignoré aujourd’hui' : 'À renseigner' : `${weightLabel(savedWeight)} kg`} onPress={() => setPage('weight')} />
+          <Text style={s.date}>{new Date().toLocaleDateString(getLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+          <SummaryCard icon="scale" title="Poids" value={savedWeight === null ? weightSkipped ? 'Ignoré aujourd’hui' : 'À renseigner' : t("{p0} kg", { p0: weightLabel(savedWeight) })} onPress={() => setPage('weight')} />
           <SummaryCard icon="sleep" title="Sommeil" value={minutesLabel(sleep)} subtitle="À confirmer dans ton bilan" onPress={() => setPage('recovery')} />
           <SummaryCard icon="person" title="État physique" value="Faire le point avec le coach" onPress={openAdjustment} />
           <Banner message="Fais le point sur ton état pour préparer ta séance du jour." />
@@ -132,11 +138,11 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
         </EntranceGroup> : null}
         {page === 'weight' ? <EntranceGroup>
           <Text style={s.title}>Quel est ton poids ?</Text>
-          {daily.status?.reference ? <Text style={s.caption}>{daily.status.reference.date ? `Dernière pesée · ${new Date(`${daily.status.reference.date}T12:00:00Z`).toLocaleDateString('fr-FR')}` : 'Poids renseigné à l’inscription'} : {weightLabel(daily.status.reference.weight)} kg</Text> : null}
+          {daily.status?.reference ? <Text style={s.caption}>{daily.status.reference.date ? t("Dernière pesée · {p0}", { p0: new Date(`${daily.status.reference.date}T12:00:00Z`).toLocaleDateString(getLocale()) }) : 'Poids renseigné à l’inscription'} : {weightLabel(daily.status.reference.weight)} kg</Text> : null}
           <WeightSelectorV2 value={weight} onChange={setWeight} minimum={30} maximum={350} />
           <Card style={s.stack}><Text style={s.sectionTitle}>Moyenne sur 7 jours</Text>
             <View style={s.row}><Text style={s.largeValue}>{average === null ? '—' : weightLabel(average)} <Text style={s.body}>kg</Text></Text>{delta === null ? null : <Text style={s.trend}>{delta > 0 ? '+' : ''}{weightLabel(delta)} kg</Text>}</View>
-            <LineChart data={history} accessibilityLabel="Tes pesées enregistrées sur les sept derniers jours" />
+            <LineChart data={history} accessibilityLabel={localizeLabel("Tes pesées enregistrées sur les sept derniers jours")} />
             <Text style={s.caption}>{recent.length} pesée(s) sur les 7 derniers jours</Text></Card>
           <Banner message="La tendance compte plus qu’une variation quotidienne." />
         </EntranceGroup> : null}
@@ -150,7 +156,7 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
             <EnergyChoice key={value} index={index} selected={energy === value} onPress={() => { if (energy !== value) { selectionFeedback(); setEnergy(value); } }} />)}</View>
             <Text style={s.caption}>1 · Épuisé    3 · Moyen    5 · En pleine forme</Text></MetricCard>
           <MetricCard icon="bodyweight" title="Courbatures"><TabSelector value={soreness} onChange={setSoreness} items={[{ value: 'none', label: 'Aucune' }, { value: 'light', label: 'Légères' }, { value: 'strong', label: 'Fortes' }]} /></MetricCard>
-          <SummaryCard icon="target" title="Zone sensible" value={pains.length ? `${pains.length} zone(s) sélectionnée(s)` : 'Aucune · facultatif'} onPress={() => setPainVisible(true)} compact />
+          <SummaryCard icon="target" title="Zone sensible" value={pains.length ? t("{p0} zone(s) sélectionnée(s)", { p0: pains.length }) : 'Aucune · facultatif'} onPress={() => setPainVisible(true)} compact />
         </EntranceGroup> : null}
         {page === 'adjustment' ? <EntranceGroup>
           <Text style={s.title}>Ta séance, adaptée</Text>
@@ -184,11 +190,13 @@ export function DailyCheckInScreen({ onFinish }: { onFinish: () => void }) {
 }
 
 function EntranceGroup({ children }: { children: ReactNode }) {
+  useLanguage();
   return <View style={{ gap: 18 }}>{Children.toArray(children).map((child, index) =>
     <Entrance key={index} delay={index * 45}>{child}</Entrance>)}</View>;
 }
 
 function Entrance({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
+  useLanguage();
   const reducedMotion = useContext(ReducedMotion);
   const progress = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
   useEffect(() => {
@@ -203,6 +211,7 @@ function Entrance({ children, delay = 0 }: { children: ReactNode; delay?: number
 }
 
 function ValueBounce({ children, value }: { children: ReactNode; value: number }) {
+  useLanguage();
   const reducedMotion = useContext(ReducedMotion);
   const scale = useRef(new Animated.Value(1)).current;
   const previous = useRef(value);
@@ -223,6 +232,7 @@ function ValueBounce({ children, value }: { children: ReactNode; value: number }
 }
 
 function EnergyChoice({ index, selected, onPress }: { index: number; selected: boolean; onPress: () => void }) {
+  useLanguage();
   const reducedMotion = useContext(ReducedMotion);
   const progress = useRef(new Animated.Value(selected ? 1 : 0)).current;
   const color = energyLevelColors[index];
@@ -233,7 +243,7 @@ function EnergyChoice({ index, selected, onPress }: { index: number; selected: b
     animation.start();
     return () => animation.stop();
   }, [progress, reducedMotion, selected]);
-  return <Pressable accessibilityRole="radio" accessibilityLabel={`Énergie : ${index + 1} sur 5`} accessibilityState={{ checked: selected }}
+  return <Pressable accessibilityRole="radio" accessibilityLabel={localizeLabel(t("Énergie : {p0} sur 5", { p0: index + 1 }))} accessibilityState={{ checked: selected }}
     onPress={onPress} style={({ pressed }) => [s.energyChoice, { opacity: pressed ? 0.8 : 1 }]}>
     <Animated.View style={[s.energyBar, { height: 22 + index * 9, transform: [{ scale: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) }] }]}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: color, opacity: 0.25, borderRadius: 9 }]} />
@@ -246,16 +256,19 @@ function EnergyChoice({ index, selected, onPress }: { index: number; selected: b
 }
 
 function SummaryCard({ icon, title, value, subtitle, onPress, compact = false }: { icon: IllustrationName; title: string; value: string; subtitle?: string; onPress: () => void; compact?: boolean }) {
+  useLanguage();
   const reducedMotion = useContext(ReducedMotion);
-  return <Pressable accessibilityRole="button" accessibilityLabel={`${title}, ${value}`} onPress={() => { selectionFeedback(); onPress(); }}
+  return <Pressable accessibilityRole="button" accessibilityLabel={localizeLabel(`${title}, ${value}`)} onPress={() => { selectionFeedback(); onPress(); }}
     style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }] })}><Card style={[s.row, compact ? s.compact : s.summary]}>
     <Illustration name={icon} size={compact ? 38 : 65} /><View style={s.grow}><Text style={s.sectionTitle}>{title}</Text><Text style={s.body}>{value}</Text>{subtitle ? <Text style={s.caption}>{subtitle}</Text> : null}</View>
     <Symbol name="chevron" color="textMuted" /></Card></Pressable>;
 }
 function MetricCard({ icon, title, children }: { icon: IllustrationName; title: string; children: ReactNode }) {
+  useLanguage();
   return <Card style={s.metric}><View style={s.row}><Illustration name={icon} size={40} /><Text style={s.sectionTitle}>{title}</Text></View>{children}</Card>;
 }
 function ChangeCard({ icon, title, before, after, removed = false }: { icon: IllustrationName; title: string; before: string; after: string; removed?: boolean }) {
+  useLanguage();
   return <Card style={s.row}><Illustration name={icon} size={52} /><View style={[s.grow, s.stack]}><Text style={s.sectionTitle}>{title}</Text>
     <View style={s.comparison}><Text style={s.before}>{before}</Text><Symbol name="arrow" color="textMuted" /><Text style={[s.after, removed && { color: colors.energy }]}>{after}</Text></View></View></Card>;
 }

@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import { Redirect, useGlobalSearchParams, usePathname, type Href } from 'expo-router';
 import { useIsFocused } from 'expo-router/react-navigation';
 import type { PropsWithChildren } from 'react';
@@ -6,6 +7,7 @@ import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { useSession } from './SessionProvider';
 export function SessionGate({ children }: PropsWithChildren) {
+  useLanguage();
   const session = useSession();
   const focused = useIsFocused();
   const pathname = usePathname();

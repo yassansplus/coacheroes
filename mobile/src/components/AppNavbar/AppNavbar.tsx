@@ -1,3 +1,4 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
@@ -22,6 +23,7 @@ const tabs: readonly { value: AppNavTab; label: string; icon: SymbolName }[] = [
 
 /** Shared app navigation; the parent retains responsibility for routing. */
 export function AppNavbar({ value, onChange, style, includeCoach = false }: AppNavbarProps) {
+  useLanguage();
   const keyboardVisible = useKeyboardVisible();
   if (keyboardVisible) return null;
   const visibleTabs = includeCoach ? [...tabs.slice(0, 2), { value: 'coach' as const, label: 'Coach', icon: 'sparkles' as const }, ...tabs.slice(2)] : tabs;

@@ -1,3 +1,5 @@
+import { t } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { AppState } from 'react-native';
 import { usePathname, useRootNavigationState, useRouter } from 'expo-router';
@@ -7,11 +9,18 @@ import { readDailyCache, updateDailyCache } from '@/storage/daily';
 import { dailyDate, dailyTimezone, loadDaily, markDailyOpened, saveDaily, type DailyData, type DailyProposal, type DailyStatus, type DailyWrite } from '@/services/daily';
 import { updateHomeSummary } from '@/store/homeSummary';
 import { setupDailyNotifications } from '@/services/daily/notifications';
+import { useAppStarting } from './AppStartupContext';
 
 type Context = { status:DailyStatus|null;draft:DailyData|null;loading:boolean;error:string|null;busy:boolean;refresh:()=>Promise<void>;saveDraft:(data:DailyData)=>Promise<void>;complete:(data:DailyData,decision:'none'|'accepted'|'declined',proposal:DailyProposal|null)=>Promise<boolean> };
 const DailyContext=createContext<Context|null>(null);
+function publishRecovery(status:DailyStatus|null){
+ const data=status?.date===dailyDate()&&status.row?.completed_at?status.row.data:null;
+ updateHomeSummary(data?{sleepMinutes:data.sleepMinutes,energy:data.energy,checkedIn:true}:{sleepMinutes:null,energy:null,checkedIn:false});
+}
 export function DailyProvider({children}:PropsWithChildren){
+  useLanguage();
  const {user}=useSession();const owner=user?.onboardingCompleted?user.id:null;
+ const starting=useAppStarting();
  const [status,setStatus]=useState<DailyStatus|null>(null),[draft,setDraft]=useState<DailyData|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
  const account=useRef(owner);account.current=owner;
  const syncing=useRef<string|null>(null),saving=useRef(false),opening=useRef(false),epoch=useRef(0);
@@ -22,6 +31,7 @@ export function DailyProvider({children}:PropsWithChildren){
   try{
    const cache=await readDailyCache(owner);if(account.current!==owner||epoch.current!==version)return;
    const date=dailyDate();setDraft(cache.days[date]?.draft??null);
+   publishRecovery(cache.status??null);
    if(cache.status?.date===date)setStatus(cache.status);
    else {
     const history=cache.status?.history??[];
@@ -33,15 +43,14 @@ export function DailyProvider({children}:PropsWithChildren){
    if(account.current!==owner||epoch.current!==version)return;
    setStatus(next);setError(null);
    if(cache.days[next.date]?.opened&&!next.row?.opened_at&&!next.row?.completed_at&&new Date().getHours()>=7)void markDailyOpened().catch(()=>undefined);
-   if(next.row?.completed_at&&next.row.data)updateHomeSummary({sleepMinutes:next.row.data.sleepMinutes,energy:next.row.data.energy,checkedIn:true});
-   else updateHomeSummary({checkedIn:false});
+   publishRecovery(next);
   }catch(e){if(account.current===owner)setError(e instanceof Error?e.message:'Impossible de charger le bilan.');}
   finally{if(syncing.current===owner)syncing.current=null;if(account.current===owner)setLoading(false);}
  },[owner]);
- useEffect(()=>{setStatus(null);setDraft(null);setError(null);setLoading(!!owner);epoch.current++;saving.current=false;setBusy(false);opening.current=false;if(!owner)return;void refresh();const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},60000);const listener=AppState.addEventListener('change',state=>{if(state==='active')void refresh();});return()=>{clearInterval(timer);listener.remove();};},[owner,refresh]);
+ useEffect(()=>{setStatus(null);setDraft(null);setError(null);setLoading(!!owner);publishRecovery(null);epoch.current++;saving.current=false;setBusy(false);opening.current=false;if(!owner)return;void refresh();const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},60000);const listener=AppState.addEventListener('change',state=>{if(state==='active')void refresh();});return()=>{clearInterval(timer);listener.remove();};},[owner,refresh]);
  useEffect(()=>{if(owner&&pathname==='/')void refresh();},[pathname,owner,refresh]);
  useEffect(()=>{
-  if(!owner||!navigation?.key||loading||opening.current||status?.date!==dailyDate()||currentHour<7||status.row?.completed_at)return;
+  if(starting||!owner||!navigation?.key||loading||opening.current||status?.date!==dailyDate()||currentHour<7||status.row?.completed_at)return;
   if(!['/','/today','/nutrition','/profile','/progression','/game','/squad','/coach'].includes(pathname))return;
   opening.current=true;let alive=true;
   void (async()=>{
@@ -53,7 +62,7 @@ export function DailyProvider({children}:PropsWithChildren){
    if(open&&alive&&account.current===owner&&pathname!=='/today')router.push('/today');
   })().catch(()=>undefined).finally(()=>{opening.current=false;});
   return()=>{alive=false;};
- },[owner,navigation?.key,loading,currentHour,status?.date,status?.row?.opened_at,status?.row?.completed_at,pathname,router]);
+ },[starting,owner,navigation?.key,loading,currentHour,status?.date,status?.row?.opened_at,status?.row?.completed_at,pathname,router]);
  useEffect(()=>{if(!owner)return;let cleanup:undefined|(()=>void),alive=true;void setupDailyNotifications(owner,()=>{if(account.current===owner)router.push('/today');}).then(stop=>{if(alive)cleanup=stop;else stop();}).catch(()=>undefined);return()=>{alive=false;cleanup?.();};},[owner,router]);
  const saveDraft=useCallback(async(data:DailyData)=>{if(!owner)return;const date=dailyDate();await updateDailyCache(owner,c=>{c.days[date]={...c.days[date],draft:data};});if(account.current===owner)setDraft(data);},[owner]);
  const complete=useCallback(async(data:DailyData,decision:'none'|'accepted'|'declined',proposal:DailyProposal|null)=>{
@@ -70,8 +79,8 @@ export function DailyProvider({children}:PropsWithChildren){
    const history=status.history.filter(h=>h.date!==status.date);if(data.weightKg!==null)history.push({date:status.date,weight:data.weightKg});
    const next={...status,row,history:history.sort((a,b)=>a.date.localeCompare(b.date)),shouldOpen:false};
    await updateDailyCache(owner,c=>{c.status=next;c.days[status.date]={opened:true,draft:data};});
-   setStatus(next);updateHomeSummary({sleepMinutes:data.sleepMinutes,energy:data.energy,checkedIn:true});return true;
-  }catch(e){if(account.current===owner)setError(`${e instanceof Error?e.message:'Bilan non envoyé.'} Tes réponses restent sur cet appareil. Réessaie pour valider.`);return false;}
+   setStatus(next);publishRecovery(next);return true;
+  }catch(e){if(account.current===owner)setError(t("{p0} Tes réponses restent sur cet appareil. Réessaie pour valider.", { p0: e instanceof Error?e.message:'Bilan non envoyé.' }));return false;}
   finally{saving.current=false;if(account.current===owner)setBusy(false);}
  },[owner,status]);
  return <DailyContext.Provider value={{status,draft,loading,error,busy,refresh,saveDraft,complete}}>{children}</DailyContext.Provider>;

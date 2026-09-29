@@ -1,4 +1,6 @@
-import { Text, View } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Symbol } from '@/components/Symbol';
@@ -8,6 +10,7 @@ import { CoachIcon, CoachRow } from './CoachUI';
 import { s } from './styles';
 
 export function AdjustmentReasons({ onContinue, onChat, onRule, onKeep, fromComparison = false }: { onContinue: () => void; onChat: () => void; onRule: () => void; onKeep: () => void; fromComparison?: boolean }) {
+  useLanguage();
   return <>
     <Card style={s.card}><View style={s.row}><CoachIcon icon="dumbbell" size={66} /><View style={s.grow}><Text style={s.label}>Muscu B</Text><Text style={[s.title, { color: colors.energy }]}>Volume −22 %</Text><Text style={s.caption}>Pour la période que tu choisiras</Text></View></View></Card>
     <Card style={s.card}><Text style={s.heading}>Données utilisées</Text>{observations.map((item, index) => <View key={item.label} style={[s.row, index > 0 && s.divider, { paddingTop: index ? 12 : 0, gap: 8 }]}>

@@ -1,3 +1,5 @@
+import { localizeLabel } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { Image, type ImageSourcePropType, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 
@@ -11,15 +13,16 @@ type IllustrationProps = {
 };
 
 export function Illustration({ name, size = 48, style, accessibilityLabel }: IllustrationProps) {
+  useLanguage();
   const source = illustrations[name];
   if (isSvgIllustration(source)) {
     const asset = source.source as ImageSourcePropType | string;
     const uri = typeof asset === 'string' ? asset : typeof asset === 'object' && !Array.isArray(asset)
       ? asset.uri : typeof Image.resolveAssetSource === 'function' ? Image.resolveAssetSource(asset)?.uri : undefined;
-    return <SvgUri accessible={Boolean(accessibilityLabel)} accessibilityLabel={accessibilityLabel}
+    return <SvgUri accessible={Boolean(accessibilityLabel)} accessibilityLabel={localizeLabel(accessibilityLabel)}
       uri={uri ?? null} width={size} height={size}
       style={style as StyleProp<ViewStyle>} />;
   }
-  return <Image accessible={Boolean(accessibilityLabel)} accessibilityLabel={accessibilityLabel}
+  return <Image accessible={Boolean(accessibilityLabel)} accessibilityLabel={localizeLabel(accessibilityLabel)}
     source={source} fadeDuration={0} resizeMode="contain" style={[{ width: size, height: size }, style]} />;
 }

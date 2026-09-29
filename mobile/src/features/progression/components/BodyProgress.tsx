@@ -1,5 +1,9 @@
+import { t } from '@/i18n/core';
+import { Text } from '@/components/LocalizedText';
+import { getLocale } from '@/i18n/core';
+import { useLanguage } from '@/i18n/useLanguage';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { TabSelector } from '@/components/TabSelector';
@@ -11,6 +15,7 @@ import { Change, Metric, Row, TileIcon } from './UI';
 import { s } from './styles';
 
 export function WeightProgress({ entries, onAdd, onHistory }: { entries: WeightEntry[]; onAdd: () => void; onHistory: () => void }) {
+  useLanguage();
   const [period, setPeriod] = useState('30');
   const today = dayKey(new Date());
   const last = entries.at(-1);
@@ -36,7 +41,7 @@ export function WeightProgress({ entries, onAdd, onHistory }: { entries: WeightE
           compactLabelSize={11}
           compactTitle={item.label}
           title={item.title}
-          value={item.value === null ? '—' : `${number(item.value)} kg`}
+          value={item.value === null ? '—' : t("{p0} kg", { p0: number(item.value) })}
           icon={index === 0 ? <TileIcon name="scale" size={28} /> : <TileIcon glyph="chart" tone={index === 3 ? 'green' : 'purple'} size={28} />}
         />
       ))}
@@ -47,12 +52,13 @@ export function WeightProgress({ entries, onAdd, onHistory }: { entries: WeightE
   </>;
 }
 export function MeasurementsProgress({ entries, onAdd, onHistory }: { entries: Measurement[]; onAdd: () => void; onHistory: () => void }) {
+  useLanguage();
   const [selected, setSelected] = useState<MeasureKey>('waist');
   const [period, setPeriod] = useState('120');
   const latest = entries.at(-1);
   return <><Card style={s.card}><Row title="Dernière mesure" value={latest ? dateLabel(latest.date) : '—'} icon={<TileIcon glyph="calendar" />} onPress={onHistory} /></Card>
-    {(Object.keys(measureLabels) as MeasureKey[]).map(key => { const values = entries.filter(item => item[key] !== null); const last = values.at(-1)?.[key] ?? null; const first = values[0]?.[key] ?? null; const change = last !== null && first !== null && values.length > 1 ? last - first : null; return <Card key={key} style={{ padding: 10 }}><Row title={measureLabels[key]} value={last === null ? '—' : `${number(last)} cm`} icon={<TileIcon glyph={key === 'waist' ? 'waist' : key === 'chest' ? 'chest' : key === 'arm' ? 'arm' : 'thigh'} size={50} />} trailing={change === null ? undefined : <Change text={`${change > 0 ? '+' : ''}${number(change)} cm`} />} onPress={() => setSelected(key)} /></Card>; })}
-    <Card style={s.card}><Text style={s.heading}>{measureLabels[selected]}</Text><TabSelector value={period} onChange={setPeriod} items={[{ value: '120', label: '4 mois' }, { value: '180', label: '6 mois' }, { value: '365', label: '1 an' }]} /><TrendChart key={selected + period} showValues unit="cm" height={185} series={[{ label: measureLabels[selected], color: colors.primary, gradient: true, points: withinDays(entries, Number(period), dayKey(new Date())).filter(item => item[selected] !== null).map(item => ({ label: new Date(`${item.date}T12:00:00`).toLocaleDateString('fr-FR', { month: 'short' }), value: item[selected]!, detail: dateLabel(item.date) })) }]} /></Card>
+    {(Object.keys(measureLabels) as MeasureKey[]).map(key => { const values = entries.filter(item => item[key] !== null); const last = values.at(-1)?.[key] ?? null; const first = values[0]?.[key] ?? null; const change = last !== null && first !== null && values.length > 1 ? last - first : null; return <Card key={key} style={{ padding: 10 }}><Row title={measureLabels[key]} value={last === null ? '—' : t("{p0} cm", { p0: number(last) })} icon={<TileIcon glyph={key === 'waist' ? 'waist' : key === 'chest' ? 'chest' : key === 'arm' ? 'arm' : 'thigh'} size={50} />} trailing={change === null ? undefined : <Change text={t("{p0}{p1} cm", { p0: change > 0 ? '+' : '', p1: number(change) })} />} onPress={() => setSelected(key)} /></Card>; })}
+    <Card style={s.card}><Text style={s.heading}>{measureLabels[selected]}</Text><TabSelector value={period} onChange={setPeriod} items={[{ value: '120', label: '4 mois' }, { value: '180', label: '6 mois' }, { value: '365', label: '1 an' }]} /><TrendChart key={selected + period} showValues unit="cm" height={185} series={[{ label: measureLabels[selected], color: colors.primary, gradient: true, points: withinDays(entries, Number(period), dayKey(new Date())).filter(item => item[selected] !== null).map(item => ({ label: new Date(`${item.date}T12:00:00`).toLocaleDateString(getLocale(), { month: 'short' }), value: item[selected]!, detail: dateLabel(item.date) })) }]} /></Card>
     <View style={s.actions}><Button text="＋ Ajouter des mesures" hapticFeedback onPress={onAdd} /><Button text="Historique" variant="secondary" backgroundColor={colors.primarySurface} onPress={onHistory} /></View>
   </>;
 }

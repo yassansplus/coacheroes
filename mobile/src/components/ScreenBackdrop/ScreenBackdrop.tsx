@@ -1,9 +1,11 @@
+import { useLanguage } from '@/i18n/useLanguage';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { colors, gradients } from '@/theme/colors';
 
 export function ScreenBackdrop() {
+  useLanguage();
   return <View pointerEvents="none" style={StyleSheet.absoluteFill}>
     <LinearGradient colors={gradients.onboarding} style={StyleSheet.absoluteFill} />
     <Svg width="100%" height="100%" viewBox="0 0 400 860" preserveAspectRatio="none">

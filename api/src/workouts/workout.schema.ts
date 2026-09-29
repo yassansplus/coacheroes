@@ -21,7 +21,7 @@ export type WorkoutSnapshot = z.infer<typeof snapshotSchema>;
 export type WorkoutWrite = z.infer<typeof writeSchema>;
 export function summarizeWorkout(s: WorkoutSnapshot) {
   const sets = s.exercises.flatMap(e=>e.sets.filter(v=>v && !v.warmup));
-  return { xp:s.status==='completed'?(s.workout.kind==='free'?80:sets.length*16):0,records:0,durationSeconds: Math.max(0, Math.floor(((s.endedAt ?? s.startedAt)-s.startedAt)/1000)), sets:sets.length,
+  return { xp:s.status==='completed'?(s.workout.programVersionId?100:60):0,records:0,durationSeconds: Math.max(0, Math.floor(((s.endedAt ?? s.startedAt)-s.startedAt)/1000)), sets:sets.length,
     volume:sets.reduce((n,v)=>n+v!.weight*v!.reps,0), completedExercises:s.exercises.filter(e=>e.sets.length && e.sets.every(Boolean)).length,
     pain:s.debrief.pain || s.painReports.length>0, energy:Number(s.debrief.energy), difficulty:s.debrief.difficulty, comment:s.debrief.comment };
 }

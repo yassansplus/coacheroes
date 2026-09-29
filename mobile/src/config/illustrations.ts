@@ -5,6 +5,16 @@ const svg = (source: number): SvgIllustration => ({ type: 'svg', source });
 
 /** Static requires keep the same asset registry available to Metro and the preloader. */
 export const illustrations = {
+  badgeWood: require('../../assets/badges/niveaux/runtime/01-bois.png'),
+  badgeStone: require('../../assets/badges/niveaux/runtime/02-pierre.png'),
+  badgeBronze: require('../../assets/badges/niveaux/runtime/03-bronze.png'),
+  badgeSteel: require('../../assets/badges/niveaux/runtime/04-acier.png'),
+  badgeSilver: require('../../assets/badges/niveaux/runtime/05-argent.png'),
+  badgeGold: require('../../assets/badges/niveaux/runtime/06-or.png'),
+  badgeEmerald: require('../../assets/badges/niveaux/runtime/07-emeraude.png'),
+  badgeSapphire: require('../../assets/badges/niveaux/runtime/08-saphir.png'),
+  badgeAmethyst: require('../../assets/badges/niveaux/runtime/09-amethyste.png'),
+  badgeObsidian: require('../../assets/badges/niveaux/runtime/10-obsidienne.png'),
   benchPress: require('../../assets/program/bench-press.png'),
   camera: svg(require('../../assets/icones/camera.svg')),
   logo: svg(require('../../assets/icones/logo-eclair.svg')),

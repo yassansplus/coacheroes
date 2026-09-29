@@ -1,5 +1,7 @@
+import { Text } from '@/components/LocalizedText';
+import { useLanguage } from '@/i18n/useLanguage';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { fontFamily } from '@/theme/typography';
@@ -21,6 +23,7 @@ export function EmptyState({
   style,
   title,
 }: EmptyStateProps) {
+  useLanguage();
   return (
     <View style={[styles.container, style]}>
       {icon ? <View style={styles.icon}>{icon}</View> : null}

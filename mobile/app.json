@@ -16,7 +16,15 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#080d38",
+          "image": "./assets/app-icon/icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
       [
         "expo-camera",
         {
@@ -36,7 +44,29 @@
       ],
       "expo-apple-authentication",
       "expo-secure-store",
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/with-widget-fonts.cjs",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.yassansplus.coacheroes.widgets",
+          "groupIdentifier": "group.com.yassansplus.coacheroes",
+          "widgets": [
+            {
+              "name": "CoacHeroesToday",
+              "displayName": "Coac Heroes",
+              "description": "Tes calories, ta séance et ton Squad en un coup d’œil.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemMedium",
+                  "systemLarge"
+                ],
+                "contentMarginsDisabled": true
+              }
+            }
+          ]
+        }
+      ]
     ],
     "extra": {
       "router": {},

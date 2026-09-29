@@ -13,6 +13,8 @@ function screen(flow) {
     if (name === 'react/jsx-runtime') return jsx;
     if (name === 'react-native') return { StyleSheet: { create: x => x }, View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', ScrollView: 'ScrollView', Platform: { OS: 'ios' } };
     if (name === '@/hooks/useTrainingProgram') return { useTrainingProgram: () => flow };
+    if (name === '@/i18n/useLanguage') return { useLanguage() {} };
+    if (name === '@/i18n/core') return { localizeLabel: value => value };
     if (name === '@/theme/colors') return { colors: {} };
     return new Proxy({}, { get: (_, key) => String(key) });
   } });

@@ -27,8 +27,8 @@ export class ProgramController {
   @Post('generate')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   generate(@Req() req: AuthRequest, @Body() body: unknown) {
-    const parsed = z.strictObject({ retry: z.boolean().optional(), renew: z.boolean().optional() }).safeParse(body ?? {});
+    const parsed = z.strictObject({ retry: z.boolean().optional(), renew: z.boolean().optional(), force: z.boolean().optional() }).safeParse(body ?? {});
     if (!parsed.success) throw new BadRequestException('Requête invalide.');
-    return this.program.start(req.session.userId, parsed.data.retry, parsed.data.renew);
+    return this.program.start(req.session.userId, parsed.data.retry, parsed.data.renew, parsed.data.force);
   }
 }

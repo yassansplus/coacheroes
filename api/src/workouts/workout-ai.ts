@@ -1,3 +1,4 @@
+import { responseLanguage } from '../ai/language';
 import { Injectable,ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
@@ -9,7 +10,7 @@ export const workoutAnalysisSchema=z.strictObject({reply:z.string().min(1).max(1
 @Injectable()
 export class WorkoutAi {
  constructor(private readonly config:ConfigService){}
- async analyze(snapshot:WorkoutSnapshot,history:WorkoutSnapshot[],profile:Record<string,unknown>,firstName:string|null){
+ async analyze(snapshot:WorkoutSnapshot,history:WorkoutSnapshot[],profile:Record<string,unknown>,firstName:string|null,language:unknown='fr'){
   if(!this.config.get<string>('OPENAI_API_KEY'))throw new ServiceUnavailableException('Le coach est indisponible. Ta séance reste enregistrée.');
   const settings=aiSettings(this.config,'program'),schema=z.toJSONSchema(workoutAnalysisSchema,{target:'draft-7'});delete schema.$schema;
   const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:AbortSignal.timeout(90000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${this.config.getOrThrow<string>('OPENAI_API_KEY')}`},body:JSON.stringify({model:settings.model,reasoning:{effort:settings.reasoningEffort},store:false,max_output_tokens:6000,
@@ -19,7 +20,7 @@ Retourne une recommandation par exercice, uniquement ceux de la séance. Sport l
 Utilise la dernière charge de travail réellement réalisée ; zéro si aucune série de travail. Ne transpose aucune charge entre exercices.
 Consolide d'abord les répétitions dans la plage prescrite. Si douleur, effort difficile ou données insuffisantes, aucune augmentation de charge.
 Une hausse éventuelle exige deux séances récentes faciles en haut de fourchette, sans douleur, et ne dépasse jamais 5 %. Précise de conserver la charge si cet incrément n'est pas disponible.
-Ne suppose jamais qu'une séance planifiée a été réalisée. Les recommandations ne sont pas encore appliquées ; l'utilisateur les valide dans l'écran existant.`,
+Ne suppose jamais qu'une séance planifiée a été réalisée. Les recommandations ne sont pas encore appliquées ; l'utilisateur les valide dans l'écran existant. ${responseLanguage(language)}`,
    input:[{role:'user',content:JSON.stringify({session:workoutAiContext(snapshot,firstName),history:history.map(s=>workoutAiContext(s,firstName)),profile:anonymousData({level:profile.level,sports:profile.sports,goal:profile.goal,equipment:profile.equipment,pains:profile.pains,noPain:profile.noPain,painNotes:profile.painNotes},firstName)})}],text:{format:{type:'json_schema',name:'workout_analysis',strict:true,schema}}})});
   if(!response.ok)throw new ServiceUnavailableException('Le coach ne répond pas. Réessaie.');
   const body=z.object({id:z.string(),status:z.string(),output:z.array(z.object({type:z.string(),content:z.array(z.object({type:z.string(),text:z.string().optional()})).optional()})),usage:z.unknown().optional()}).parse(await response.json());
